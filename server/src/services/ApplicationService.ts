@@ -15,10 +15,13 @@ import {
 import { ApplicantService } from './ApplicantService.js';
 import { ScholarService } from './ScholarService.js';
 import { NotificationService } from './NotificationService.js';
+import { supabaseAdmin, DOCUMENTS_BUCKET } from '../lib/supabase.js';
 
 const applicantService = new ApplicantService();
 const scholarService = new ScholarService();
 const notificationService = new NotificationService();
+
+const FINALIZED_STATUSES = ['approved', 'rejected'];
 
 const applicationInclude = {
   scholarship: true,
@@ -248,6 +251,39 @@ export class ApplicationService {
     }
 
     return toApplication(updated);
+  }
+
+  /**
+   * Lets a Student withdraw their own application — blocked once a final
+   * decision (approved/rejected) has been recorded, so the audit trail
+   * for a completed review is never destroyed. Cleans up any uploaded
+   * Storage files first so nothing is orphaned; the DB rows (documents,
+   * status history) cascade from the Application delete itself.
+   */
+  async deleteApplication(user: JWTPayload, id: number): Promise<boolean> {
+    const application = await this.getOwnedRecord(user, id);
+    if (!application) return false;
+
+    if (FINALIZED_STATUSES.includes(application.status)) {
+      throw new Error('This application has already been decided and can no longer be deleted');
+    }
+
+    const documents = await prisma.uploadedDocument.findMany({
+      where: { applicationId: id },
+      select: { filePath: true }
+    });
+
+    if (documents.length > 0) {
+      const { error: storageError } = await supabaseAdmin.storage
+        .from(DOCUMENTS_BUCKET)
+        .remove(documents.map((d) => d.filePath));
+      if (storageError) {
+        throw new Error(`Failed to delete uploaded files: ${storageError.message}`);
+      }
+    }
+
+    await prisma.application.delete({ where: { id } });
+    return true;
   }
 
   /**

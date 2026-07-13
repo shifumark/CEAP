@@ -196,6 +196,10 @@ class ApiService {
     return this.request('PUT', `/applications/${id}`, data);
   }
 
+  async deleteApplication(id: number): Promise<{ message: string }> {
+    return this.request('DELETE', `/applications/${id}`);
+  }
+
   // ============== DOCUMENTS ==============
 
   async getApplicationDocuments(applicationId: number): Promise<UploadedDocument[]> {
@@ -225,6 +229,10 @@ class ApiService {
     }
 
     return response.json();
+  }
+
+  async deleteDocument(documentId: number): Promise<{ message: string }> {
+    return this.request('DELETE', `/documents/${documentId}`);
   }
 
   async getDocumentDownloadUrl(documentId: number): Promise<{ url: string }> {

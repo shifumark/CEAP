@@ -318,6 +318,25 @@ router.get('/applications/:id/history', verifyToken, async (req: AuthenticatedRe
 });
 
 /**
+ * Withdraw (delete) an application
+ * Protected - Students only, ownership enforced server-side; blocked once
+ * the application has a final decision (approved/rejected)
+ */
+router.delete('/applications/:id', verifyToken, requireRole([UserRole.APPLICANT]), async (req: AuthenticatedRequest, res) => {
+  try {
+    const deleted = await applicationService.deleteApplication(req.user!, parseInt(req.params.id));
+
+    if (!deleted) {
+      return res.status(404).json({ error: 'Application not found' });
+    }
+
+    res.json({ message: 'Application deleted successfully' });
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+/**
  * Create a new application (starts as draft)
  * Protected - Students only
  */
@@ -427,6 +446,25 @@ router.post(
     }
   }
 );
+
+/**
+ * Delete an uploaded document
+ * Protected - owner (Student) or Admin/Super Admin; ownership enforced
+ * server-side
+ */
+router.delete('/documents/:id', verifyToken, async (req: AuthenticatedRequest, res) => {
+  try {
+    const deleted = await documentService.delete(req.user!, parseInt(req.params.id));
+
+    if (!deleted) {
+      return res.status(404).json({ error: 'Document not found' });
+    }
+
+    res.json({ message: 'Document deleted successfully' });
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
+  }
+});
 
 /**
  * Get a short-lived signed download URL for a document

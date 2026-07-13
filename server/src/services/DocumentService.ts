@@ -145,6 +145,25 @@ export class DocumentService {
   }
 
   /**
+   * Lets a Student remove their own upload (e.g. they picked the wrong
+   * file) — also lets an Admin remove one during review. Deletes the
+   * Storage object first; if that fails we don't touch the DB row, so
+   * the two stay consistent.
+   */
+  async delete(user: JWTPayload, documentId: number): Promise<boolean> {
+    const doc = await this.getOwnedDocument(user, documentId);
+    if (!doc) return false;
+
+    const { error: storageError } = await supabaseAdmin.storage.from(DOCUMENTS_BUCKET).remove([doc.filePath]);
+    if (storageError) {
+      throw new Error(`Failed to delete file: ${storageError.message}`);
+    }
+
+    await prisma.uploadedDocument.delete({ where: { id: documentId } });
+    return true;
+  }
+
+  /**
    * Row-level ownership check for a single document: a Student only ever
    * gets a document back if they're the one who uploaded it.
    */

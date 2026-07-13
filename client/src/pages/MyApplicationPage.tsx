@@ -5,6 +5,16 @@ import { Application, ApplicationStatus, ScholarshipProgram } from '../types';
 import ApplicationDocuments from '../components/ApplicationDocuments';
 import MyScholarshipPanel from '../components/MyScholarshipPanel';
 import ApplyModal from '../components/ApplyModal';
+import EditProfileModal from '../components/EditProfileModal';
+
+const DELETABLE_STATUSES = new Set<ApplicationStatus>([
+  ApplicationStatus.DRAFT,
+  ApplicationStatus.SUBMITTED,
+  ApplicationStatus.UNDER_REVIEW,
+  ApplicationStatus.DOCUMENT_VERIFICATION,
+  ApplicationStatus.INTERVIEW,
+  ApplicationStatus.NEEDS_REVISION
+]);
 
 const STATUS_LABEL: Record<ApplicationStatus, string> = {
   [ApplicationStatus.DRAFT]: 'Draft',
@@ -41,6 +51,7 @@ const MyApplicationPage = () => {
   const [error, setError] = useState('');
   const [busyId, setBusyId] = useState<number | null>(null);
   const [applyingTo, setApplyingTo] = useState<ScholarshipProgram | null>(null);
+  const [editingProfile, setEditingProfile] = useState(false);
 
   const loadData = async () => {
     setError('');
@@ -81,6 +92,22 @@ const MyApplicationPage = () => {
     }
   };
 
+  const handleDeleteApplication = async (applicationId: number, scholarshipName?: string) => {
+    if (!window.confirm(`Withdraw your application to ${scholarshipName ?? 'this scholarship'}? This cannot be undone.`)) {
+      return;
+    }
+    setBusyId(applicationId);
+    setError('');
+    try {
+      await apiService.deleteApplication(applicationId);
+      await loadData();
+    } catch (err: any) {
+      setError(err.message || 'Failed to withdraw application');
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   const appliedScholarshipIds = new Set(applications.map((a) => a.scholarshipId));
   const availableScholarships = scholarships.filter(
     (s) => s.status === 'active' && !appliedScholarshipIds.has(s.id)
@@ -90,6 +117,11 @@ const MyApplicationPage = () => {
     <div>
       <nav className="navbar">
         <div className="navbar-brand">My Application</div>
+        <div className="navbar-actions">
+          <button className="btn btn-outline btn-sm" onClick={() => setEditingProfile(true)}>
+            Edit My Information
+          </button>
+        </div>
       </nav>
 
       <div className="container">
@@ -162,17 +194,28 @@ const MyApplicationPage = () => {
                           </p>
                         )}
 
-                        {(application.status === ApplicationStatus.DRAFT ||
-                          application.status === ApplicationStatus.NEEDS_REVISION) && (
-                          <button
-                            className="btn btn-primary btn-sm"
-                            style={{ marginTop: '1rem' }}
-                            disabled={busyId === application.id}
-                            onClick={() => handleSubmit(application.id)}
-                          >
-                            {busyId === application.id ? 'Submitting...' : 'Submit Application'}
-                          </button>
-                        )}
+                        <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem', flexWrap: 'wrap' }}>
+                          {(application.status === ApplicationStatus.DRAFT ||
+                            application.status === ApplicationStatus.NEEDS_REVISION) && (
+                            <button
+                              className="btn btn-primary btn-sm"
+                              disabled={busyId === application.id}
+                              onClick={() => handleSubmit(application.id)}
+                            >
+                              {busyId === application.id ? 'Submitting...' : 'Submit Application'}
+                            </button>
+                          )}
+
+                          {DELETABLE_STATUSES.has(application.status) && (
+                            <button
+                              className="btn btn-outline btn-sm"
+                              disabled={busyId === application.id}
+                              onClick={() => handleDeleteApplication(application.id, application.scholarshipName)}
+                            >
+                              Withdraw Application
+                            </button>
+                          )}
+                        </div>
 
                         <ApplicationDocuments applicationId={application.id} scholarshipId={application.scholarshipId} />
                       </div>
@@ -227,6 +270,10 @@ const MyApplicationPage = () => {
 
       {applyingTo && (
         <ApplyModal scholarship={applyingTo} onClose={() => setApplyingTo(null)} onSuccess={handleApplySuccess} />
+      )}
+
+      {editingProfile && (
+        <EditProfileModal onClose={() => setEditingProfile(false)} onSuccess={() => setEditingProfile(false)} />
       )}
     </div>
   );

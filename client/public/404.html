@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Scholarship Management System</title>
+    <!--
+      GitHub Pages has no server-side rewrites, so a hard reload or a
+      shared deep link to e.g. /scholarship-management-system/my-application
+      hits this 404 page instead of index.html. This redirects back to
+      index.html with the real path packed into a query string; the
+      matching script in index.html unpacks it via history.replaceState
+      before React Router mounts, so the client-side route is restored.
+      Standard technique: https://github.com/rafgraph/spa-github-pages
+    -->
+    <script>
+      var segmentCount = 1; // matches the single '/scholarship-management-system' base segment
+      var l = window.location;
+      l.replace(
+        l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
+        l.pathname.split('/').slice(0, 1 + segmentCount).join('/') +
+        '/?/' +
+        l.pathname.slice(1).split('/').slice(segmentCount).join('/').replace(/&/g, '~and~') +
+        (l.search ? '&' + l.search.slice(1).replace(/&/g, '~and~') : '') +
+        l.hash
+      );
+    </script>
+  </head>
+  <body></body>
+</html>

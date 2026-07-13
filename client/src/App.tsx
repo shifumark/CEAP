@@ -115,7 +115,10 @@ function AppLayout() {
 
 function App() {
   return (
-    <BrowserRouter>
+    // BASE_URL mirrors vite.config.ts's `base` — required so routes
+    // resolve correctly under GitHub Pages' /scholarship-management-system/
+    // subpath instead of assuming the app is served from the domain root.
+    <BrowserRouter basename={import.meta.env.BASE_URL}>
       <AuthProvider>
         <AppLayout />
       </AuthProvider>

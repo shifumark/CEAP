@@ -72,9 +72,12 @@ class ApiService {
       const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
 
       if (response.status === 401) {
-        // Token expired, clear and redirect to login
+        // Token expired, clear and redirect to login. A hard navigation
+        // here (this file has no access to React Router's basename) must
+        // still respect Vite's configured base path — a bare '/login'
+        // would 404 on GitHub Pages' /CEAP/ subpath.
         this.clearToken();
-        window.location.href = '/login';
+        window.location.href = `${import.meta.env.BASE_URL}login`;
       }
 
       if (!response.ok) {

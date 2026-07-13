@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom';
+
 const stats = [
   { label: 'Total Scholars', value: '1,248', icon: '👥', color: '#8B5CF6' },
   { label: 'Pending Applications', value: '84', icon: '⏳', color: '#EC4899' },
@@ -53,7 +55,7 @@ const DashboardPage = () => {
             <div className="card">
               <div className="card-header">
                 <h3>Recent Activity</h3>
-                <a href="/applications" style={{ color: '#8B5CF6', fontSize: '0.9rem', fontWeight: 500 }}>View all →</a>
+                <Link to="/applications" style={{ color: '#8B5CF6', fontSize: '0.9rem', fontWeight: 500 }}>View all →</Link>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 {activities.map((activity) => (

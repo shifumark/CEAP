@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom';
+
 const HomePage = () => {
   return (
     <div>
@@ -7,7 +9,7 @@ const HomePage = () => {
           <span>ScholarshipHub</span>
         </div>
         <div className="navbar-actions">
-          <a className="btn btn-primary" href="/login">Access Portal</a>
+          <Link className="btn btn-primary" to="/login">Access Portal</Link>
         </div>
       </nav>
 
@@ -18,8 +20,8 @@ const HomePage = () => {
             <h1>Modern scholarship platform</h1>
             <p>Streamline applications, document verification, awards, and renewals in one elegant system.</p>
             <div className="hero-buttons">
-              <a className="btn btn-primary btn-lg" href="/register">Apply Now</a>
-              <a className="btn btn-primary btn-lg" href="/login" style={{ background: 'white', color: '#8B5CF6', textDecoration: 'none' }}>Sign In</a>
+              <Link className="btn btn-primary btn-lg" to="/register">Apply Now</Link>
+              <Link className="btn btn-primary btn-lg" to="/login" style={{ background: 'white', color: '#8B5CF6', textDecoration: 'none' }}>Sign In</Link>
             </div>
           </div>
         </section>
@@ -102,7 +104,7 @@ const HomePage = () => {
           <p style={{ color: '#6B7280', marginBottom: '2rem', fontSize: '1.1rem' }}>
             Join thousands of institutions using ScholarshipHub to streamline their scholarship operations.
           </p>
-          <a className="btn btn-primary btn-lg" href="/register">Get Started</a>
+          <Link className="btn btn-primary btn-lg" to="/register">Get Started</Link>
         </section>
       </main>
     </div>

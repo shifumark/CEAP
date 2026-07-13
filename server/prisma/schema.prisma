@@ -1,0 +1,509 @@
+// Prisma schema for the Scholarship Management System.
+// Mirrors database_schema.sql, with roles/permissions/role_permissions,
+// login_history, system_settings, and document_verification_checklist
+// intentionally omitted — nothing in the app reads them.
+//
+// Enum members use the same lowercase snake_case string values as the
+// hand-written enums in src/types.ts (e.g. UserRole.APPLICANT = 'applicant')
+// so Prisma's runtime values line up 1:1 with the app-level types.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ============== ENUMS ==============
+
+enum UserRole {
+  super_admin
+  admin
+  applicant
+  guest
+}
+
+enum UserStatus {
+  active
+  inactive
+  suspended
+  deactivated
+}
+
+enum ApplicationStatus {
+  draft
+  submitted
+  under_review
+  document_verification
+  interview
+  approved
+  rejected
+  needs_revision
+}
+
+enum DocumentVerificationStatus {
+  pending
+  verified
+  rejected
+  requesting_revision
+}
+
+enum ScholarStatus {
+  active
+  inactive
+  graduated
+  terminated
+}
+
+enum RenewalStatus {
+  pending
+  approved
+  rejected
+  under_review
+}
+
+enum AllowanceStatus {
+  pending
+  released
+  cancelled
+}
+
+enum ViolationSeverity {
+  low
+  medium
+  high
+  critical
+}
+
+enum AnnouncementType {
+  news
+  deadline
+  event
+  scholarship_update
+  maintenance
+}
+
+enum NotificationType {
+  application_submitted
+  documents_missing
+  application_approved
+  application_rejected
+  renewal_due
+  announcement_posted
+  system_notification
+}
+
+// ============== USERS ==============
+
+model User {
+  id                 Int        @id @default(autoincrement())
+  email              String     @unique
+  passwordHash       String     @map("password_hash")
+  firstName          String     @map("first_name")
+  lastName           String     @map("last_name")
+  role               UserRole
+  status             UserStatus @default(active)
+  emailVerified      Boolean    @default(false) @map("email_verified")
+  profilePictureUrl  String?    @map("profile_picture_url")
+  createdAt          DateTime   @default(now()) @map("created_at")
+  updatedAt          DateTime   @updatedAt @map("updated_at")
+  deletedAt          DateTime?  @map("deleted_at")
+  lastLogin          DateTime?  @map("last_login")
+
+  applicant             Applicant?
+  scholar               Scholar?
+  createdPrograms       ScholarshipProgram[]       @relation("ProgramCreator")
+  reviewedApplications  Application[]              @relation("ApplicationReviewer")
+  statusChanges         ApplicationStatusHistory[] @relation("StatusChanger")
+  uploadedDocuments     UploadedDocument[]         @relation("DocumentUploader")
+  verifiedDocuments     UploadedDocument[]         @relation("DocumentVerifier")
+  reviewedRenewals      Renewal[]                  @relation("RenewalReviewer")
+  createdViolations     Violation[]                @relation("ViolationCreator")
+  createdAnnouncements  Announcement[]              @relation("AnnouncementCreator")
+  notifications         Notification[]
+  auditLogs             AuditLog[]
+
+  @@map("users")
+}
+
+// ============== APPLICANT / SCHOLAR PROFILE ==============
+
+model Applicant {
+  id                      Int       @id @default(autoincrement())
+  userId                  Int       @unique @map("user_id")
+  middleName              String?   @map("middle_name")
+  suffix                  String?
+  dateOfBirth             DateTime? @map("date_of_birth") @db.Date
+  sex                     String?
+  civilStatus             String?   @map("civil_status")
+  contactNumber           String?   @map("contact_number")
+  address                 String?
+  municipality            String?
+  barangay                String?
+  zipCode                 String?   @map("zip_code")
+  householdMonthlyIncome  Decimal?  @map("household_monthly_income") @db.Decimal(12, 2)
+  createdAt               DateTime  @default(now()) @map("created_at")
+  updatedAt               DateTime  @updatedAt @map("updated_at")
+
+  user                User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  familyMembers       FamilyMember[]
+  emergencyContact    EmergencyContact?
+  educationalRecords  EducationalRecord[]
+  applications        Application[]
+
+  @@map("applicants")
+}
+
+model FamilyMember {
+  id             Int      @id @default(autoincrement())
+  applicantId    Int      @map("applicant_id")
+  name           String
+  relationship   String?
+  occupation     String?
+  contactNumber  String?  @map("contact_number")
+  memberType     String?  @map("member_type")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  applicant Applicant @relation(fields: [applicantId], references: [id], onDelete: Cascade)
+
+  @@map("family_members")
+}
+
+model EmergencyContact {
+  id             Int      @id @default(autoincrement())
+  applicantId    Int      @unique @map("applicant_id")
+  name           String
+  relationship   String?
+  contactNumber  String?  @map("contact_number")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  applicant Applicant @relation(fields: [applicantId], references: [id], onDelete: Cascade)
+
+  @@map("emergency_contacts")
+}
+
+// ============== SCHOOLS / COURSES ==============
+
+model School {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  address   String?
+  city      String?
+  region    String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  courses            Course[]
+  educationalRecords EducationalRecord[]
+
+  @@map("schools")
+}
+
+model Course {
+  id        Int      @id @default(autoincrement())
+  schoolId  Int?     @map("school_id")
+  name      String
+  code      String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  school             School?              @relation(fields: [schoolId], references: [id], onDelete: SetNull)
+  educationalRecords EducationalRecord[]
+
+  @@map("courses")
+}
+
+model EducationalRecord {
+  id                Int      @id @default(autoincrement())
+  applicantId       Int      @map("applicant_id")
+  schoolId          Int?     @map("school_id")
+  studentId         String?  @map("student_id")
+  courseId          Int?     @map("course_id")
+  yearLevel         String?  @map("year_level")
+  semester          String?
+  gpa               Decimal? @db.Decimal(5, 2)
+  enrollmentStatus  String?  @map("enrollment_status")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  applicant Applicant @relation(fields: [applicantId], references: [id], onDelete: Cascade)
+  school    School?   @relation(fields: [schoolId], references: [id])
+  course    Course?   @relation(fields: [courseId], references: [id])
+
+  @@map("educational_records")
+}
+
+// ============== SCHOLARSHIP PROGRAMS ==============
+
+model ScholarshipProgram {
+  id                       Int       @id @default(autoincrement())
+  name                     String
+  description              String?
+  sponsor                  String?
+  benefits                 String?
+  numberOfSlots            Int?      @map("number_of_slots")
+  maxApplicants            Int?      @map("max_applicants")
+  eligibilityRequirements  String?   @map("eligibility_requirements")
+  openingDate              DateTime? @map("opening_date") @db.Date
+  closingDate              DateTime? @map("closing_date") @db.Date
+  academicYear             String?   @map("academic_year")
+  status                   String    @default("active")
+  createdBy                Int?      @map("created_by")
+  createdAt                DateTime  @default(now()) @map("created_at")
+  updatedAt                DateTime  @updatedAt @map("updated_at")
+
+  creator            User?                @relation("ProgramCreator", fields: [createdBy], references: [id])
+  requiredDocuments  RequiredDocument[]
+  applications       Application[]
+  scholars           Scholar[]
+
+  @@map("scholarship_programs")
+}
+
+model RequiredDocument {
+  id            Int      @id @default(autoincrement())
+  scholarshipId Int      @map("scholarship_id")
+  documentType  String   @map("document_type")
+  description   String?
+  isRequired    Boolean  @default(true) @map("is_required")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  scholarship ScholarshipProgram @relation(fields: [scholarshipId], references: [id], onDelete: Cascade)
+
+  @@map("required_documents")
+}
+
+// ============== APPLICATIONS ==============
+
+model Application {
+  id             Int               @id @default(autoincrement())
+  applicantId    Int               @map("applicant_id")
+  scholarshipId  Int               @map("scholarship_id")
+  status         ApplicationStatus @default(draft)
+  submissionDate DateTime?         @map("submission_date")
+  reviewedBy     Int?              @map("reviewed_by")
+  reviewedAt     DateTime?         @map("reviewed_at")
+  comments       String?
+  createdAt      DateTime          @default(now()) @map("created_at")
+  updatedAt      DateTime          @updatedAt @map("updated_at")
+
+  applicant     Applicant                  @relation(fields: [applicantId], references: [id], onDelete: Cascade)
+  scholarship   ScholarshipProgram         @relation(fields: [scholarshipId], references: [id])
+  reviewer      User?                      @relation("ApplicationReviewer", fields: [reviewedBy], references: [id])
+  statusHistory ApplicationStatusHistory[]
+  documents     UploadedDocument[]
+
+  @@map("applications")
+}
+
+model ApplicationStatusHistory {
+  id              Int                @id @default(autoincrement())
+  applicationId   Int                @map("application_id")
+  previousStatus  ApplicationStatus? @map("previous_status")
+  newStatus       ApplicationStatus  @map("new_status")
+  changedBy       Int?               @map("changed_by")
+  notes           String?
+  createdAt       DateTime           @default(now()) @map("created_at")
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  changer     User?       @relation("StatusChanger", fields: [changedBy], references: [id])
+
+  @@map("application_status_history")
+}
+
+model UploadedDocument {
+  id                   Int                         @id @default(autoincrement())
+  applicationId        Int?                        @map("application_id")
+  userId               Int                         @map("user_id")
+  documentType         String?                     @map("document_type")
+  fileName             String                      @map("file_name")
+  filePath             String                      @map("file_path")
+  fileSize             Int?                        @map("file_size")
+  fileType             String?                     @map("file_type")
+  verificationStatus   DocumentVerificationStatus  @default(pending) @map("verification_status")
+  verifiedBy           Int?                        @map("verified_by")
+  verifiedAt           DateTime?                   @map("verified_at")
+  verificationNotes    String?                     @map("verification_notes")
+  createdAt            DateTime                    @default(now()) @map("created_at")
+  updatedAt            DateTime                    @updatedAt @map("updated_at")
+
+  application Application? @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  uploader    User         @relation("DocumentUploader", fields: [userId], references: [id])
+  verifier    User?        @relation("DocumentVerifier", fields: [verifiedBy], references: [id])
+
+  @@map("uploaded_documents")
+}
+
+// ============== SCHOLARS ==============
+
+model Scholar {
+  id               Int           @id @default(autoincrement())
+  userId           Int           @unique @map("user_id")
+  scholarshipId    Int           @map("scholarship_id")
+  scholarIdNumber  String?       @unique @map("scholar_id_number")
+  approvalDate     DateTime?     @map("approval_date") @db.Date
+  qrCode           String?       @map("qr_code")
+  status           ScholarStatus @default(active)
+  createdAt        DateTime      @default(now()) @map("created_at")
+  updatedAt        DateTime      @updatedAt @map("updated_at")
+
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scholarship ScholarshipProgram @relation(fields: [scholarshipId], references: [id])
+  grades      Grade[]
+  renewals    Renewal[]
+  allowances  Allowance[]
+  violations  Violation[]
+
+  @@map("scholars")
+}
+
+model Grade {
+  id              Int      @id @default(autoincrement())
+  scholarId       Int      @map("scholar_id")
+  academicYear    String?  @map("academic_year")
+  semester        String?
+  gpa             Decimal? @db.Decimal(5, 2)
+  subjectDetails  Json?    @map("subject_details")
+  uploadedBy      Int?     @map("uploaded_by")
+  uploadedAt      DateTime? @map("uploaded_at")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  scholar Scholar @relation(fields: [scholarId], references: [id], onDelete: Cascade)
+
+  @@map("grades")
+}
+
+model Renewal {
+  id              Int           @id @default(autoincrement())
+  scholarId       Int           @map("scholar_id")
+  academicYear    String?       @map("academic_year")
+  semester        String?
+  status          RenewalStatus @default(pending)
+  submissionDate  DateTime?     @map("submission_date")
+  reviewedBy      Int?          @map("reviewed_by")
+  reviewedAt      DateTime?     @map("reviewed_at")
+  decision        String?
+  notes           String?
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
+
+  scholar  Scholar @relation(fields: [scholarId], references: [id], onDelete: Cascade)
+  reviewer User?   @relation("RenewalReviewer", fields: [reviewedBy], references: [id])
+
+  @@map("renewals")
+}
+
+model Allowance {
+  id            Int             @id @default(autoincrement())
+  scholarId     Int             @map("scholar_id")
+  academicYear  String?         @map("academic_year")
+  semester      String?
+  amount        Decimal         @db.Decimal(12, 2)
+  paymentDate   DateTime?       @map("payment_date") @db.Date
+  status        AllowanceStatus @default(pending)
+  releaseDate   DateTime?       @map("release_date")
+  notes         String?
+  createdAt     DateTime        @default(now()) @map("created_at")
+  updatedAt     DateTime        @updatedAt @map("updated_at")
+
+  scholar Scholar @relation(fields: [scholarId], references: [id], onDelete: Cascade)
+
+  @@map("allowances")
+}
+
+model Violation {
+  id             Int                @id @default(autoincrement())
+  scholarId      Int                @map("scholar_id")
+  violationType  String?            @map("violation_type")
+  description    String?
+  severity       ViolationSeverity?
+  actionTaken    String?            @map("action_taken")
+  resolved       Boolean            @default(false)
+  resolvedDate   DateTime?          @map("resolved_date")
+  createdBy      Int?               @map("created_by")
+  createdAt      DateTime           @default(now()) @map("created_at")
+  updatedAt      DateTime           @updatedAt @map("updated_at")
+
+  scholar Scholar @relation(fields: [scholarId], references: [id], onDelete: Cascade)
+  creator User?   @relation("ViolationCreator", fields: [createdBy], references: [id])
+
+  @@map("violations")
+}
+
+// ============== ANNOUNCEMENTS ==============
+
+model Announcement {
+  id                Int               @id @default(autoincrement())
+  title             String
+  content           String
+  announcementType  AnnouncementType? @map("announcement_type")
+  pinned            Boolean           @default(false)
+  pinnedUntil       DateTime?         @map("pinned_until")
+  createdBy         Int               @map("created_by")
+  publishedAt       DateTime?         @map("published_at")
+  imageUrl          String?           @map("image_url")
+  createdAt         DateTime          @default(now()) @map("created_at")
+  updatedAt         DateTime          @updatedAt @map("updated_at")
+
+  creator     User                       @relation("AnnouncementCreator", fields: [createdBy], references: [id])
+  attachments AnnouncementAttachment[]
+
+  @@map("announcements")
+}
+
+model AnnouncementAttachment {
+  id              Int      @id @default(autoincrement())
+  announcementId  Int      @map("announcement_id")
+  fileName        String?  @map("file_name")
+  filePath        String?  @map("file_path")
+  fileType        String?  @map("file_type")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  announcement Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+
+  @@map("announcement_attachments")
+}
+
+// ============== NOTIFICATIONS ==============
+
+model Notification {
+  id                Int               @id @default(autoincrement())
+  userId            Int               @map("user_id")
+  title             String?
+  message           String?
+  notificationType  NotificationType? @map("notification_type")
+  isRead            Boolean           @default(false) @map("is_read")
+  readAt            DateTime?         @map("read_at")
+  actionUrl         String?           @map("action_url")
+  createdAt         DateTime          @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+// ============== AUDIT LOGS ==============
+
+model AuditLog {
+  id          Int      @id @default(autoincrement())
+  userId      Int?     @map("user_id")
+  action      String
+  entityType  String?  @map("entity_type")
+  entityId    Int?     @map("entity_id")
+  oldValues   Json?    @map("old_values")
+  newValues   Json?    @map("new_values")
+  ipAddress   String?  @map("ip_address")
+  userAgent   String?  @map("user_agent")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@map("audit_logs")
+}

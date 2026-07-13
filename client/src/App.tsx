@@ -1,0 +1,126 @@
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
+import ProtectedRoute from './components/ProtectedRoute';
+import HomePage from './pages/HomePage';
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
+import DashboardPage from './pages/DashboardPage';
+import ProgramPage from './pages/ProgramPage';
+import ApplicationReviewPage from './pages/ApplicationReviewPage';
+import MyApplicationPage from './pages/MyApplicationPage';
+import ScholarManagementPage from './pages/ScholarManagementPage';
+import ScholarDetailPage from './pages/ScholarDetailPage';
+import AnnouncementsPage from './pages/AnnouncementsPage';
+import NotificationsPage from './pages/NotificationsPage';
+import Sidebar from './components/Sidebar';
+import { UserRole } from './types';
+import './styles.css';
+
+const SIDEBAR_PATHS = [
+  '/dashboard',
+  '/programs',
+  '/applications',
+  '/my-application',
+  '/scholars',
+  '/announcements',
+  '/notifications'
+];
+
+function AppLayout() {
+  const location = useLocation();
+  const showSidebar = SIDEBAR_PATHS.some(
+    (path) => location.pathname === path || location.pathname.startsWith(`${path}/`)
+  );
+
+  return (
+    <div className={showSidebar ? 'app-layout' : ''}>
+      {showSidebar && <Sidebar />}
+      <div className={showSidebar ? 'app-main' : ''}>
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.SUPER_ADMIN]}>
+                <DashboardPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/applications"
+            element={
+              <ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.SUPER_ADMIN]}>
+                <ApplicationReviewPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/my-application"
+            element={
+              <ProtectedRoute allowedRoles={[UserRole.APPLICANT]}>
+                <MyApplicationPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/programs"
+            element={
+              <ProtectedRoute>
+                <ProgramPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/scholars"
+            element={
+              <ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.SUPER_ADMIN]}>
+                <ScholarManagementPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/scholars/:id"
+            element={
+              <ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.SUPER_ADMIN]}>
+                <ScholarDetailPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/announcements"
+            element={
+              <ProtectedRoute>
+                <AnnouncementsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/notifications"
+            element={
+              <ProtectedRoute>
+                <NotificationsPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </div>
+    </div>
+  );
+}
+
+function App() {
+  return (
+    <BrowserRouter>
+      <AuthProvider>
+        <AppLayout />
+      </AuthProvider>
+    </BrowserRouter>
+  );
+}
+
+export default App;

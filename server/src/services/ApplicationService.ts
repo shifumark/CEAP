@@ -1,0 +1,269 @@
+import { Prisma } from '@prisma/client';
+import { prisma } from '../lib/prisma.js';
+import {
+  Application,
+  ApplicationStatusHistory,
+  ApplicationStatus,
+  CreateApplicationRequest,
+  UpdateApplicationRequest,
+  ApplicationFilters,
+  PaginatedResponse,
+  JWTPayload,
+  UserRole,
+  NotificationType
+} from '../types.js';
+import { ApplicantService } from './ApplicantService.js';
+import { ScholarService } from './ScholarService.js';
+import { NotificationService } from './NotificationService.js';
+
+const applicantService = new ApplicantService();
+const scholarService = new ScholarService();
+const notificationService = new NotificationService();
+
+const applicationInclude = {
+  scholarship: true,
+  applicant: { include: { user: true } }
+} satisfies Prisma.ApplicationInclude;
+
+type ApplicationWithRelations = Prisma.ApplicationGetPayload<{ include: typeof applicationInclude }>;
+
+function toApplication(record: ApplicationWithRelations): Application {
+  return {
+    id: record.id,
+    applicantId: record.applicantId,
+    scholarshipId: record.scholarshipId,
+    status: record.status as unknown as ApplicationStatus,
+    submissionDate: record.submissionDate ?? undefined,
+    reviewedBy: record.reviewedBy ?? undefined,
+    reviewedAt: record.reviewedAt ?? undefined,
+    comments: record.comments ?? undefined,
+    createdAt: record.createdAt,
+    updatedAt: record.updatedAt,
+    scholarshipName: record.scholarship?.name,
+    applicantName: record.applicant?.user
+      ? `${record.applicant.user.firstName} ${record.applicant.user.lastName}`
+      : undefined,
+    applicantEmail: record.applicant?.user?.email
+  };
+}
+
+function toHistory(record: Prisma.ApplicationStatusHistoryGetPayload<{}>): ApplicationStatusHistory {
+  return {
+    id: record.id,
+    applicationId: record.applicationId,
+    previousStatus: (record.previousStatus as unknown as ApplicationStatus) ?? undefined,
+    newStatus: record.newStatus as unknown as ApplicationStatus,
+    changedBy: record.changedBy ?? 0,
+    notes: record.notes ?? undefined,
+    createdAt: record.createdAt
+  };
+}
+
+function isPrivileged(user: JWTPayload): boolean {
+  return user.role === UserRole.ADMIN || user.role === UserRole.SUPER_ADMIN;
+}
+
+export class ApplicationService {
+  async createApplication(user: JWTPayload, request: CreateApplicationRequest): Promise<Application> {
+    const applicant = await applicantService.getOrCreateForUser(user.sub);
+
+    const scholarship = await prisma.scholarshipProgram.findUnique({ where: { id: request.scholarshipId } });
+    if (!scholarship) {
+      throw new Error('Scholarship not found');
+    }
+    if (scholarship.status !== 'active') {
+      throw new Error('This scholarship is not currently accepting applications');
+    }
+
+    const existing = await prisma.application.findFirst({
+      where: { applicantId: applicant.id, scholarshipId: request.scholarshipId }
+    });
+    if (existing) {
+      throw new Error('You have already applied to this scholarship');
+    }
+
+    const created = await prisma.application.create({
+      data: {
+        applicantId: applicant.id,
+        scholarshipId: request.scholarshipId,
+        status: 'draft'
+      },
+      include: applicationInclude
+    });
+
+    return toApplication(created);
+  }
+
+  async submitApplication(user: JWTPayload, applicationId: number): Promise<Application> {
+    const application = await this.getOwnedRecord(user, applicationId);
+    if (!application) {
+      throw new Error('Application not found');
+    }
+    if (application.status !== 'draft' && application.status !== 'needs_revision') {
+      throw new Error('Only draft or needs-revision applications can be submitted');
+    }
+
+    const updated = await prisma.$transaction(async (tx) => {
+      const app = await tx.application.update({
+        where: { id: application.id },
+        data: { status: 'submitted', submissionDate: new Date() },
+        include: applicationInclude
+      });
+      await tx.applicationStatusHistory.create({
+        data: {
+          applicationId: app.id,
+          previousStatus: application.status,
+          newStatus: 'submitted',
+          changedBy: user.sub
+        }
+      });
+      return app;
+    });
+
+    return toApplication(updated);
+  }
+
+  async listApplications(user: JWTPayload, filters?: ApplicationFilters): Promise<PaginatedResponse<Application>> {
+    const page = filters?.page || 1;
+    const pageSize = filters?.pageSize || 10;
+
+    const where: Prisma.ApplicationWhereInput = {};
+    if (filters?.status) where.status = filters.status as any;
+    if (filters?.scholarshipId) where.scholarshipId = filters.scholarshipId;
+
+    if (!isPrivileged(user)) {
+      // Ownership predicate baked directly into the query — a Student can
+      // never receive rows belonging to another applicant, regardless of
+      // what filters were requested.
+      const applicant = await applicantService.getOrCreateForUser(user.sub);
+      where.applicantId = applicant.id;
+    } else if (filters?.applicantId) {
+      where.applicantId = filters.applicantId;
+    }
+
+    const [items, total] = await Promise.all([
+      prisma.application.findMany({
+        where,
+        include: applicationInclude,
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+        orderBy: { id: 'desc' }
+      }),
+      prisma.application.count({ where })
+    ]);
+
+    return {
+      data: items.map(toApplication),
+      total,
+      page,
+      pageSize,
+      totalPages: Math.ceil(total / pageSize)
+    };
+  }
+
+  async getById(user: JWTPayload, id: number): Promise<Application | undefined> {
+    const record = await this.getOwnedRecord(user, id);
+    return record ? toApplication(record) : undefined;
+  }
+
+  async getHistory(user: JWTPayload, id: number): Promise<ApplicationStatusHistory[]> {
+    // Confirms ownership (or admin privilege) before returning any history.
+    const application = await this.getOwnedRecord(user, id);
+    if (!application) return [];
+
+    const history = await prisma.applicationStatusHistory.findMany({
+      where: { applicationId: application.id },
+      orderBy: { createdAt: 'asc' }
+    });
+    return history.map(toHistory);
+  }
+
+  async updateStatus(
+    user: JWTPayload,
+    id: number,
+    request: UpdateApplicationRequest
+  ): Promise<Application | undefined> {
+    if (!isPrivileged(user)) {
+      throw new Error('Not authorized to update application status');
+    }
+
+    const application = await prisma.application.findUnique({ where: { id } });
+    if (!application) return undefined;
+
+    const updated = await prisma.$transaction(async (tx) => {
+      const app = await tx.application.update({
+        where: { id },
+        data: {
+          status: (request.status as any) ?? application.status,
+          comments: request.comments ?? application.comments,
+          reviewedBy: user.sub,
+          reviewedAt: new Date()
+        },
+        include: applicationInclude
+      });
+
+      if (request.status && request.status !== (application.status as unknown as ApplicationStatus)) {
+        await tx.applicationStatusHistory.create({
+          data: {
+            applicationId: id,
+            previousStatus: application.status,
+            newStatus: request.status as any,
+            changedBy: user.sub,
+            notes: request.comments
+          }
+        });
+      }
+
+      return app;
+    });
+
+    if (request.status === 'approved' && application.status !== 'approved') {
+      // Best-effort: the application decision has already been recorded
+      // above, so a failure here shouldn't fail the whole request — it
+      // just means Scholar creation needs a manual retry.
+      try {
+        await scholarService.createFromApprovedApplication(updated.applicant.userId, updated.scholarshipId);
+      } catch (error) {
+        console.error('[ScholarService] Failed to create scholar for approved application', updated.id, error);
+      }
+    }
+
+    if (request.status && request.status !== (application.status as unknown as ApplicationStatus)) {
+      const notificationType =
+        request.status === 'approved'
+          ? NotificationType.APPLICATION_APPROVED
+          : request.status === 'rejected'
+            ? NotificationType.APPLICATION_REJECTED
+            : NotificationType.SYSTEM_NOTIFICATION;
+
+      notificationService
+        .create(
+          updated.applicant.userId,
+          notificationType,
+          'Application Update',
+          `Your application for ${updated.scholarship?.name ?? 'a scholarship'} is now ${request.status.replace(/_/g, ' ')}.`,
+          '/my-application'
+        )
+        .catch((error) => console.error('[NotificationService] Failed to notify applicant', updated.id, error));
+    }
+
+    return toApplication(updated);
+  }
+
+  /**
+   * Row-level ownership check: Students only ever get rows tied to their
+   * own applicantId — a mismatched id resolves to `null` (404), never a
+   * leaky 403. Admin/Super Admin bypass the predicate entirely.
+   */
+  private async getOwnedRecord(user: JWTPayload, id: number): Promise<ApplicationWithRelations | null> {
+    if (isPrivileged(user)) {
+      return prisma.application.findUnique({ where: { id }, include: applicationInclude });
+    }
+
+    const applicant = await applicantService.getOrCreateForUser(user.sub);
+    return prisma.application.findFirst({
+      where: { id, applicantId: applicant.id },
+      include: applicationInclude
+    });
+  }
+}

@@ -1,0 +1,147 @@
+import type { ScholarshipProgram as PrismaScholarshipProgram } from '@prisma/client';
+import { prisma } from '../lib/prisma.js';
+import {
+  ScholarshipProgram,
+  CreateScholarshipProgramRequest,
+  UpdateScholarshipProgramRequest,
+  PaginatedResponse,
+  ScholarFilters,
+  RequiredDocument
+} from '../types.js';
+
+function toProgram(record: PrismaScholarshipProgram): ScholarshipProgram {
+  return {
+    id: record.id,
+    name: record.name,
+    description: record.description ?? '',
+    sponsor: record.sponsor ?? '',
+    benefits: record.benefits ?? '',
+    numberOfSlots: record.numberOfSlots ?? 0,
+    maxApplicants: record.maxApplicants ?? 0,
+    eligibilityRequirements: record.eligibilityRequirements ?? '',
+    openingDate: record.openingDate ?? record.createdAt,
+    closingDate: record.closingDate ?? record.createdAt,
+    academicYear: record.academicYear ?? '',
+    status: record.status,
+    createdBy: record.createdBy ?? 0,
+    createdAt: record.createdAt,
+    updatedAt: record.updatedAt
+  };
+}
+
+/**
+ * Scholarship Program Service
+ * Manages scholarship program creation, retrieval, and updates
+ */
+export class ScholarshipService {
+  async createProgram(userId: number, request: CreateScholarshipProgramRequest): Promise<ScholarshipProgram> {
+    const created = await prisma.scholarshipProgram.create({
+      data: {
+        name: request.name,
+        description: request.description,
+        sponsor: request.sponsor,
+        benefits: request.benefits,
+        numberOfSlots: request.numberOfSlots,
+        maxApplicants: request.maxApplicants,
+        eligibilityRequirements: request.eligibilityRequirements,
+        openingDate: new Date(request.openingDate),
+        closingDate: new Date(request.closingDate),
+        academicYear: request.academicYear,
+        status: 'active',
+        createdBy: userId,
+        requiredDocuments: request.requiredDocuments
+          ? {
+              create: request.requiredDocuments.map((documentType) => ({ documentType }))
+            }
+          : undefined
+      }
+    });
+
+    return toProgram(created);
+  }
+
+  async getPrograms(filters?: ScholarFilters): Promise<PaginatedResponse<ScholarshipProgram>> {
+    const page = filters?.page || 1;
+    const pageSize = filters?.pageSize || 10;
+    const where = filters?.status ? { status: filters.status } : {};
+
+    const [items, total] = await Promise.all([
+      prisma.scholarshipProgram.findMany({
+        where,
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+        orderBy: { id: 'asc' }
+      }),
+      prisma.scholarshipProgram.count({ where })
+    ]);
+
+    return {
+      data: items.map(toProgram),
+      total,
+      page,
+      pageSize,
+      totalPages: Math.ceil(total / pageSize)
+    };
+  }
+
+  async getProgramById(id: number): Promise<ScholarshipProgram | undefined> {
+    const program = await prisma.scholarshipProgram.findUnique({ where: { id } });
+    return program ? toProgram(program) : undefined;
+  }
+
+  async updateProgram(
+    id: number,
+    request: UpdateScholarshipProgramRequest
+  ): Promise<ScholarshipProgram | undefined> {
+    try {
+      const updated = await prisma.scholarshipProgram.update({
+        where: { id },
+        data: request
+      });
+      return toProgram(updated);
+    } catch {
+      return undefined;
+    }
+  }
+
+  async deleteProgram(id: number): Promise<boolean> {
+    try {
+      await prisma.scholarshipProgram.delete({ where: { id } });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  async getProgramStats(): Promise<any> {
+    const [activePrograms, totalPrograms, slotAgg] = await Promise.all([
+      prisma.scholarshipProgram.count({ where: { status: 'active' } }),
+      prisma.scholarshipProgram.count(),
+      prisma.scholarshipProgram.aggregate({ _sum: { numberOfSlots: true } })
+    ]);
+
+    return {
+      activePrograms,
+      closedPrograms: totalPrograms - activePrograms,
+      totalPrograms,
+      totalSlots: slotAgg._sum.numberOfSlots ?? 0
+    };
+  }
+
+  async getRequiredDocuments(scholarshipId: number): Promise<RequiredDocument[]> {
+    const docs = await prisma.requiredDocument.findMany({
+      where: { scholarshipId },
+      orderBy: { id: 'asc' }
+    });
+
+    return docs.map((d) => ({
+      id: d.id,
+      scholarshipId: d.scholarshipId,
+      documentType: d.documentType,
+      description: d.description ?? '',
+      isRequired: d.isRequired,
+      createdAt: d.createdAt,
+      updatedAt: d.updatedAt
+    }));
+  }
+}

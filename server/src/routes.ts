@@ -4,6 +4,7 @@ import { upload } from './middleware/upload.js';
 import { AuthService } from './services/AuthService.js';
 import { ScholarshipService } from './services/ScholarshipService.js';
 import { ApplicationService } from './services/ApplicationService.js';
+import { ApplicantService } from './services/ApplicantService.js';
 import { DocumentService } from './services/DocumentService.js';
 import { ScholarService } from './services/ScholarService.js';
 import { AnnouncementService } from './services/AnnouncementService.js';
@@ -24,13 +25,15 @@ import {
   CreateAllowanceRequest,
   CreateViolationRequest,
   CreateAnnouncementRequest,
-  AnnouncementFilters
+  AnnouncementFilters,
+  UpdateApplicantProfileRequest
 } from './types.js';
 
 const router = express.Router();
 const authService = new AuthService();
 const scholarshipService = new ScholarshipService();
 const applicationService = new ApplicationService();
+const applicantService = new ApplicantService();
 const documentService = new DocumentService();
 const scholarService = new ScholarService();
 const announcementService = new AnnouncementService();
@@ -220,6 +223,41 @@ router.delete('/scholarships/:id', verifyToken, requireSuperAdmin, async (req: A
     res.json({ message: 'Scholarship deleted successfully' });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+// ============== APPLICANT PROFILE ROUTES ==============
+
+/**
+ * Get the requesting user's own applicant profile (school/course/year/
+ * address, etc). Creates an empty profile on first access.
+ * Protected - self-scoped only
+ */
+router.get('/applicants/me', verifyToken, async (req: AuthenticatedRequest, res) => {
+  try {
+    const profile = await applicantService.getOrCreateForUser(req.user!.sub);
+    res.json(profile);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * Update the requesting user's own applicant profile
+ * Protected - self-scoped only
+ */
+router.put('/applicants/me', verifyToken, async (req: AuthenticatedRequest, res) => {
+  try {
+    const request: UpdateApplicantProfileRequest = req.body;
+
+    if (!request.schoolName || !request.yearLevel || !request.courseName || !request.address) {
+      return res.status(400).json({ error: 'schoolName, yearLevel, courseName, and address are required' });
+    }
+
+    const profile = await applicantService.updateProfile(req.user!.sub, request);
+    res.json(profile);
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
   }
 });
 
@@ -741,25 +779,30 @@ router.get('/dashboard/stats', verifyToken, async (req: AuthenticatedRequest, re
     let stats: any;
 
     if (isAdmin) {
-      const [pending, approved, rejected] = await Promise.all([
-        prisma.application.count({
-          where: { status: { in: ['submitted', 'under_review', 'document_verification', 'interview'] } }
-        }),
-        prisma.application.count({ where: { status: 'approved' } }),
-        prisma.application.count({ where: { status: 'rejected' } })
-      ]);
+      const [pending, approved, rejected, totalScholars, activeScholars, graduatedScholars, renewalsDue] =
+        await Promise.all([
+          prisma.application.count({
+            where: { status: { in: ['submitted', 'under_review', 'document_verification', 'interview'] } }
+          }),
+          prisma.application.count({ where: { status: 'approved' } }),
+          prisma.application.count({ where: { status: 'rejected' } }),
+          prisma.scholar.count(),
+          prisma.scholar.count({ where: { status: 'active' } }),
+          prisma.scholar.count({ where: { status: 'graduated' } }),
+          prisma.renewal.count({ where: { status: 'pending' } })
+        ]);
 
       stats = {
-        // Scholar/renewal/allowance modules don't exist yet (Phase D) —
-        // reporting 0 rather than fabricated numbers until they're real.
-        totalScholars: 0,
-        activeScholars: 0,
-        graduatedScholars: 0,
+        totalScholars,
+        activeScholars,
+        graduatedScholars,
         pendingApplications: pending,
         approvedApplications: approved,
         rejectedApplications: rejected,
+        // No per-program capacity target is tracked yet to compute a
+        // meaningful utilization percentage against.
         scholarshipUtilization: 0,
-        renewalsDue: 0
+        renewalsDue
       };
     } else {
       // Student view — most recently created application, if any.

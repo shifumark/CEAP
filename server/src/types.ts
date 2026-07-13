@@ -154,6 +154,9 @@ export interface Applicant {
   civilStatus?: string;
   contactNumber?: string;
   address?: string;
+  schoolName?: string;
+  courseName?: string;
+  yearLevel?: string;
   municipality?: string;
   barangay?: string;
   zipCode?: string;
@@ -174,6 +177,16 @@ export interface CreateApplicantRequest {
   barangay: string;
   zipCode: string;
   householdMonthlyIncome?: number;
+}
+
+// Minimal profile update collected during the application flow —
+// separate from CreateApplicantRequest, which asks for far more than a
+// student needs to provide just to apply.
+export interface UpdateApplicantProfileRequest {
+  schoolName: string;
+  yearLevel: string;
+  courseName: string;
+  address: string;
 }
 
 // EDUCATIONAL RECORD

@@ -141,6 +141,9 @@ model Applicant {
   civilStatus             String?   @map("civil_status")
   contactNumber           String?   @map("contact_number")
   address                 String?
+  schoolName              String?   @map("school_name")
+  courseName              String?   @map("course_name")
+  yearLevel               String?   @map("year_level")
   municipality            String?
   barangay                String?
   zipCode                 String?   @map("zip_code")

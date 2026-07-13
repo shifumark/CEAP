@@ -1,6 +1,6 @@
 import type { Applicant as PrismaApplicant } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
-import { Applicant } from '../types.js';
+import { Applicant, UpdateApplicantProfileRequest } from '../types.js';
 
 function computeAge(dateOfBirth: Date | null): number {
   if (!dateOfBirth) return 0;
@@ -20,6 +20,9 @@ function toApplicant(record: PrismaApplicant): Applicant {
     civilStatus: record.civilStatus ?? '',
     contactNumber: record.contactNumber ?? '',
     address: record.address ?? '',
+    schoolName: record.schoolName ?? undefined,
+    courseName: record.courseName ?? undefined,
+    yearLevel: record.yearLevel ?? undefined,
     municipality: record.municipality ?? '',
     barangay: record.barangay ?? '',
     zipCode: record.zipCode ?? '',
@@ -46,5 +49,24 @@ export class ApplicantService {
   async getProfile(userId: number): Promise<Applicant | undefined> {
     const record = await prisma.applicant.findUnique({ where: { userId } });
     return record ? toApplicant(record) : undefined;
+  }
+
+  async updateProfile(userId: number, request: UpdateApplicantProfileRequest): Promise<Applicant> {
+    // Ensure a row exists first (applicant profiles are created lazily),
+    // then update it — upsert would work too, but this keeps the
+    // "create" path centralized in getOrCreateForUser.
+    await this.getOrCreateForUser(userId);
+
+    const updated = await prisma.applicant.update({
+      where: { userId },
+      data: {
+        schoolName: request.schoolName,
+        yearLevel: request.yearLevel,
+        courseName: request.courseName,
+        address: request.address
+      }
+    });
+
+    return toApplicant(updated);
   }
 }

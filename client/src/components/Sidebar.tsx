@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { UserRole } from '../types';
@@ -32,49 +33,67 @@ function Sidebar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const [isOpen, setIsOpen] = useState(false);
 
   const navItems = user ? NAV_ITEMS_BY_ROLE[user.role] : [];
 
+  const closeMenu = () => setIsOpen(false);
+
   const handleLogout = () => {
+    closeMenu();
     logout();
     navigate('/login');
   };
 
   return (
-    <aside className="app-sidebar">
-      <div className="sidebar-logo">
-        <span style={{ fontSize: '1.5rem' }}>✨</span>
-        <span>ScholarshipHub</span>
-      </div>
+    <>
+      <button
+        className="sidebar-toggle"
+        aria-label={isOpen ? 'Close menu' : 'Open menu'}
+        aria-expanded={isOpen}
+        onClick={() => setIsOpen((prev) => !prev)}
+      >
+        {isOpen ? '✕' : '☰'}
+      </button>
 
-      <nav className="sidebar-nav">
-        {navItems.map((item) => (
-          <li key={item.path} className="nav-item">
-            <Link
-              to={item.path}
-              className={`nav-link ${location.pathname === item.path ? 'active' : ''}`}
-            >
-              <span>{item.icon}</span>
-              <span>{item.label}</span>
-            </Link>
-          </li>
-        ))}
-      </nav>
+      {isOpen && <div className="sidebar-overlay" onClick={closeMenu} />}
 
-      <div className="sidebar-footer">
-        <div style={{ fontSize: '0.85rem', marginBottom: '0.5rem' }}>
-          <strong>
-            {user ? `${user.firstName} ${user.lastName}` : 'Guest'}
-          </strong>
+      <aside className={`app-sidebar${isOpen ? ' open' : ''}`}>
+        <div className="sidebar-logo">
+          <span style={{ fontSize: '1.5rem' }}>✨</span>
+          <span>ScholarshipHub</span>
         </div>
-        <div style={{ opacity: 0.8, fontSize: '0.8rem', marginBottom: '0.75rem' }}>
-          {user?.role === UserRole.APPLICANT ? 'Student' : user?.role === UserRole.ADMIN ? 'Administrator' : user?.role}
+
+        <nav className="sidebar-nav">
+          {navItems.map((item) => (
+            <li key={item.path} className="nav-item">
+              <Link
+                to={item.path}
+                className={`nav-link ${location.pathname === item.path ? 'active' : ''}`}
+                onClick={closeMenu}
+              >
+                <span>{item.icon}</span>
+                <span>{item.label}</span>
+              </Link>
+            </li>
+          ))}
+        </nav>
+
+        <div className="sidebar-footer">
+          <div style={{ fontSize: '0.85rem', marginBottom: '0.5rem' }}>
+            <strong>
+              {user ? `${user.firstName} ${user.lastName}` : 'Guest'}
+            </strong>
+          </div>
+          <div style={{ opacity: 0.8, fontSize: '0.8rem', marginBottom: '0.75rem' }}>
+            {user?.role === UserRole.APPLICANT ? 'Student' : user?.role === UserRole.ADMIN ? 'Administrator' : user?.role}
+          </div>
+          <button className="btn btn-outline btn-sm" style={{ width: '100%' }} onClick={handleLogout}>
+            Log out
+          </button>
         </div>
-        <button className="btn btn-outline btn-sm" style={{ width: '100%' }} onClick={handleLogout}>
-          Log out
-        </button>
-      </div>
-    </aside>
+      </aside>
+    </>
   );
 }
 

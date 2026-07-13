@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { Application, ApplicationStatus, ScholarshipProgram } from '../types';
 import ApplicationDocuments from '../components/ApplicationDocuments';
 import MyScholarshipPanel from '../components/MyScholarshipPanel';
+import ApplyModal from '../components/ApplyModal';
 
 const STATUS_LABEL: Record<ApplicationStatus, string> = {
   [ApplicationStatus.DRAFT]: 'Draft',
@@ -39,6 +40,7 @@ const MyApplicationPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [busyId, setBusyId] = useState<number | null>(null);
+  const [applyingTo, setApplyingTo] = useState<ScholarshipProgram | null>(null);
 
   const loadData = async () => {
     setError('');
@@ -61,17 +63,9 @@ const MyApplicationPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleApply = async (scholarshipId: number) => {
-    setBusyId(scholarshipId);
-    setError('');
-    try {
-      await apiService.createApplication(scholarshipId);
-      await loadData();
-    } catch (err: any) {
-      setError(err.message || 'Failed to apply');
-    } finally {
-      setBusyId(null);
-    }
+  const handleApplySuccess = () => {
+    setApplyingTo(null);
+    loadData();
   };
 
   const handleSubmit = async (applicationId: number) => {
@@ -218,12 +212,8 @@ const MyApplicationPage = () => {
                             {scholarship.benefits}
                           </p>
                         </div>
-                        <button
-                          className="btn btn-primary btn-sm"
-                          disabled={busyId === scholarship.id}
-                          onClick={() => handleApply(scholarship.id)}
-                        >
-                          {busyId === scholarship.id ? 'Applying...' : 'Apply'}
+                        <button className="btn btn-primary btn-sm" onClick={() => setApplyingTo(scholarship)}>
+                          Apply
                         </button>
                       </div>
                     ))}
@@ -234,6 +224,10 @@ const MyApplicationPage = () => {
           </>
         )}
       </div>
+
+      {applyingTo && (
+        <ApplyModal scholarship={applyingTo} onClose={() => setApplyingTo(null)} onSuccess={handleApplySuccess} />
+      )}
     </div>
   );
 };

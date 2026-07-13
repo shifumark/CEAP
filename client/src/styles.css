@@ -774,12 +774,71 @@ tr:hover {
 }
 
 /* ===========================
+   SIDEBAR MOBILE TOGGLE
+   =========================== */
+
+.sidebar-toggle {
+  display: none;
+  position: fixed;
+  top: 0.85rem;
+  left: 1rem;
+  z-index: 1002;
+  width: 42px;
+  height: 42px;
+  border-radius: var(--radius-md);
+  border: none;
+  background: var(--sidebar-dark);
+  color: white;
+  font-size: 1.25rem;
+  cursor: pointer;
+  box-shadow: var(--shadow-md);
+  align-items: center;
+  justify-content: center;
+}
+
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+}
+
+/* ===========================
    RESPONSIVE ADJUSTMENTS
    =========================== */
 
-@media (max-width: 768px) {
+@media (max-width: 900px) {
+  .sidebar-toggle {
+    display: flex;
+  }
+
   .app-sidebar {
-    width: 200px;
+    position: fixed;
+    left: -280px;
+    top: 0;
+    width: 260px;
+    height: 100vh;
+    z-index: 1001;
+    transition: var(--transition);
+  }
+
+  .app-sidebar.open {
+    left: 0;
+  }
+
+  /* The overlay element is only rendered in the DOM while the sidebar
+     is open, so unconditionally showing it here (scoped to this
+     breakpoint) is sufficient — no sibling-selector trick needed. */
+  .sidebar-overlay {
+    display: block;
+  }
+
+  /* Leave room so page content isn't hidden under the toggle button.
+     Descendant selector, not direct-child — each page wraps its own
+     .navbar in a div before .app-main. */
+  .app-main .navbar {
+    padding-left: 4.25rem;
   }
 
   .hero h1 {
@@ -802,19 +861,6 @@ tr:hover {
 }
 
 @media (max-width: 640px) {
-  .app-sidebar {
-    position: fixed;
-    left: -200px;
-    width: 200px;
-    height: 100vh;
-    z-index: 1001;
-    transition: var(--transition);
-  }
-
-  .app-sidebar.open {
-    left: 0;
-  }
-
   .stats {
     grid-template-columns: repeat(2, 1fr);
   }

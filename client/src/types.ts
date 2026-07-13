@@ -152,6 +152,9 @@ export interface Applicant {
   civilStatus?: string;
   contactNumber?: string;
   address?: string;
+  schoolName?: string;
+  courseName?: string;
+  yearLevel?: string;
   municipality?: string;
   barangay?: string;
   zipCode?: string;
@@ -172,6 +175,13 @@ export interface CreateApplicantRequest {
   barangay: string;
   zipCode: string;
   householdMonthlyIncome?: number;
+}
+
+export interface UpdateApplicantProfileRequest {
+  schoolName: string;
+  yearLevel: string;
+  courseName: string;
+  address: string;
 }
 
 // EDUCATIONAL RECORD

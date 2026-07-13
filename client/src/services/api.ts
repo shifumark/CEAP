@@ -20,7 +20,12 @@ import {
   Announcement,
   AnnouncementFilters,
   CreateAnnouncementRequest,
-  Notification
+  Notification,
+  Applicant,
+  UpdateApplicantProfileRequest,
+  CreateScholarshipProgramRequest,
+  UpdateScholarshipProgramRequest,
+  DashboardStats
 } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
@@ -126,6 +131,16 @@ class ApiService {
     });
   }
 
+  // ============== APPLICANT PROFILE ==============
+
+  async getMyProfile(): Promise<Applicant> {
+    return this.request('GET', '/applicants/me');
+  }
+
+  async updateMyProfile(data: UpdateApplicantProfileRequest): Promise<Applicant> {
+    return this.request('PUT', '/applicants/me', data);
+  }
+
   // ============== SCHOLARSHIPS ==============
 
   async getScholarships(page = 1, pageSize = 10): Promise<PaginatedResponse<ScholarshipProgram>> {
@@ -140,11 +155,11 @@ class ApiService {
     return this.request('GET', `/scholarships/${scholarshipId}/required-documents`);
   }
 
-  async createScholarship(data: any) {
+  async createScholarship(data: CreateScholarshipProgramRequest): Promise<ScholarshipProgram> {
     return this.request('POST', '/scholarships', data);
   }
 
-  async updateScholarship(id: number, data: any) {
+  async updateScholarship(id: number, data: UpdateScholarshipProgramRequest): Promise<ScholarshipProgram> {
     return this.request('PUT', `/scholarships/${id}`, data);
   }
 
@@ -294,7 +309,7 @@ class ApiService {
 
   // ============== DASHBOARD ==============
 
-  async getDashboardStats() {
+  async getDashboardStats(): Promise<DashboardStats> {
     return this.request('GET', '/dashboard/stats');
   }
 

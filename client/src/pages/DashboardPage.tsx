@@ -1,11 +1,8 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-
-const stats = [
-  { label: 'Total Scholars', value: '1,248', icon: '👥', color: '#8B5CF6' },
-  { label: 'Pending Applications', value: '84', icon: '⏳', color: '#EC4899' },
-  { label: 'Approved', value: '612', icon: '✅', color: '#10B981' },
-  { label: 'Renewals Due', value: '37', icon: '🔄', color: '#F59E0B' }
-];
+import { apiService } from '../services/api';
+import { useAuth } from '../context/AuthContext';
+import { DashboardStats } from '../types';
 
 const activities = [
   { id: 1, title: 'Application #1042 Status Updated', description: 'Moved to Under Review', time: '2 hours ago', icon: '📋' },
@@ -15,6 +12,24 @@ const activities = [
 ];
 
 const DashboardPage = () => {
+  const { user } = useAuth();
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [statsError, setStatsError] = useState('');
+
+  useEffect(() => {
+    apiService
+      .getDashboardStats()
+      .then(setStats)
+      .catch((err) => setStatsError(err.message || 'Failed to load dashboard stats'));
+  }, []);
+
+  const statCards = [
+    { label: 'Total Scholars', value: stats?.totalScholars ?? 0, icon: '👥', color: '#8B5CF6' },
+    { label: 'Pending Applications', value: stats?.pendingApplications ?? 0, icon: '⏳', color: '#EC4899' },
+    { label: 'Approved', value: stats?.approvedApplications ?? 0, icon: '✅', color: '#10B981' },
+    { label: 'Renewals Due', value: stats?.renewalsDue ?? 0, icon: '🔄', color: '#F59E0B' }
+  ];
+
   return (
     <div>
       <nav className="navbar">
@@ -22,26 +37,41 @@ const DashboardPage = () => {
         <div className="navbar-actions">
           <div className="user-menu">
             <span>👤</span>
-            <span>John Admin</span>
+            <span>{user ? `${user.firstName} ${user.lastName}` : ''}</span>
           </div>
         </div>
       </nav>
 
       <div className="container">
         <div className="page-header">
-          <h1>Welcome back, John</h1>
+          <h1>Welcome back, {user?.firstName}</h1>
           <p>Here's what's happening with your scholarships today</p>
         </div>
+
+        {statsError && (
+          <div
+            style={{
+              padding: '1rem',
+              background: 'rgba(239, 68, 68, 0.1)',
+              border: '1px solid rgba(239, 68, 68, 0.3)',
+              borderRadius: 'var(--radius-md)',
+              marginBottom: '1.5rem',
+              color: '#DC2626'
+            }}
+          >
+            {statsError}
+          </div>
+        )}
 
         {/* Key Metrics */}
         <section style={{ marginBottom: '3rem' }}>
           <div className="stats">
-            {stats.map((item) => (
+            {statCards.map((item) => (
               <div className="stat" key={item.label}>
                 <div className="stat-icon" style={{ background: `linear-gradient(135deg, ${item.color}, ${item.color}BB)` }}>
                   {item.icon}
                 </div>
-                <h3>{item.value}</h3>
+                <h3>{item.value.toLocaleString()}</h3>
                 <p>{item.label}</p>
               </div>
             ))}

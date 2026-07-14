@@ -1,6 +1,8 @@
+import { Readable } from 'stream';
 import type { UploadedDocument as PrismaUploadedDocument } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { supabaseAdmin, DOCUMENTS_BUCKET } from '../lib/supabase.js';
+import { drive, DRIVE_FOLDER_ID } from '../lib/googleDrive.js';
 import { ApplicationService } from './ApplicationService.js';
 import { NotificationService } from './NotificationService.js';
 import { UploadedDocument, DocumentVerificationStatus, JWTPayload, UserRole, NotificationType } from '../types.js';
@@ -14,6 +16,10 @@ interface UploadFile {
   mimetype: string;
   size: number;
 }
+
+export type DownloadResult =
+  | { kind: 'stream'; stream: NodeJS.ReadableStream; mimeType: string; fileName: string }
+  | { kind: 'redirect'; url: string };
 
 function isPrivileged(user: JWTPayload): boolean {
   return user.role === UserRole.ADMIN || user.role === UserRole.SUPER_ADMIN;
@@ -39,6 +45,12 @@ function toDocument(record: PrismaUploadedDocument): UploadedDocument {
 }
 
 export class DocumentService {
+  /**
+   * Uploads go to Google Drive (current storage provider). filePath is
+   * still populated (with the same Drive file id) purely to satisfy the
+   * column's existing NOT NULL constraint — googleDriveId is what the
+   * rest of the service actually keys off of.
+   */
   async upload(
     user: JWTPayload,
     applicationId: number,
@@ -53,14 +65,21 @@ export class DocumentService {
     }
 
     const safeName = file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_');
-    const storagePath = `applications/${applicationId}/${Date.now()}-${safeName}`;
+    const driveFile = await drive.files.create({
+      requestBody: {
+        name: `application-${applicationId}-${Date.now()}-${safeName}`,
+        parents: DRIVE_FOLDER_ID ? [DRIVE_FOLDER_ID] : undefined
+      },
+      media: {
+        mimeType: file.mimetype,
+        body: Readable.from(file.buffer)
+      },
+      fields: 'id'
+    });
 
-    const { error: uploadError } = await supabaseAdmin.storage
-      .from(DOCUMENTS_BUCKET)
-      .upload(storagePath, file.buffer, { contentType: file.mimetype, upsert: false });
-
-    if (uploadError) {
-      throw new Error(`Upload failed: ${uploadError.message}`);
+    const fileId = driveFile.data.id;
+    if (!fileId) {
+      throw new Error('Upload failed: Google Drive did not return a file id');
     }
 
     const created = await prisma.uploadedDocument.create({
@@ -69,7 +88,8 @@ export class DocumentService {
         userId: user.sub,
         documentType,
         fileName: file.originalname,
-        filePath: storagePath,
+        filePath: fileId,
+        googleDriveId: fileId,
         fileSize: file.size,
         fileType: file.mimetype,
         verificationStatus: 'pending'
@@ -90,21 +110,36 @@ export class DocumentService {
     return docs.map(toDocument);
   }
 
-  async getSignedUrl(user: JWTPayload, documentId: number): Promise<string> {
+  /**
+   * Drive documents are streamed directly through our own server (never a
+   * public Drive link, so access stays gated behind our own auth/ownership
+   * check). Legacy pre-migration documents fall back to a short-lived
+   * Supabase signed URL, which the route redirects to.
+   */
+  async getDownload(user: JWTPayload, documentId: number): Promise<DownloadResult> {
     const doc = await this.getOwnedDocument(user, documentId);
     if (!doc) {
       throw new Error('Document not found');
     }
 
-    const { data, error } = await supabaseAdmin.storage
-      .from(DOCUMENTS_BUCKET)
-      .createSignedUrl(doc.filePath, 60 * 5);
+    if (doc.googleDriveId) {
+      const response = await drive.files.get(
+        { fileId: doc.googleDriveId, alt: 'media' },
+        { responseType: 'stream' }
+      );
+      return {
+        kind: 'stream',
+        stream: response.data,
+        mimeType: doc.fileType || 'application/octet-stream',
+        fileName: doc.fileName
+      };
+    }
 
+    const { data, error } = await supabaseAdmin.storage.from(DOCUMENTS_BUCKET).createSignedUrl(doc.filePath, 60 * 5);
     if (error || !data) {
       throw new Error('Failed to generate download link');
     }
-
-    return data.signedUrl;
+    return { kind: 'redirect', url: data.signedUrl };
   }
 
   async verify(
@@ -147,16 +182,28 @@ export class DocumentService {
   /**
    * Lets a Student remove their own upload (e.g. they picked the wrong
    * file) — also lets an Admin remove one during review. Deletes the
-   * Storage object first; if that fails we don't touch the DB row, so
-   * the two stay consistent.
+   * remote file first; if that fails we don't touch the DB row, so the
+   * two stay consistent.
    */
   async delete(user: JWTPayload, documentId: number): Promise<boolean> {
     const doc = await this.getOwnedDocument(user, documentId);
     if (!doc) return false;
 
-    const { error: storageError } = await supabaseAdmin.storage.from(DOCUMENTS_BUCKET).remove([doc.filePath]);
-    if (storageError) {
-      throw new Error(`Failed to delete file: ${storageError.message}`);
+    if (doc.googleDriveId) {
+      try {
+        await drive.files.delete({ fileId: doc.googleDriveId });
+      } catch (error: any) {
+        // Already gone on Drive (e.g. manually deleted) — fine to proceed
+        // and clean up our own row; anything else is a real failure.
+        if (error?.code !== 404) {
+          throw new Error(`Failed to delete file: ${error.message}`);
+        }
+      }
+    } else {
+      const { error: storageError } = await supabaseAdmin.storage.from(DOCUMENTS_BUCKET).remove([doc.filePath]);
+      if (storageError) {
+        throw new Error(`Failed to delete file: ${storageError.message}`);
+      }
     }
 
     await prisma.uploadedDocument.delete({ where: { id: documentId } });

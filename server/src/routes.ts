@@ -467,13 +467,23 @@ router.delete('/documents/:id', verifyToken, async (req: AuthenticatedRequest, r
 });
 
 /**
- * Get a short-lived signed download URL for a document
+ * Download a document. Streams the file bytes directly for Drive-backed
+ * documents (never exposes a public Drive link — access stays gated
+ * behind our own auth); redirects to a short-lived signed URL for any
+ * legacy document still on Supabase Storage.
  * Protected - ownership enforced server-side
  */
 router.get('/documents/:id/download', verifyToken, async (req: AuthenticatedRequest, res) => {
   try {
-    const url = await documentService.getSignedUrl(req.user!, parseInt(req.params.id));
-    res.json({ url });
+    const result = await documentService.getDownload(req.user!, parseInt(req.params.id));
+
+    if (result.kind === 'redirect') {
+      return res.redirect(result.url);
+    }
+
+    res.setHeader('Content-Type', result.mimeType);
+    res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(result.fileName)}"`);
+    (result.stream as NodeJS.ReadableStream).pipe(res);
   } catch (error: any) {
     res.status(404).json({ error: error.message });
   }

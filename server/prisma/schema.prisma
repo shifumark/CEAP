@@ -327,6 +327,10 @@ model UploadedDocument {
   documentType         String?                     @map("document_type")
   fileName             String                      @map("file_name")
   filePath             String                      @map("file_path")
+  // Set for documents uploaded via Google Drive (current storage
+  // provider); null for older documents that predate the switch and
+  // still live in Supabase Storage at `filePath`.
+  googleDriveId        String?                     @map("google_drive_id")
   fileSize             Int?                        @map("file_size")
   fileType             String?                     @map("file_type")
   verificationStatus   DocumentVerificationStatus  @default(pending) @map("verification_status")

@@ -116,8 +116,12 @@ const ApplicationReviewPage = () => {
 
   const handleViewDocument = async (documentId: number) => {
     try {
-      const { url } = await apiService.getDocumentDownloadUrl(documentId);
-      window.open(url, '_blank', 'noopener');
+      const { blob } = await apiService.downloadDocument(documentId);
+      const objectUrl = URL.createObjectURL(blob);
+      window.open(objectUrl, '_blank', 'noopener');
+      // Revoked after a delay rather than immediately — the new tab needs
+      // time to actually load the blob URL before it's freed.
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
     } catch (err: any) {
       setError(err.message || 'Failed to open document');
     }

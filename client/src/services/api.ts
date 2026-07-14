@@ -235,8 +235,24 @@ class ApiService {
     return this.request('DELETE', `/documents/${documentId}`);
   }
 
-  async getDocumentDownloadUrl(documentId: number): Promise<{ url: string }> {
-    return this.request('GET', `/documents/${documentId}/download`);
+  async downloadDocument(documentId: number): Promise<{ blob: Blob; fileName: string }> {
+    const headers: HeadersInit = {};
+    if (this.token) {
+      headers.Authorization = `Bearer ${this.token}`;
+    }
+
+    const response = await fetch(`${API_BASE_URL}/documents/${documentId}/download`, { headers });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.error || error.message || 'Failed to download document');
+    }
+
+    const disposition = response.headers.get('Content-Disposition') || '';
+    const match = disposition.match(/filename="?([^"]+)"?/);
+    const fileName = match ? decodeURIComponent(match[1]) : `document-${documentId}`;
+
+    return { blob: await response.blob(), fileName };
   }
 
   async verifyDocument(

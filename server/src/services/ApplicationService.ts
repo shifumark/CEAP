@@ -16,6 +16,7 @@ import { ApplicantService } from './ApplicantService.js';
 import { ScholarService } from './ScholarService.js';
 import { NotificationService } from './NotificationService.js';
 import { supabaseAdmin, DOCUMENTS_BUCKET } from '../lib/supabase.js';
+import { drive } from '../lib/googleDrive.js';
 
 const applicantService = new ApplicantService();
 const scholarService = new ScholarService();
@@ -257,8 +258,9 @@ export class ApplicationService {
    * Lets a Student withdraw their own application — blocked once a final
    * decision (approved/rejected) has been recorded, so the audit trail
    * for a completed review is never destroyed. Cleans up any uploaded
-   * Storage files first so nothing is orphaned; the DB rows (documents,
-   * status history) cascade from the Application delete itself.
+   * files (Drive or, for older rows, Supabase Storage) first so nothing
+   * is orphaned; the DB rows (documents, status history) cascade from
+   * the Application delete itself.
    */
   async deleteApplication(user: JWTPayload, id: number): Promise<boolean> {
     const application = await this.getOwnedRecord(user, id);
@@ -270,13 +272,16 @@ export class ApplicationService {
 
     const documents = await prisma.uploadedDocument.findMany({
       where: { applicationId: id },
-      select: { filePath: true }
+      select: { filePath: true, googleDriveId: true }
     });
 
-    if (documents.length > 0) {
-      const { error: storageError } = await supabaseAdmin.storage
-        .from(DOCUMENTS_BUCKET)
-        .remove(documents.map((d) => d.filePath));
+    const driveIds = documents.filter((d) => d.googleDriveId).map((d) => d.googleDriveId as string);
+    const legacyPaths = documents.filter((d) => !d.googleDriveId).map((d) => d.filePath);
+
+    await Promise.all(driveIds.map((fileId) => drive.files.delete({ fileId }).catch(() => undefined)));
+
+    if (legacyPaths.length > 0) {
+      const { error: storageError } = await supabaseAdmin.storage.from(DOCUMENTS_BUCKET).remove(legacyPaths);
       if (storageError) {
         throw new Error(`Failed to delete uploaded files: ${storageError.message}`);
       }

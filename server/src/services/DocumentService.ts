@@ -53,21 +53,33 @@ export class DocumentService {
    */
   async upload(
     user: JWTPayload,
-    applicationId: number,
+    applicationId: number | null,
     documentType: string,
     file: UploadFile
   ): Promise<UploadedDocument> {
-    // Reuses ApplicationService's row-level ownership check — a Student can
-    // only attach documents to an application that resolves as their own.
-    const application = await applicationService.getById(user, applicationId);
-    if (!application) {
-      throw new Error('Application not found');
+    if (applicationId !== null) {
+      // Reuses ApplicationService's row-level ownership check — a Student
+      // can only attach documents to an application that resolves as
+      // their own.
+      const application = await applicationService.getById(user, applicationId);
+      if (!application) {
+        throw new Error('Application not found');
+      }
+    } else if (documentType === 'Valid ID') {
+      // Profile-level Valid ID uploads are capped at 5 files, matching
+      // the source form's "up to 5 files" limit.
+      const existingCount = await prisma.uploadedDocument.count({
+        where: { userId: user.sub, applicationId: null, documentType: 'Valid ID' }
+      });
+      if (existingCount >= 5) {
+        throw new Error('You can only upload up to 5 Valid ID files');
+      }
     }
 
     const safeName = file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_');
     const driveFile = await drive.files.create({
       requestBody: {
-        name: `application-${applicationId}-${Date.now()}-${safeName}`,
+        name: `${applicationId !== null ? `application-${applicationId}` : 'profile'}-${Date.now()}-${safeName}`,
         parents: DRIVE_FOLDER_ID ? [DRIVE_FOLDER_ID] : undefined
       },
       media: {
@@ -105,6 +117,18 @@ export class DocumentService {
 
     const docs = await prisma.uploadedDocument.findMany({
       where: { applicationId },
+      orderBy: { createdAt: 'asc' }
+    });
+    return docs.map(toDocument);
+  }
+
+  /**
+   * Profile-level documents (Valid ID, ATM card, etc.) — always
+   * self-scoped by construction, no ownership branch needed.
+   */
+  async listMyProfileDocuments(user: JWTPayload): Promise<UploadedDocument[]> {
+    const docs = await prisma.uploadedDocument.findMany({
+      where: { userId: user.sub, applicationId: null },
       orderBy: { createdAt: 'asc' }
     });
     return docs.map(toDocument);

@@ -8,6 +8,7 @@ import DashboardPage from './pages/DashboardPage';
 import ProgramPage from './pages/ProgramPage';
 import ApplicationReviewPage from './pages/ApplicationReviewPage';
 import MyApplicationPage from './pages/MyApplicationPage';
+import ProfilePage from './pages/ProfilePage';
 import ScholarManagementPage from './pages/ScholarManagementPage';
 import ScholarDetailPage from './pages/ScholarDetailPage';
 import AnnouncementsPage from './pages/AnnouncementsPage';
@@ -21,6 +22,7 @@ const SIDEBAR_PATHS = [
   '/programs',
   '/applications',
   '/my-application',
+  '/profile',
   '/scholars',
   '/announcements',
   '/notifications'
@@ -62,6 +64,14 @@ function AppLayout() {
             element={
               <ProtectedRoute allowedRoles={[UserRole.APPLICANT]}>
                 <MyApplicationPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute allowedRoles={[UserRole.APPLICANT]}>
+                <ProfilePage />
               </ProtectedRoute>
             }
           />

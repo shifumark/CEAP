@@ -148,6 +148,48 @@ model Applicant {
   barangay                String?
   zipCode                 String?   @map("zip_code")
   householdMonthlyIncome  Decimal?  @map("household_monthly_income") @db.Decimal(12, 2)
+
+  // I. Personal Information
+  placeOfBirth   String?  @map("place_of_birth")
+  nationality    String?
+  idType         String?  @map("id_type")
+  idNumber       String?  @map("id_number")
+
+  // II. IP Affiliation
+  isIndigenousPeople Boolean? @map("is_indigenous_people")
+  ipGroupTribe       String?  @map("ip_group_tribe")
+
+  // III. Contact Details
+  province String?
+
+  // IV. Socio-economic classification (fixed checkbox set -> native array, no join table)
+  sectoralClassifications      String[] @map("sectoral_classifications")
+  sectoralClassificationOther  String?  @map("sectoral_classification_other")
+
+  // V. Family background (household aggregate; father/mother/guardian live on FamilyMember)
+  numberOfHouseholdMembers    Int?    @map("number_of_household_members")
+  numberOfDependentsStudying  Int?    @map("number_of_dependents_studying")
+  parentalStatus              String? @map("parental_status")
+
+  // VI. Educational background
+  schoolAddress   String?  @map("school_address")
+  schoolType      String?  @map("school_type")
+  gwa             Decimal? @db.Decimal(5, 2)
+  previousSchool  String?  @map("previous_school")
+  honorsAwards    String?  @map("honors_awards")
+  academicStatus  String?  @map("academic_status")
+
+  // VII. Other educational assistance
+  currentlyReceivingAssistance       Boolean? @map("currently_receiving_assistance")
+  currentAssistanceProgram           String?  @map("current_assistance_program")
+  currentAssistanceAmount            Decimal? @map("current_assistance_amount") @db.Decimal(12, 2)
+  appliedOtherScholarship            Boolean? @map("applied_other_scholarship")
+  otherScholarshipProgram            String?  @map("other_scholarship_program")
+  academicDistinctionExtracurricular String?  @map("academic_distinction_extracurricular")
+
+  // IX. ATM
+  lbpAtmAccountNumber String? @map("lbp_atm_account_number")
+
   createdAt               DateTime  @default(now()) @map("created_at")
   updatedAt               DateTime  @updatedAt @map("updated_at")
 
@@ -161,18 +203,21 @@ model Applicant {
 }
 
 model FamilyMember {
-  id             Int      @id @default(autoincrement())
-  applicantId    Int      @map("applicant_id")
-  name           String
-  relationship   String?
-  occupation     String?
-  contactNumber  String?  @map("contact_number")
-  memberType     String?  @map("member_type")
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
+  id                     Int      @id @default(autoincrement())
+  applicantId            Int      @map("applicant_id")
+  name                   String
+  relationship           String?
+  occupation             String?
+  contactNumber          String?  @map("contact_number")
+  memberType             String?  @map("member_type")
+  monthlyIncome          Decimal? @map("monthly_income") @db.Decimal(12, 2)
+  educationalAttainment  String?  @map("educational_attainment")
+  createdAt              DateTime @default(now()) @map("created_at")
+  updatedAt              DateTime @updatedAt @map("updated_at")
 
   applicant Applicant @relation(fields: [applicantId], references: [id], onDelete: Cascade)
 
+  @@unique([applicantId, memberType])
   @@map("family_members")
 }
 

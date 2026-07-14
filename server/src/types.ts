@@ -141,6 +141,13 @@ export interface JWTPayload {
 }
 
 // APPLICANT
+export interface FamilyMemberDetail {
+  name?: string;
+  occupation?: string;
+  monthlyIncome?: number;
+  educationalAttainment?: string;
+}
+
 export interface Applicant {
   id: number;
   userId: number;
@@ -161,6 +168,51 @@ export interface Applicant {
   barangay?: string;
   zipCode?: string;
   householdMonthlyIncome?: number;
+
+  // I. Personal Information
+  placeOfBirth?: string;
+  nationality?: string;
+  idType?: string;
+  idNumber?: string;
+
+  // II. IP Affiliation
+  isIndigenousPeople?: boolean;
+  ipGroupTribe?: string;
+
+  // III. Contact Details
+  province?: string;
+
+  // IV. Socio-economic classification
+  sectoralClassifications: string[];
+  sectoralClassificationOther?: string;
+
+  // V. Family background
+  numberOfHouseholdMembers?: number;
+  numberOfDependentsStudying?: number;
+  parentalStatus?: string;
+  father?: FamilyMemberDetail;
+  mother?: FamilyMemberDetail;
+  guardian?: FamilyMemberDetail;
+
+  // VI. Educational background
+  schoolAddress?: string;
+  schoolType?: string;
+  gwa?: number;
+  previousSchool?: string;
+  honorsAwards?: string;
+  academicStatus?: string;
+
+  // VII. Other educational assistance
+  currentlyReceivingAssistance?: boolean;
+  currentAssistanceProgram?: string;
+  currentAssistanceAmount?: number;
+  appliedOtherScholarship?: boolean;
+  otherScholarshipProgram?: string;
+  academicDistinctionExtracurricular?: string;
+
+  // IX. ATM
+  lbpAtmAccountNumber?: string;
+
   createdAt: Date;
   updatedAt: Date;
 }
@@ -179,14 +231,58 @@ export interface CreateApplicantRequest {
   householdMonthlyIncome?: number;
 }
 
-// Minimal profile update collected during the application flow —
-// separate from CreateApplicantRequest, which asks for far more than a
-// student needs to provide just to apply.
+// Full profile update — every field optional so students can save the
+// form incrementally across sessions. Required-ness is enforced only at
+// application-submit time (see ApplicantService.getProfileCompleteness).
 export interface UpdateApplicantProfileRequest {
-  schoolName: string;
-  yearLevel: string;
-  courseName: string;
-  address: string;
+  middleName?: string;
+  suffix?: string;
+  dateOfBirth?: string;
+  sex?: string;
+  civilStatus?: string;
+  contactNumber?: string;
+  address?: string;
+  schoolName?: string;
+  courseName?: string;
+  yearLevel?: string;
+  municipality?: string;
+  barangay?: string;
+  zipCode?: string;
+  householdMonthlyIncome?: number;
+  placeOfBirth?: string;
+  nationality?: string;
+  idType?: string;
+  idNumber?: string;
+  isIndigenousPeople?: boolean;
+  ipGroupTribe?: string;
+  province?: string;
+  sectoralClassifications?: string[];
+  sectoralClassificationOther?: string;
+  numberOfHouseholdMembers?: number;
+  numberOfDependentsStudying?: number;
+  parentalStatus?: string;
+  schoolAddress?: string;
+  schoolType?: string;
+  gwa?: number;
+  previousSchool?: string;
+  honorsAwards?: string;
+  academicStatus?: string;
+  currentlyReceivingAssistance?: boolean;
+  currentAssistanceProgram?: string;
+  currentAssistanceAmount?: number;
+  appliedOtherScholarship?: boolean;
+  otherScholarshipProgram?: string;
+  academicDistinctionExtracurricular?: string;
+  lbpAtmAccountNumber?: string;
+  father?: FamilyMemberDetail;
+  mother?: FamilyMemberDetail;
+  guardian?: FamilyMemberDetail;
+}
+
+export interface ProfileCompleteness {
+  complete: boolean;
+  missingFields: string[];
+  missingDocuments: string[];
 }
 
 // EDUCATIONAL RECORD

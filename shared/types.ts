@@ -142,6 +142,13 @@ export interface JWTPayload {
 }
 
 // APPLICANT
+export interface FamilyMemberDetail {
+  name?: string;
+  occupation?: string;
+  monthlyIncome?: number;
+  educationalAttainment?: string;
+}
+
 export interface Applicant {
   id: number;
   userId: number;
@@ -157,8 +164,42 @@ export interface Applicant {
   barangay: string;
   zipCode: string;
   householdMonthlyIncome?: number;
+  placeOfBirth?: string;
+  nationality?: string;
+  idType?: string;
+  idNumber?: string;
+  isIndigenousPeople?: boolean;
+  ipGroupTribe?: string;
+  province?: string;
+  sectoralClassifications: string[];
+  sectoralClassificationOther?: string;
+  numberOfHouseholdMembers?: number;
+  numberOfDependentsStudying?: number;
+  parentalStatus?: string;
+  father?: FamilyMemberDetail;
+  mother?: FamilyMemberDetail;
+  guardian?: FamilyMemberDetail;
+  schoolAddress?: string;
+  schoolType?: string;
+  gwa?: number;
+  previousSchool?: string;
+  honorsAwards?: string;
+  academicStatus?: string;
+  currentlyReceivingAssistance?: boolean;
+  currentAssistanceProgram?: string;
+  currentAssistanceAmount?: number;
+  appliedOtherScholarship?: boolean;
+  otherScholarshipProgram?: string;
+  academicDistinctionExtracurricular?: string;
+  lbpAtmAccountNumber?: string;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface ProfileCompleteness {
+  complete: boolean;
+  missingFields: string[];
+  missingDocuments: string[];
 }
 
 export interface CreateApplicantRequest {

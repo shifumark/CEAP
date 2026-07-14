@@ -23,6 +23,7 @@ import {
   Notification,
   Applicant,
   UpdateApplicantProfileRequest,
+  ProfileCompleteness,
   CreateScholarshipProgramRequest,
   UpdateScholarshipProgramRequest,
   DashboardStats
@@ -141,6 +142,10 @@ class ApiService {
     return this.request('PUT', '/applicants/me', data);
   }
 
+  async getProfileCompleteness(): Promise<ProfileCompleteness> {
+    return this.request('GET', '/applicants/me/completeness');
+  }
+
   // ============== SCHOLARSHIPS ==============
 
   async getScholarships(page = 1, pageSize = 10): Promise<PaginatedResponse<ScholarshipProgram>> {
@@ -206,9 +211,15 @@ class ApiService {
     return this.request('GET', `/applications/${applicationId}/documents`);
   }
 
-  async uploadDocument(applicationId: number, documentType: string, file: File): Promise<UploadedDocument> {
+  async getMyProfileDocuments(): Promise<UploadedDocument[]> {
+    return this.request('GET', '/documents/me');
+  }
+
+  async uploadDocument(documentType: string, file: File, applicationId?: number): Promise<UploadedDocument> {
     const formData = new FormData();
-    formData.append('applicationId', applicationId.toString());
+    if (applicationId !== undefined) {
+      formData.append('applicationId', applicationId.toString());
+    }
     formData.append('documentType', documentType);
     formData.append('file', file);
 

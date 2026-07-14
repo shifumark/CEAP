@@ -249,15 +249,24 @@ router.get('/applicants/me', verifyToken, async (req: AuthenticatedRequest, res)
 router.put('/applicants/me', verifyToken, async (req: AuthenticatedRequest, res) => {
   try {
     const request: UpdateApplicantProfileRequest = req.body;
-
-    if (!request.schoolName || !request.yearLevel || !request.courseName || !request.address) {
-      return res.status(400).json({ error: 'schoolName, yearLevel, courseName, and address are required' });
-    }
-
     const profile = await applicantService.updateProfile(req.user!.sub, request);
     res.json(profile);
   } catch (error: any) {
     res.status(400).json({ error: error.message });
+  }
+});
+
+/**
+ * Report which required profile fields/documents are still missing before
+ * an application can be submitted.
+ * Protected - self-scoped only
+ */
+router.get('/applicants/me/completeness', verifyToken, async (req: AuthenticatedRequest, res) => {
+  try {
+    const completeness = await applicantService.getProfileCompleteness(req.user!);
+    res.json(completeness);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -426,11 +435,11 @@ router.post(
         return res.status(400).json({ error: 'No file uploaded' });
       }
 
-      const applicationId = parseInt(req.body.applicationId);
+      const applicationId = req.body.applicationId ? parseInt(req.body.applicationId) : null;
       const documentType = req.body.documentType;
 
-      if (!applicationId || !documentType) {
-        return res.status(400).json({ error: 'applicationId and documentType are required' });
+      if (!documentType) {
+        return res.status(400).json({ error: 'documentType is required' });
       }
 
       const document = await documentService.upload(req.user!, applicationId, documentType, {
@@ -446,6 +455,20 @@ router.post(
     }
   }
 );
+
+/**
+ * List the requesting user's profile-level documents (not tied to any
+ * one application) — Valid ID, ATM card, etc.
+ * Protected - self-scoped only
+ */
+router.get('/documents/me', verifyToken, requireRole([UserRole.APPLICANT]), async (req: AuthenticatedRequest, res) => {
+  try {
+    const documents = await documentService.listMyProfileDocuments(req.user!);
+    res.json(documents);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 /**
  * Delete an uploaded document

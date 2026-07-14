@@ -107,6 +107,13 @@ export class ApplicationService {
       throw new Error('Only draft or needs-revision applications can be submitted');
     }
 
+    const completeness = await applicantService.getProfileCompleteness(user);
+    if (!completeness.complete) {
+      throw new Error(
+        `Your profile is incomplete. Missing: ${[...completeness.missingFields, ...completeness.missingDocuments].join(', ')}`
+      );
+    }
+
     const updated = await prisma.$transaction(async (tx) => {
       const app = await tx.application.update({
         where: { id: application.id },

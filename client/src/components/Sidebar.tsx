@@ -21,6 +21,7 @@ const NAV_ITEMS_BY_ROLE: Record<UserRole, Array<{ path: string; label: string; i
     { path: '/notifications', label: 'Notifications', icon: '🔔' }
   ],
   [UserRole.APPLICANT]: [
+    { path: '/profile', label: 'My Profile', icon: '🧾' },
     { path: '/my-application', label: 'My Application', icon: '📝' },
     { path: '/programs', label: 'Programs', icon: '🎓' },
     { path: '/announcements', label: 'Announcements', icon: '📢' },

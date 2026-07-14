@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { apiService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { Application, ApplicationStatus, ScholarshipProgram } from '../types';
 import ApplicationDocuments from '../components/ApplicationDocuments';
 import MyScholarshipPanel from '../components/MyScholarshipPanel';
 import ApplyModal from '../components/ApplyModal';
-import EditProfileModal from '../components/EditProfileModal';
 
 const DELETABLE_STATUSES = new Set<ApplicationStatus>([
   ApplicationStatus.DRAFT,
@@ -51,7 +51,6 @@ const MyApplicationPage = () => {
   const [error, setError] = useState('');
   const [busyId, setBusyId] = useState<number | null>(null);
   const [applyingTo, setApplyingTo] = useState<ScholarshipProgram | null>(null);
-  const [editingProfile, setEditingProfile] = useState(false);
 
   const loadData = async () => {
     setError('');
@@ -118,9 +117,9 @@ const MyApplicationPage = () => {
       <nav className="navbar">
         <div className="navbar-brand">My Application</div>
         <div className="navbar-actions">
-          <button className="btn btn-outline btn-sm" onClick={() => setEditingProfile(true)}>
+          <Link to="/profile" className="btn btn-outline btn-sm">
             Edit My Information
-          </button>
+          </Link>
         </div>
       </nav>
 
@@ -270,10 +269,6 @@ const MyApplicationPage = () => {
 
       {applyingTo && (
         <ApplyModal scholarship={applyingTo} onClose={() => setApplyingTo(null)} onSuccess={handleApplySuccess} />
-      )}
-
-      {editingProfile && (
-        <EditProfileModal onClose={() => setEditingProfile(false)} onSuccess={() => setEditingProfile(false)} />
       )}
     </div>
   );

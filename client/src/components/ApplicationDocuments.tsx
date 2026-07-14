@@ -61,7 +61,7 @@ const ApplicationDocuments = ({ applicationId, scholarshipId }: Props) => {
     setBusyKey(`upload:${documentType}`);
     setError('');
     try {
-      await apiService.uploadDocument(applicationId, documentType, file);
+      await apiService.uploadDocument(documentType, file, applicationId);
       setExtraType('');
       await load();
     } catch (err: any) {

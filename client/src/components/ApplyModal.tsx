@@ -51,7 +51,7 @@ const ApplyModal = ({ scholarship, onClose, onSuccess }: Props) => {
       const application = await apiService.createApplication(scholarship.id);
 
       if (gradeFile) {
-        await apiService.uploadDocument(application.id, 'Grades / Transcript', gradeFile);
+        await apiService.uploadDocument('Grades / Transcript', gradeFile, application.id);
       }
 
       onSuccess();

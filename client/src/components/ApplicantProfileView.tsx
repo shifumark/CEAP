@@ -51,6 +51,8 @@ const ApplicantProfileView = ({ profile, loading, email }: Props) => {
   return (
     <div style={{ marginTop: '0.6rem' }}>
       <ProfileSection title="Personal Information">
+        <Field label="Last Name" value={profile.lastName} />
+        <Field label="First Name" value={profile.firstName} />
         <Field label="Middle Name" value={profile.middleName} />
         <Field label="Suffix" value={profile.suffix} />
         <Field label="Sex" value={profile.sex} />

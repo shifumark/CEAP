@@ -152,6 +152,8 @@ export interface FamilyMemberDetail {
 export interface Applicant {
   id: number;
   userId: number;
+  firstName: string;
+  lastName: string;
   middleName?: string;
   suffix?: string;
   dateOfBirth: Date;

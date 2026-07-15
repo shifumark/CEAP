@@ -151,6 +151,11 @@ export interface FamilyMemberDetail {
 export interface Applicant {
   id: number;
   userId: number;
+  // Owned by the User row (set at registration), not the Applicant table
+  // — included here for convenience so the profile form can display and
+  // edit them in one place.
+  firstName: string;
+  lastName: string;
   middleName?: string;
   suffix?: string;
   // Profile fields below are unset until the student fills out their
@@ -235,6 +240,8 @@ export interface CreateApplicantRequest {
 // form incrementally across sessions. Required-ness is enforced only at
 // application-submit time (see ApplicantService.getProfileCompleteness).
 export interface UpdateApplicantProfileRequest {
+  firstName?: string;
+  lastName?: string;
   middleName?: string;
   suffix?: string;
   dateOfBirth?: string;

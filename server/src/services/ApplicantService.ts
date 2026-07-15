@@ -1,9 +1,11 @@
-import type { Applicant as PrismaApplicant, FamilyMember as PrismaFamilyMember } from '@prisma/client';
+import { Prisma } from '@prisma/client';
+import type { Applicant as PrismaApplicant, FamilyMember as PrismaFamilyMember, User as PrismaUser } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { computeMissingFields, computeMissingDocuments } from '../lib/profileRequirements.js';
 import { Applicant, FamilyMemberDetail, ProfileCompleteness, UpdateApplicantProfileRequest, JWTPayload } from '../types.js';
 
-type ApplicantWithFamily = PrismaApplicant & { familyMembers: PrismaFamilyMember[] };
+const applicantInclude = { familyMembers: true, user: true } satisfies Prisma.ApplicantInclude;
+type ApplicantWithFamily = PrismaApplicant & { familyMembers: PrismaFamilyMember[]; user: PrismaUser };
 
 function computeAge(dateOfBirth: Date | null): number {
   if (!dateOfBirth) return 0;
@@ -29,6 +31,8 @@ function toApplicant(record: ApplicantWithFamily): Applicant {
   return {
     id: record.id,
     userId: record.userId,
+    firstName: record.user.firstName,
+    lastName: record.user.lastName,
     middleName: record.middleName ?? undefined,
     suffix: record.suffix ?? undefined,
     dateOfBirth: record.dateOfBirth ?? undefined,
@@ -93,15 +97,15 @@ function toApplicant(record: ApplicantWithFamily): Applicant {
  */
 export class ApplicantService {
   async getOrCreateForUser(userId: number): Promise<Applicant> {
-    const existing = await prisma.applicant.findUnique({ where: { userId }, include: { familyMembers: true } });
+    const existing = await prisma.applicant.findUnique({ where: { userId }, include: applicantInclude });
     if (existing) return toApplicant(existing);
 
-    const created = await prisma.applicant.create({ data: { userId }, include: { familyMembers: true } });
+    const created = await prisma.applicant.create({ data: { userId }, include: applicantInclude });
     return toApplicant(created);
   }
 
   async getProfile(userId: number): Promise<Applicant | undefined> {
-    const record = await prisma.applicant.findUnique({ where: { userId }, include: { familyMembers: true } });
+    const record = await prisma.applicant.findUnique({ where: { userId }, include: applicantInclude });
     return record ? toApplicant(record) : undefined;
   }
 
@@ -112,16 +116,20 @@ export class ApplicantService {
    * has no ownership predicate of its own.
    */
   async getProfileByApplicantId(applicantId: number): Promise<Applicant | undefined> {
-    const record = await prisma.applicant.findUnique({ where: { id: applicantId }, include: { familyMembers: true } });
+    const record = await prisma.applicant.findUnique({ where: { id: applicantId }, include: applicantInclude });
     return record ? toApplicant(record) : undefined;
   }
 
   async updateProfile(userId: number, request: UpdateApplicantProfileRequest): Promise<Applicant> {
     // Ensure a row exists first (applicant profiles are created lazily).
     const applicant = await this.getOrCreateForUser(userId);
-    const { father, mother, guardian, ...flatFields } = request;
+    const { father, mother, guardian, firstName, lastName, ...flatFields } = request;
 
     const updated = await prisma.$transaction(async (tx) => {
+      if (firstName !== undefined || lastName !== undefined) {
+        await tx.user.update({ where: { id: userId }, data: { firstName, lastName } });
+      }
+
       await tx.applicant.update({
         where: { userId },
         data: {
@@ -153,7 +161,7 @@ export class ApplicantService {
 
       await Promise.all([upsertMember('father', father), upsertMember('mother', mother), upsertMember('guardian', guardian)]);
 
-      return tx.applicant.findUniqueOrThrow({ where: { userId }, include: { familyMembers: true } });
+      return tx.applicant.findUniqueOrThrow({ where: { userId }, include: applicantInclude });
     });
 
     return toApplicant(updated);

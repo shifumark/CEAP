@@ -26,6 +26,8 @@ interface FamilyMemberForm {
 }
 
 interface FormState {
+  firstName: string;
+  lastName: string;
   middleName: string;
   suffix: string;
   dateOfBirth: string;
@@ -73,6 +75,8 @@ interface FormState {
 const emptyFamilyMember: FamilyMemberForm = { name: '', occupation: '', monthlyIncome: '', educationalAttainment: '' };
 
 const emptyForm: FormState = {
+  firstName: '',
+  lastName: '',
   middleName: '',
   suffix: '',
   dateOfBirth: '',
@@ -147,6 +151,8 @@ function toFamilyMemberForm(detail?: Applicant['father']): FamilyMemberForm {
 
 function applicantToForm(applicant: Applicant): FormState {
   return {
+    firstName: applicant.firstName ?? '',
+    lastName: applicant.lastName ?? '',
     middleName: applicant.middleName ?? '',
     suffix: applicant.suffix ?? '',
     dateOfBirth: toDateInputValue(applicant.dateOfBirth),
@@ -206,6 +212,8 @@ function formToRequest(form: FormState): UpdateApplicantProfileRequest {
       : undefined;
 
   return {
+    firstName: form.firstName || undefined,
+    lastName: form.lastName || undefined,
     middleName: form.middleName || undefined,
     suffix: form.suffix || undefined,
     dateOfBirth: form.dateOfBirth || undefined,
@@ -401,6 +409,14 @@ const ProfilePage = () => {
               <div className="card" style={{ marginBottom: '1.5rem' }}>
                 <div className="card-header">
                   <h3>I. Personal Information</h3>
+                </div>
+                <div className="form-group">
+                  <label htmlFor="lastName">Last Name</label>
+                  <input id="lastName" value={form.lastName} onChange={(e) => set('lastName', e.target.value)} required autoFocus />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="firstName">First Name</label>
+                  <input id="firstName" value={form.firstName} onChange={(e) => set('firstName', e.target.value)} required />
                 </div>
                 <div className="form-group">
                   <label htmlFor="middleName">Middle Name</label>

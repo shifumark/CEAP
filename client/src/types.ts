@@ -151,6 +151,8 @@ export interface FamilyMemberDetail {
 export interface Applicant {
   id: number;
   userId: number;
+  firstName: string;
+  lastName: string;
   middleName?: string;
   suffix?: string;
   dateOfBirth?: Date;
@@ -233,6 +235,8 @@ export interface CreateApplicantRequest {
 // form incrementally across sessions. Required-ness is enforced only at
 // application-submit time.
 export interface UpdateApplicantProfileRequest {
+  firstName?: string;
+  lastName?: string;
   middleName?: string;
   suffix?: string;
   dateOfBirth?: string;

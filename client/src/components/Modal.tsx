@@ -1,4 +1,4 @@
-import { ReactNode, useEffect } from 'react';
+import { ReactNode } from 'react';
 
 interface ModalProps {
   title: string;
@@ -6,18 +6,14 @@ interface ModalProps {
   children: ReactNode;
 }
 
+// Deliberately does not close on overlay click or Escape — only via an
+// explicit close/cancel/submit button inside the modal, so a stray click
+// or keypress can't silently discard an in-progress form (e.g. a review
+// decision or profile edit).
 const Modal = ({ title, onClose, children }: ModalProps) => {
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [onClose]);
-
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+    <div className="modal-overlay">
+      <div className="modal-card">
         <div className="modal-header">
           <h3>{title}</h3>
           <button className="modal-close" aria-label="Close" onClick={onClose}>

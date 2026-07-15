@@ -270,6 +270,24 @@ router.get('/applicants/me/completeness', verifyToken, async (req: Authenticated
   }
 });
 
+/**
+ * Look up any applicant's full profile by Applicant.id — used by admins
+ * reviewing an application, where application.applicantId is known but
+ * doesn't correspond to the requesting user.
+ * Protected - admin/super admin only
+ */
+router.get('/applicants/:id', verifyToken, requireAdmin, async (req: AuthenticatedRequest, res) => {
+  try {
+    const profile = await applicantService.getProfileByApplicantId(parseInt(req.params.id));
+    if (!profile) {
+      return res.status(404).json({ error: 'Applicant not found' });
+    }
+    res.json(profile);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // ============== APPLICATION ROUTES ==============
 
 /**

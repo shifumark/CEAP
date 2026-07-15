@@ -105,6 +105,17 @@ export class ApplicantService {
     return record ? toApplicant(record) : undefined;
   }
 
+  /**
+   * Admin-only lookup by Applicant.id (not userId) — used when reviewing
+   * an application, where only the applicantId is known. Callers must
+   * enforce the admin-role check themselves (see routes.ts); this method
+   * has no ownership predicate of its own.
+   */
+  async getProfileByApplicantId(applicantId: number): Promise<Applicant | undefined> {
+    const record = await prisma.applicant.findUnique({ where: { id: applicantId }, include: { familyMembers: true } });
+    return record ? toApplicant(record) : undefined;
+  }
+
   async updateProfile(userId: number, request: UpdateApplicantProfileRequest): Promise<Applicant> {
     // Ensure a row exists first (applicant profiles are created lazily).
     const applicant = await this.getOrCreateForUser(userId);

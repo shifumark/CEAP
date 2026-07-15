@@ -146,6 +146,10 @@ class ApiService {
     return this.request('GET', '/applicants/me/completeness');
   }
 
+  async getApplicantProfile(applicantId: number): Promise<Applicant> {
+    return this.request('GET', `/applicants/${applicantId}`);
+  }
+
   // ============== SCHOLARSHIPS ==============
 
   async getScholarships(page = 1, pageSize = 10): Promise<PaginatedResponse<ScholarshipProgram>> {

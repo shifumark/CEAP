@@ -13,15 +13,16 @@ interface Props {
 
 /**
  * Collects the applicant's school/year/course/address (saved to their
- * profile) and an optional grade/transcript file, then creates the
- * application in one step.
+ * profile), then creates the application in one step. Grades/transcript
+ * upload lives on the full Profile page's Documentary Requirements
+ * section instead — a student only needs to upload it once, not per
+ * application.
  */
 const ApplyModal = ({ scholarship, onClose, onSuccess }: Props) => {
   const [schoolName, setSchoolName] = useState('');
   const [yearLevel, setYearLevel] = useState(YEAR_LEVELS[0]);
   const [courseName, setCourseName] = useState('');
   const [address, setAddress] = useState('');
-  const [gradeFile, setGradeFile] = useState<File | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -48,12 +49,7 @@ const ApplyModal = ({ scholarship, onClose, onSuccess }: Props) => {
 
     try {
       await apiService.updateMyProfile({ schoolName, yearLevel, courseName, address });
-      const application = await apiService.createApplication(scholarship.id);
-
-      if (gradeFile) {
-        await apiService.uploadDocument('Grades / Transcript', gradeFile, application.id);
-      }
-
+      await apiService.createApplication(scholarship.id);
       onSuccess();
     } catch (err: any) {
       setError(err.message || 'Failed to submit application');
@@ -114,16 +110,6 @@ const ApplyModal = ({ scholarship, onClose, onSuccess }: Props) => {
           <div className="form-group">
             <label htmlFor="address">Current Address</label>
             <input id="address" value={address} onChange={(e) => setAddress(e.target.value)} required />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="gradeFile">Grades / Transcript (optional, PDF/JPG/PNG)</label>
-            <input
-              id="gradeFile"
-              type="file"
-              accept=".pdf,.jpg,.jpeg,.png"
-              onChange={(e) => setGradeFile(e.target.files?.[0] ?? null)}
-            />
           </div>
 
           <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem' }}>

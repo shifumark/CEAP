@@ -8,9 +8,6 @@ const HomePage = () => {
           <span style={{ fontSize: '1.5rem' }}>✨</span>
           <span>ScholarshipHub</span>
         </div>
-        <div className="navbar-actions">
-          <Link className="btn btn-primary" to="/login">Access Portal</Link>
-        </div>
       </nav>
 
       <main className="container">

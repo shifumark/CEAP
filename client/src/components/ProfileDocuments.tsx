@@ -66,6 +66,25 @@ const ProfileDocuments = ({ onChange }: Props) => {
     }
   };
 
+  // Replaces an already-uploaded single-file document type in one step —
+  // removes the old row first so re-uploading never leaves two rows for
+  // the same type.
+  const handleReplace = async (documentType: string, existingDocumentId: number, file: File | undefined) => {
+    if (!file) return;
+    setBusyKey(`upload:${documentType}`);
+    setError('');
+    try {
+      await apiService.deleteDocument(existingDocumentId);
+      await apiService.uploadDocument(documentType, file);
+      await load();
+      onChange?.();
+    } catch (err: any) {
+      setError(err.message || 'Failed to replace document');
+    } finally {
+      setBusyKey(null);
+    }
+  };
+
   if (loading) {
     return <p style={{ fontSize: '0.85rem', color: '#6B7280' }}>Loading documents...</p>;
   }
@@ -129,16 +148,28 @@ const ProfileDocuments = ({ onChange }: Props) => {
             >
               <span>{documentType}</span>
               {existing ? (
-                <button
-                  className="btn btn-outline btn-sm"
-                  disabled={busyKey === `delete:${existing.id}`}
-                  onClick={() => handleDelete(existing.id)}
-                >
-                  Remove
-                </button>
+                <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <label className="btn btn-outline btn-sm" style={{ cursor: 'pointer', margin: 0 }}>
+                    {busyKey === `upload:${documentType}` ? 'Uploading...' : 'Upload File'}
+                    <input
+                      type="file"
+                      accept=".pdf,.jpg,.jpeg,.png"
+                      style={{ display: 'none' }}
+                      disabled={busyKey === `upload:${documentType}` || busyKey === `delete:${existing.id}`}
+                      onChange={(e) => handleReplace(documentType, existing.id, e.target.files?.[0])}
+                    />
+                  </label>
+                  <button
+                    className="btn btn-outline btn-sm"
+                    disabled={busyKey === `delete:${existing.id}` || busyKey === `upload:${documentType}`}
+                    onClick={() => handleDelete(existing.id)}
+                  >
+                    Remove
+                  </button>
+                </span>
               ) : (
                 <label className="btn btn-outline btn-sm" style={{ cursor: 'pointer', margin: 0 }}>
-                  {busyKey === `upload:${documentType}` ? 'Uploading...' : 'Upload'}
+                  {busyKey === `upload:${documentType}` ? 'Uploading...' : 'Upload File'}
                   <input
                     type="file"
                     accept=".pdf,.jpg,.jpeg,.png"

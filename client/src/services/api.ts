@@ -376,6 +376,10 @@ class ApiService {
     return this.request('PATCH', `/users/${id}`, updates);
   }
 
+  async resetUserPassword(id: number): Promise<{ user: User; temporaryPassword: string }> {
+    return this.request('POST', `/users/${id}/reset-password`);
+  }
+
   // ============== ANNOUNCEMENTS ==============
 
   async getAnnouncements(filters?: Partial<AnnouncementFilters>): Promise<PaginatedResponse<Announcement>> {

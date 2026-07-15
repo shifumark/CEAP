@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 import type { User as PrismaUser } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { JWT_SECRET } from '../lib/env.js';
@@ -122,6 +123,22 @@ export class AuthService {
 
     const updated = await prisma.user.update({ where: { id: userId }, data });
     return toUser(updated);
+  }
+
+  /**
+   * Super Admin only — generates a fresh random password for a user who
+   * can't get in on their own, sets it, and returns the plaintext value
+   * exactly once so the admin can relay it to the student through a
+   * trusted channel (this app has no outbound email capability, so this
+   * stands in for a self-service "forgot password" email link).
+   */
+  async adminResetPassword(userId: number): Promise<{ user: User; temporaryPassword: string }> {
+    const temporaryPassword = crypto.randomBytes(9).toString('base64url'); // 12 chars, URL-safe
+    const updated = await prisma.user.update({
+      where: { id: userId },
+      data: { passwordHash: bcrypt.hashSync(temporaryPassword, 10) }
+    });
+    return { user: toUser(updated), temporaryPassword };
   }
 
   /**

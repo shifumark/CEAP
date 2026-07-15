@@ -992,6 +992,23 @@ router.patch('/users/:id', verifyToken, requireSuperAdmin, async (req: Authentic
 });
 
 /**
+ * Reset a user's password to a freshly generated random value (Super
+ * Admin only) — stands in for self-service "forgot password" since this
+ * app has no outbound email capability. Returns the plaintext temporary
+ * password exactly once; it is never retrievable again after this
+ * response.
+ */
+router.post('/users/:id/reset-password', verifyToken, requireSuperAdmin, async (req: AuthenticatedRequest, res) => {
+  try {
+    const userId = parseInt(req.params.id);
+    const result = await authService.adminResetPassword(userId);
+    res.json(result);
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+/**
  * Create new user (Super Admin only)
  */
 router.post('/users', verifyToken, requireSuperAdmin, async (req: AuthenticatedRequest, res) => {

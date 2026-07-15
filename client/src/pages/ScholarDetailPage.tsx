@@ -49,6 +49,7 @@ const ScholarDetailPage = () => {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [accountBusy, setAccountBusy] = useState(false);
+  const [temporaryPassword, setTemporaryPassword] = useState('');
 
   const [gradeForm, setGradeForm] = useState({ academicYear: '', semester: '', gpa: '' });
   const [allowanceForm, setAllowanceForm] = useState({ academicYear: '', semester: '', amount: '' });
@@ -118,6 +119,24 @@ const ScholarDetailPage = () => {
       setAccount(await apiService.updateUserAccount(account.id, { status: nextStatus }));
     } catch (err: any) {
       setError(err.message || 'Failed to update account status');
+    } finally {
+      setAccountBusy(false);
+    }
+  };
+
+  const handleResetPassword = async () => {
+    if (!account) return;
+    if (!window.confirm(`Reset ${account.email}'s password? Their current password will stop working immediately.`)) {
+      return;
+    }
+    setAccountBusy(true);
+    setError('');
+    setTemporaryPassword('');
+    try {
+      const result = await apiService.resetUserPassword(account.id);
+      setTemporaryPassword(result.temporaryPassword);
+    } catch (err: any) {
+      setError(err.message || 'Failed to reset password');
     } finally {
       setAccountBusy(false);
     }
@@ -431,6 +450,29 @@ const ScholarDetailPage = () => {
                 <button className="btn btn-outline btn-sm" disabled={accountBusy} onClick={handleToggleAccountStatus}>
                   {account.status === UserStatus.ACTIVE ? 'Disable Account' : 'Re-enable Account'}
                 </button>
+              </div>
+
+              <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid var(--border-light)' }}>
+                <button className="btn btn-outline btn-sm" disabled={accountBusy} onClick={handleResetPassword}>
+                  Reset Password
+                </button>
+                {temporaryPassword && (
+                  <div
+                    style={{
+                      marginTop: '0.75rem',
+                      padding: '0.75rem',
+                      background: 'rgba(16, 185, 129, 0.1)',
+                      border: '1px solid rgba(16, 185, 129, 0.3)',
+                      borderRadius: 'var(--radius-md)',
+                      fontSize: '0.85rem'
+                    }}
+                  >
+                    New temporary password (share this with the student now — it won't be shown again):
+                    <div style={{ fontFamily: 'monospace', fontSize: '1rem', fontWeight: 600, marginTop: '0.4rem', userSelect: 'all' }}>
+                      {temporaryPassword}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}

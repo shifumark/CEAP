@@ -12,17 +12,13 @@ interface Props {
 }
 
 /**
- * Collects the applicant's school/year/course/address (saved to their
- * profile), then creates the application in one step. Grades/transcript
- * upload lives on the full Profile page's Documentary Requirements
- * section instead — a student only needs to upload it once, not per
- * application.
+ * Creates the application and records the student's current year level.
+ * School, course, and address moved to the full Profile page (Section
+ * III/VI) — collecting them here too was redundant, since the completeness
+ * gate already requires them there before the application can be submitted.
  */
 const ApplyModal = ({ scholarship, onClose, onSuccess }: Props) => {
-  const [schoolName, setSchoolName] = useState('');
   const [yearLevel, setYearLevel] = useState(YEAR_LEVELS[0]);
-  const [courseName, setCourseName] = useState('');
-  const [address, setAddress] = useState('');
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -31,10 +27,7 @@ const ApplyModal = ({ scholarship, onClose, onSuccess }: Props) => {
     apiService
       .getMyProfile()
       .then((profile) => {
-        setSchoolName(profile.schoolName ?? '');
         setYearLevel(profile.yearLevel ?? YEAR_LEVELS[0]);
-        setCourseName(profile.courseName ?? '');
-        setAddress(profile.address ?? '');
       })
       .catch(() => {
         // No profile yet — the form just starts blank.
@@ -48,7 +41,7 @@ const ApplyModal = ({ scholarship, onClose, onSuccess }: Props) => {
     setError('');
 
     try {
-      await apiService.updateMyProfile({ schoolName, yearLevel, courseName, address });
+      await apiService.updateMyProfile({ yearLevel });
       await apiService.createApplication(scholarship.id);
       onSuccess();
     } catch (err: any) {
@@ -81,35 +74,14 @@ const ApplyModal = ({ scholarship, onClose, onSuccess }: Props) => {
           )}
 
           <div className="form-group">
-            <label htmlFor="schoolName">School</label>
-            <input
-              id="schoolName"
-              value={schoolName}
-              onChange={(e) => setSchoolName(e.target.value)}
-              required
-              autoFocus
-            />
-          </div>
-
-          <div className="form-group">
             <label htmlFor="yearLevel">Year Level</label>
-            <select id="yearLevel" value={yearLevel} onChange={(e) => setYearLevel(e.target.value)}>
+            <select id="yearLevel" value={yearLevel} onChange={(e) => setYearLevel(e.target.value)} autoFocus>
               {YEAR_LEVELS.map((year) => (
                 <option key={year} value={year}>
                   {year}
                 </option>
               ))}
             </select>
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="courseName">Course / Program</label>
-            <input id="courseName" value={courseName} onChange={(e) => setCourseName(e.target.value)} required />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="address">Current Address</label>
-            <input id="address" value={address} onChange={(e) => setAddress(e.target.value)} required />
           </div>
 
           <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem' }}>

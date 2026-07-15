@@ -3,6 +3,8 @@ import {
   LoginRequest,
   LoginResponse,
   User,
+  UserRole,
+  UserStatus,
   Application,
   ApplicationStatusHistory,
   ApplicationFilters,
@@ -53,7 +55,7 @@ class ApiService {
   }
 
   private async request<T>(
-    method: 'GET' | 'POST' | 'PUT' | 'DELETE',
+    method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE',
     endpoint: string,
     body?: any
   ): Promise<T> {
@@ -354,16 +356,20 @@ class ApiService {
 
   // ============== USERS ==============
 
-  async getUsers() {
+  async getUsers(): Promise<User[]> {
     return this.request('GET', '/users');
   }
 
-  async getUser(id: number) {
+  async getUser(id: number): Promise<User> {
     return this.request('GET', `/users/${id}`);
   }
 
   async createUser(data: any) {
     return this.request('POST', '/users', data);
+  }
+
+  async updateUserAccount(id: number, updates: { role?: UserRole; status?: UserStatus }): Promise<User> {
+    return this.request('PATCH', `/users/${id}`, updates);
   }
 
   // ============== ANNOUNCEMENTS ==============

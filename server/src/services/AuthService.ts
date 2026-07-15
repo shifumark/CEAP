@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import type { User as PrismaUser } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { JWT_SECRET } from '../lib/env.js';
-import { User, LoginRequest, LoginResponse, UserRole, CreateUserRequest } from '../types.js';
+import { User, LoginRequest, LoginResponse, UserRole, UserStatus, CreateUserRequest } from '../types.js';
 
 /**
  * Authentication service backed by Postgres via Prisma.
@@ -33,6 +33,10 @@ export class AuthService {
 
     if (!user || user.deletedAt || !bcrypt.compareSync(request.password, user.passwordHash)) {
       throw new Error('Invalid email or password');
+    }
+
+    if (user.status !== 'active') {
+      throw new Error('This account has been disabled. Please contact an administrator.');
     }
 
     const updated = await prisma.user.update({
@@ -100,6 +104,24 @@ export class AuthService {
   async getUser(userId: number): Promise<User | undefined> {
     const user = await prisma.user.findUnique({ where: { id: userId } });
     return user ? toUser(user) : undefined;
+  }
+
+  /**
+   * Super Admin only — reassigns a user's role and/or enables/disables
+   * their account. Callers must enforce the self-modification guard (a
+   * Super Admin changing their own account) themselves; this method has
+   * no such check of its own. Takes effect on the user's next login —
+   * an already-issued JWT stays valid until its own 8h expiry, since
+   * verifyToken deliberately stays a pure signature check with no
+   * per-request DB lookup.
+   */
+  async updateUserAccount(userId: number, updates: { role?: UserRole; status?: UserStatus }): Promise<User> {
+    const data: { role?: PrismaUser['role']; status?: PrismaUser['status'] } = {};
+    if (updates.role !== undefined) data.role = updates.role as unknown as PrismaUser['role'];
+    if (updates.status !== undefined) data.status = updates.status as unknown as PrismaUser['status'];
+
+    const updated = await prisma.user.update({ where: { id: userId }, data });
+    return toUser(updated);
   }
 
   /**

@@ -1,7 +1,16 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { apiService } from '../services/api';
-import { Scholar, Grade, Renewal, Allowance, Violation } from '../types';
+import { useAuth } from '../context/AuthContext';
+import { Scholar, Grade, Renewal, Allowance, Violation, User, UserRole, UserStatus } from '../types';
+
+const ASSIGNABLE_ROLES = [UserRole.APPLICANT, UserRole.ADMIN];
+const ROLE_LABEL: Record<UserRole, string> = {
+  [UserRole.SUPER_ADMIN]: 'Super Admin',
+  [UserRole.ADMIN]: 'Admin',
+  [UserRole.APPLICANT]: 'Student',
+  [UserRole.GUEST]: 'Guest'
+};
 
 const STATUS_BADGE: Record<string, string> = {
   active: 'badge-success',
@@ -24,15 +33,19 @@ function formatDate(value?: string | Date) {
 const ScholarDetailPage = () => {
   const { id } = useParams<{ id: string }>();
   const scholarId = Number(id);
+  const { user: currentUser } = useAuth();
+  const isSuperAdmin = currentUser?.role === UserRole.SUPER_ADMIN;
 
   const [scholar, setScholar] = useState<Scholar | null>(null);
   const [grades, setGrades] = useState<Grade[]>([]);
   const [renewals, setRenewals] = useState<Renewal[]>([]);
   const [allowances, setAllowances] = useState<Allowance[]>([]);
   const [violations, setViolations] = useState<Violation[]>([]);
+  const [account, setAccount] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [accountBusy, setAccountBusy] = useState(false);
 
   const [gradeForm, setGradeForm] = useState({ academicYear: '', semester: '', gpa: '' });
   const [allowanceForm, setAllowanceForm] = useState({ academicYear: '', semester: '', amount: '' });
@@ -57,10 +70,45 @@ const ScholarDetailPage = () => {
       setRenewals(renewalList);
       setAllowances(allowanceList);
       setViolations(violationList);
+
+      if (isSuperAdmin) {
+        try {
+          setAccount(await apiService.getUser(scholarRecord.userId));
+        } catch {
+          // Non-fatal — the Account card just won't render.
+        }
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to load scholar');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRoleChange = async (role: UserRole) => {
+    if (!account) return;
+    setAccountBusy(true);
+    setError('');
+    try {
+      setAccount(await apiService.updateUserAccount(account.id, { role }));
+    } catch (err: any) {
+      setError(err.message || 'Failed to update role');
+    } finally {
+      setAccountBusy(false);
+    }
+  };
+
+  const handleToggleAccountStatus = async () => {
+    if (!account) return;
+    setAccountBusy(true);
+    setError('');
+    try {
+      const nextStatus = account.status === UserStatus.ACTIVE ? UserStatus.DEACTIVATED : UserStatus.ACTIVE;
+      setAccount(await apiService.updateUserAccount(account.id, { status: nextStatus }));
+    } catch (err: any) {
+      setError(err.message || 'Failed to update account status');
+    } finally {
+      setAccountBusy(false);
     }
   };
 
@@ -331,6 +379,43 @@ const ScholarDetailPage = () => {
               </button>
             </form>
           </div>
+
+          {isSuperAdmin && account && (
+            <div className="card">
+              <div className="card-header">
+                <h3>Account</h3>
+              </div>
+              <p style={{ fontSize: '0.9rem', color: '#6B7280', margin: '0 0 1rem' }}>{account.email}</p>
+
+              <div className="form-group">
+                <label htmlFor="accountRole">Role</label>
+                <select
+                  id="accountRole"
+                  value={account.role}
+                  disabled={accountBusy}
+                  onChange={(e) => handleRoleChange(e.target.value as UserRole)}
+                >
+                  {ASSIGNABLE_ROLES.map((role) => (
+                    <option key={role} value={role}>
+                      {ROLE_LABEL[role]}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.75rem' }}>
+                <span>
+                  Account status:{' '}
+                  <span className={`badge ${account.status === UserStatus.ACTIVE ? 'badge-success' : 'badge-error'}`}>
+                    {account.status}
+                  </span>
+                </span>
+                <button className="btn btn-outline btn-sm" disabled={accountBusy} onClick={handleToggleAccountStatus}>
+                  {account.status === UserStatus.ACTIVE ? 'Disable Account' : 'Re-enable Account'}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

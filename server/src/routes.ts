@@ -12,6 +12,7 @@ import { NotificationService } from './services/NotificationService.js';
 import { prisma } from './lib/prisma.js';
 import {
   UserRole,
+  UserStatus,
   LoginRequest,
   CreateScholarshipProgramRequest,
   CreateApplicationRequest,
@@ -943,6 +944,33 @@ router.get('/users/:id', verifyToken, requireSuperAdmin, async (req: Authenticat
     res.json(user);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * Reassign a user's role and/or enable/disable their account
+ * (Super Admin only). A Super Admin can never change their own account
+ * this way, to rule out an accidental self-lockout.
+ */
+router.patch('/users/:id', verifyToken, requireSuperAdmin, async (req: AuthenticatedRequest, res) => {
+  try {
+    const userId = parseInt(req.params.id);
+    if (userId === req.user!.sub) {
+      return res.status(400).json({ error: 'You cannot change your own role or account status' });
+    }
+
+    const { role, status } = req.body;
+    if (role !== undefined && !Object.values(UserRole).includes(role)) {
+      return res.status(400).json({ error: 'Invalid role' });
+    }
+    if (status !== undefined && !Object.values(UserStatus).includes(status)) {
+      return res.status(400).json({ error: 'Invalid status' });
+    }
+
+    const updated = await authService.updateUserAccount(userId, { role, status });
+    res.json(updated);
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
   }
 });
 

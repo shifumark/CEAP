@@ -77,17 +77,6 @@ const LoginPage = () => {
         <p style={{ margin: '1.5rem 0 0', textAlign: 'center', fontSize: '0.9rem' }}>
           New student? <Link to="/register">Create an account</Link>
         </p>
-
-        <div className="demo-credentials">
-          <strong>Demo Credentials:</strong>
-          <div style={{ marginTop: '0.75rem', lineHeight: '1.8' }}>
-            <div>Admin: <strong>admin@example.com</strong></div>
-            <div>Student: <strong>applicant@example.com</strong></div>
-            <div style={{ marginTop: '0.5rem', fontSize: '0.8rem', opacity: 0.8 }}>
-              Password: <strong>password123</strong>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );

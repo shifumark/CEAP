@@ -289,6 +289,23 @@ router.get('/applicants/:id', verifyToken, requireAdmin, async (req: Authenticat
   }
 });
 
+/**
+ * Look up any applicant's full profile by User.id — used on the Scholar
+ * Detail page, which only knows scholar.userId (not applicantId).
+ * Protected - admin/super admin only
+ */
+router.get('/applicants/by-user/:userId', verifyToken, requireAdmin, async (req: AuthenticatedRequest, res) => {
+  try {
+    const profile = await applicantService.getProfile(parseInt(req.params.userId));
+    if (!profile) {
+      return res.status(404).json({ error: 'Applicant not found' });
+    }
+    res.json(profile);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // ============== APPLICATION ROUTES ==============
 
 /**

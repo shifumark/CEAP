@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { apiService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import { Scholar, Grade, Renewal, Allowance, Violation, User, UserRole, UserStatus } from '../types';
+import { Scholar, Grade, Renewal, Allowance, Violation, User, UserRole, UserStatus, Applicant } from '../types';
+import ApplicantProfileView from '../components/ApplicantProfileView';
 
 const ASSIGNABLE_ROLES = [UserRole.APPLICANT, UserRole.ADMIN];
 const ROLE_LABEL: Record<UserRole, string> = {
@@ -42,6 +43,8 @@ const ScholarDetailPage = () => {
   const [allowances, setAllowances] = useState<Allowance[]>([]);
   const [violations, setViolations] = useState<Violation[]>([]);
   const [account, setAccount] = useState<User | null>(null);
+  const [profile, setProfile] = useState<Applicant | null>(null);
+  const [profileLoading, setProfileLoading] = useState(true);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -77,6 +80,14 @@ const ScholarDetailPage = () => {
         } catch {
           // Non-fatal — the Account card just won't render.
         }
+      }
+
+      try {
+        setProfile(await apiService.getApplicantProfileByUserId(scholarRecord.userId));
+      } catch (err: any) {
+        setError(err.message || 'Failed to load applicant profile');
+      } finally {
+        setProfileLoading(false);
       }
     } catch (err: any) {
       setError(err.message || 'Failed to load scholar');
@@ -207,6 +218,13 @@ const ScholarDetailPage = () => {
             {error}
           </div>
         )}
+
+        <div className="card" style={{ marginBottom: '1.5rem' }}>
+          <div className="card-header">
+            <h3>Profile</h3>
+          </div>
+          <ApplicantProfileView profile={profile} loading={profileLoading} email={scholar.studentEmail} />
+        </div>
 
         <div className="grid grid-2">
           <div className="card">

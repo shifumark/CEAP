@@ -2,30 +2,7 @@ import { useEffect, useState } from 'react';
 import { apiService } from '../services/api';
 import { Application, ApplicationStatus, UploadedDocument, DocumentVerificationStatus, Applicant } from '../types';
 import Modal from '../components/Modal';
-
-function formatMoney(value?: number) {
-  if (value === undefined || value === null) return '—';
-  return `₱${value.toLocaleString()}`;
-}
-
-function yesNo(value?: boolean) {
-  if (value === undefined || value === null) return '—';
-  return value ? 'Yes' : 'No';
-}
-
-const Field = ({ label, value }: { label: string; value?: string | number | null }) => (
-  <div style={{ minWidth: '180px', flex: '1 1 220px' }}>
-    <div style={{ fontSize: '0.75rem', color: '#6B7280' }}>{label}</div>
-    <div style={{ fontSize: '0.9rem' }}>{value === undefined || value === null || value === '' ? '—' : value}</div>
-  </div>
-);
-
-const ProfileSection = ({ title, children }: { title: string; children: React.ReactNode }) => (
-  <div style={{ marginBottom: '1rem' }}>
-    <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#4B5563', marginBottom: '0.4rem' }}>{title}</div>
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>{children}</div>
-  </div>
-);
+import ApplicantProfileView from '../components/ApplicantProfileView';
 
 const DOC_STATUS_LABEL: Record<DocumentVerificationStatus, string> = {
   [DocumentVerificationStatus.PENDING]: 'Pending review',
@@ -270,112 +247,7 @@ const ApplicationReviewPage = () => {
           <Modal title={`Review: ${selected.applicantName} — ${selected.scholarshipName}`} onClose={() => setSelectedId(null)}>
             <div style={{ marginBottom: '1.25rem' }}>
               <strong style={{ fontSize: '0.85rem' }}>Applicant Profile</strong>
-              {profileLoading ? (
-                <p style={{ fontSize: '0.85rem', color: '#6B7280', marginTop: '0.5rem' }}>Loading...</p>
-              ) : !applicantProfile ? (
-                <p style={{ fontSize: '0.85rem', color: '#6B7280', marginTop: '0.5rem' }}>Profile not available.</p>
-              ) : (
-                <div style={{ marginTop: '0.6rem' }}>
-                  <ProfileSection title="Personal Information">
-                    <Field label="Middle Name" value={applicantProfile.middleName} />
-                    <Field label="Suffix" value={applicantProfile.suffix} />
-                    <Field label="Sex" value={applicantProfile.sex} />
-                    <Field label="Civil Status" value={applicantProfile.civilStatus} />
-                    <Field label="Date of Birth" value={formatDate(applicantProfile.dateOfBirth)} />
-                    <Field label="Age" value={applicantProfile.age} />
-                    <Field label="Place of Birth" value={applicantProfile.placeOfBirth} />
-                    <Field label="Nationality" value={applicantProfile.nationality} />
-                    <Field label="Type of ID" value={applicantProfile.idType} />
-                    <Field label="ID Number" value={applicantProfile.idNumber} />
-                  </ProfileSection>
-
-                  <ProfileSection title="IP Affiliation">
-                    <Field label="Indigenous Peoples member?" value={yesNo(applicantProfile.isIndigenousPeople)} />
-                    {applicantProfile.isIndigenousPeople && <Field label="IP Group/Tribe" value={applicantProfile.ipGroupTribe} />}
-                  </ProfileSection>
-
-                  <ProfileSection title="Contact Details">
-                    <Field label="Address" value={applicantProfile.address} />
-                    <Field label="Barangay" value={applicantProfile.barangay} />
-                    <Field label="Municipality/City" value={applicantProfile.municipality} />
-                    <Field label="Province" value={applicantProfile.province} />
-                    <Field label="Zip Code" value={applicantProfile.zipCode} />
-                    <Field label="Phone Number" value={applicantProfile.contactNumber} />
-                    <Field label="Email" value={selected.applicantEmail} />
-                  </ProfileSection>
-
-                  <ProfileSection title="Socio-economic Classification">
-                    <Field
-                      label="Classifications"
-                      value={
-                        applicantProfile.sectoralClassifications?.length
-                          ? applicantProfile.sectoralClassifications.join(', ')
-                          : undefined
-                      }
-                    />
-                    {applicantProfile.sectoralClassificationOther && (
-                      <Field label="Other" value={applicantProfile.sectoralClassificationOther} />
-                    )}
-                  </ProfileSection>
-
-                  <ProfileSection title="Family Background">
-                    <Field label="Father's Name" value={applicantProfile.father?.name} />
-                    <Field label="Father's Occupation" value={applicantProfile.father?.occupation} />
-                    <Field label="Father's Monthly Income" value={formatMoney(applicantProfile.father?.monthlyIncome)} />
-                    <Field label="Father's Education" value={applicantProfile.father?.educationalAttainment} />
-                    <Field label="Mother's Name" value={applicantProfile.mother?.name} />
-                    <Field label="Mother's Occupation" value={applicantProfile.mother?.occupation} />
-                    <Field label="Mother's Monthly Income" value={formatMoney(applicantProfile.mother?.monthlyIncome)} />
-                    <Field label="Mother's Education" value={applicantProfile.mother?.educationalAttainment} />
-                    {applicantProfile.guardian?.name && (
-                      <>
-                        <Field label="Guardian's Name" value={applicantProfile.guardian?.name} />
-                        <Field label="Guardian's Occupation" value={applicantProfile.guardian?.occupation} />
-                        <Field label="Guardian's Monthly Income" value={formatMoney(applicantProfile.guardian?.monthlyIncome)} />
-                        <Field label="Guardian's Education" value={applicantProfile.guardian?.educationalAttainment} />
-                      </>
-                    )}
-                    <Field label="Total Household Monthly Income" value={formatMoney(applicantProfile.householdMonthlyIncome)} />
-                    <Field label="Household Members" value={applicantProfile.numberOfHouseholdMembers} />
-                    <Field label="Dependents Studying" value={applicantProfile.numberOfDependentsStudying} />
-                    <Field label="Parental Status" value={applicantProfile.parentalStatus} />
-                  </ProfileSection>
-
-                  <ProfileSection title="Educational Background">
-                    <Field label="Current School" value={applicantProfile.schoolName} />
-                    <Field label="School Address" value={applicantProfile.schoolAddress} />
-                    <Field label="School Type" value={applicantProfile.schoolType} />
-                    <Field label="Year Level" value={applicantProfile.yearLevel} />
-                    <Field label="Course" value={applicantProfile.courseName} />
-                    <Field label="GWA" value={applicantProfile.gwa} />
-                    <Field label="Previous School" value={applicantProfile.previousSchool} />
-                    <Field label="Honors/Awards" value={applicantProfile.honorsAwards} />
-                    <Field label="Academic Status" value={applicantProfile.academicStatus} />
-                  </ProfileSection>
-
-                  <ProfileSection title="Other Educational Assistance">
-                    <Field label="Currently receiving assistance?" value={yesNo(applicantProfile.currentlyReceivingAssistance)} />
-                    {applicantProfile.currentlyReceivingAssistance && (
-                      <>
-                        <Field label="Program" value={applicantProfile.currentAssistanceProgram} />
-                        <Field label="Amount" value={formatMoney(applicantProfile.currentAssistanceAmount)} />
-                      </>
-                    )}
-                    <Field label="Applied for other scholarships?" value={yesNo(applicantProfile.appliedOtherScholarship)} />
-                    {applicantProfile.appliedOtherScholarship && (
-                      <Field label="Program Applied To" value={applicantProfile.otherScholarshipProgram} />
-                    )}
-                    <Field
-                      label="Academic Distinction & Extracurricular"
-                      value={applicantProfile.academicDistinctionExtracurricular}
-                    />
-                  </ProfileSection>
-
-                  <ProfileSection title="ATM Card">
-                    <Field label="LBP ATM Account Number" value={applicantProfile.lbpAtmAccountNumber} />
-                  </ProfileSection>
-                </div>
-              )}
+              <ApplicantProfileView profile={applicantProfile} loading={profileLoading} email={selected.applicantEmail} />
             </div>
 
             <div style={{ marginBottom: '1.25rem' }}>

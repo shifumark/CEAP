@@ -1,21 +1,7 @@
 import { useEffect, useState } from 'react';
 import { apiService } from '../services/api';
-import { UploadedDocument, DocumentVerificationStatus } from '../types';
+import { UploadedDocument } from '../types';
 import { REQUIRED_PROFILE_DOCUMENT_TYPES } from '../constants/profileOptions';
-
-const VERIFICATION_LABEL: Record<DocumentVerificationStatus, string> = {
-  [DocumentVerificationStatus.PENDING]: 'Pending review',
-  [DocumentVerificationStatus.VERIFIED]: 'Verified',
-  [DocumentVerificationStatus.REJECTED]: 'Rejected',
-  [DocumentVerificationStatus.REQUESTING_REVISION]: 'Revision requested'
-};
-
-const VERIFICATION_BADGE: Record<DocumentVerificationStatus, string> = {
-  [DocumentVerificationStatus.PENDING]: 'badge-warning',
-  [DocumentVerificationStatus.VERIFIED]: 'badge-success',
-  [DocumentVerificationStatus.REJECTED]: 'badge-error',
-  [DocumentVerificationStatus.REQUESTING_REVISION]: 'badge-warning'
-};
 
 const VALID_ID_TYPE = 'Valid ID';
 const VALID_ID_MAX_FILES = 5;
@@ -122,18 +108,13 @@ const ProfileDocuments = ({ onChange }: Props) => {
               style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', paddingLeft: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}
             >
               <span style={{ color: '#6B7280' }}>{doc.fileName}</span>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <span className={`badge ${VERIFICATION_BADGE[doc.verificationStatus]}`}>
-                  {VERIFICATION_LABEL[doc.verificationStatus]}
-                </span>
-                <button
-                  className="btn btn-outline btn-sm"
-                  disabled={busyKey === `delete:${doc.id}`}
-                  onClick={() => handleDelete(doc.id)}
-                >
-                  Remove
-                </button>
-              </span>
+              <button
+                className="btn btn-outline btn-sm"
+                disabled={busyKey === `delete:${doc.id}`}
+                onClick={() => handleDelete(doc.id)}
+              >
+                Remove
+              </button>
             </div>
           ))}
         </div>
@@ -148,18 +129,13 @@ const ProfileDocuments = ({ onChange }: Props) => {
             >
               <span>{documentType}</span>
               {existing ? (
-                <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <span className={`badge ${VERIFICATION_BADGE[existing.verificationStatus]}`}>
-                    {VERIFICATION_LABEL[existing.verificationStatus]}
-                  </span>
-                  <button
-                    className="btn btn-outline btn-sm"
-                    disabled={busyKey === `delete:${existing.id}`}
-                    onClick={() => handleDelete(existing.id)}
-                  >
-                    Remove
-                  </button>
-                </span>
+                <button
+                  className="btn btn-outline btn-sm"
+                  disabled={busyKey === `delete:${existing.id}`}
+                  onClick={() => handleDelete(existing.id)}
+                >
+                  Remove
+                </button>
               ) : (
                 <label className="btn btn-outline btn-sm" style={{ cursor: 'pointer', margin: 0 }}>
                   {busyKey === `upload:${documentType}` ? 'Uploading...' : 'Upload'}

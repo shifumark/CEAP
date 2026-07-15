@@ -2,10 +2,9 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { apiService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import { Application, ApplicationStatus, ScholarshipProgram } from '../types';
+import { Application, ApplicationStatus } from '../types';
 import ApplicationDocuments from '../components/ApplicationDocuments';
 import MyScholarshipPanel from '../components/MyScholarshipPanel';
-import ApplyModal from '../components/ApplyModal';
 
 const DELETABLE_STATUSES = new Set<ApplicationStatus>([
   ApplicationStatus.DRAFT,
@@ -46,21 +45,15 @@ function formatDate(value?: string | Date) {
 const MyApplicationPage = () => {
   const { user } = useAuth();
   const [applications, setApplications] = useState<Application[]>([]);
-  const [scholarships, setScholarships] = useState<ScholarshipProgram[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [busyId, setBusyId] = useState<number | null>(null);
-  const [applyingTo, setApplyingTo] = useState<ScholarshipProgram | null>(null);
 
   const loadData = async () => {
     setError('');
     try {
-      const [applicationsResult, scholarshipsResult] = await Promise.all([
-        apiService.getApplications({ pageSize: 50 }),
-        apiService.getScholarships(1, 50)
-      ]);
+      const applicationsResult = await apiService.getApplications({ pageSize: 50 });
       setApplications(applicationsResult.data);
-      setScholarships(scholarshipsResult.data);
     } catch (err: any) {
       setError(err.message || 'Failed to load your applications');
     } finally {
@@ -72,11 +65,6 @@ const MyApplicationPage = () => {
     loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  const handleApplySuccess = () => {
-    setApplyingTo(null);
-    loadData();
-  };
 
   const handleSubmit = async (applicationId: number) => {
     setBusyId(applicationId);
@@ -106,11 +94,6 @@ const MyApplicationPage = () => {
       setBusyId(null);
     }
   };
-
-  const appliedScholarshipIds = new Set(applications.map((a) => a.scholarshipId));
-  const availableScholarships = scholarships.filter(
-    (s) => s.status === 'active' && !appliedScholarshipIds.has(s.id)
-  );
 
   return (
     <div>
@@ -158,7 +141,8 @@ const MyApplicationPage = () => {
 
                 {applications.length === 0 ? (
                   <p style={{ color: '#6B7280' }}>
-                    You haven't applied to any scholarship yet. Browse open programs below.
+                    You haven't applied to any scholarship yet. Browse open programs on the{' '}
+                    <Link to="/programs">Programs</Link> page.
                   </p>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -223,53 +207,9 @@ const MyApplicationPage = () => {
                 )}
               </div>
             </section>
-
-            <section>
-              <div className="card">
-                <div className="card-header">
-                  <h3>Available Scholarships</h3>
-                </div>
-
-                {availableScholarships.length === 0 ? (
-                  <p style={{ color: '#6B7280' }}>No open scholarships available to apply to right now.</p>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                    {availableScholarships.map((scholarship) => (
-                      <div
-                        key={scholarship.id}
-                        style={{
-                          padding: '1rem',
-                          border: '1px solid rgba(139, 92, 246, 0.15)',
-                          borderRadius: '12px',
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          flexWrap: 'wrap',
-                          gap: '0.75rem'
-                        }}
-                      >
-                        <div>
-                          <strong style={{ color: '#1F2937' }}>{scholarship.name}</strong>
-                          <p style={{ margin: '0.25rem 0 0', fontSize: '0.9rem', color: '#6B7280' }}>
-                            {scholarship.benefits}
-                          </p>
-                        </div>
-                        <button className="btn btn-primary btn-sm" onClick={() => setApplyingTo(scholarship)}>
-                          Apply
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </section>
           </>
         )}
       </div>
-
-      {applyingTo && (
-        <ApplyModal scholarship={applyingTo} onClose={() => setApplyingTo(null)} onSuccess={handleApplySuccess} />
-      )}
     </div>
   );
 };

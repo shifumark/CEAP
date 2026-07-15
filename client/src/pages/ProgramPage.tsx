@@ -3,6 +3,7 @@ import { apiService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { ScholarshipProgram, UserRole } from '../types';
 import Modal from '../components/Modal';
+import ApplyModal from '../components/ApplyModal';
 
 const emptyForm = {
   name: '',
@@ -26,19 +27,26 @@ function formatDate(value?: string | Date) {
 const ProgramPage = () => {
   const { user } = useAuth();
   const isAdmin = user?.role === UserRole.ADMIN || user?.role === UserRole.SUPER_ADMIN;
+  const isApplicant = user?.role === UserRole.APPLICANT;
 
   const [programs, setPrograms] = useState<ScholarshipProgram[]>([]);
+  const [appliedScholarshipIds, setAppliedScholarshipIds] = useState<Set<number>>(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [busyId, setBusyId] = useState<number | null>(null);
+  const [applyingTo, setApplyingTo] = useState<ScholarshipProgram | null>(null);
 
   const load = async () => {
     try {
       const result = await apiService.getScholarships(1, 50);
       setPrograms(result.data);
+      if (isApplicant) {
+        const applications = await apiService.getApplications({ pageSize: 100 });
+        setAppliedScholarshipIds(new Set(applications.data.map((a) => a.scholarshipId)));
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to load scholarship programs');
     } finally {
@@ -48,7 +56,13 @@ const ProgramPage = () => {
 
   useEffect(() => {
     load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const handleApplySuccess = () => {
+    setApplyingTo(null);
+    load();
+  };
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -169,6 +183,22 @@ const ProgramPage = () => {
                     {program.status === 'active' ? 'Close Program' : 'Reopen Program'}
                   </button>
                 )}
+
+                {isApplicant && program.status === 'active' && (
+                  appliedScholarshipIds.has(program.id) ? (
+                    <span className="badge badge-secondary" style={{ marginTop: '1rem', display: 'inline-block' }}>
+                      Already Applied
+                    </span>
+                  ) : (
+                    <button
+                      className="btn btn-primary btn-sm"
+                      style={{ marginTop: '1rem' }}
+                      onClick={() => setApplyingTo(program)}
+                    >
+                      Apply
+                    </button>
+                  )
+                )}
               </div>
             ))}
           </div>
@@ -282,6 +312,10 @@ const ProgramPage = () => {
             </div>
           </form>
         </Modal>
+      )}
+
+      {applyingTo && (
+        <ApplyModal scholarship={applyingTo} onClose={() => setApplyingTo(null)} onSuccess={handleApplySuccess} />
       )}
     </div>
   );

@@ -171,12 +171,16 @@ function draw(doc: PDFKit.PDFDocument, applicant: Applicant): void {
   });
 
   // ---------- 2x2 ID picture box ----------
+  // An actual 2x2 inch photo is a square (144x144pt) -- the reserved
+  // column is left slightly wider so the square can center within it.
   console.log('[ApplicationFormPdf] drawing ID box and footer');
-  doc.roundedRect(contentLeft + formWidth + 15, 122, idBoxWidth, 220, 4).stroke();
+  const idPhotoSize = 130;
+  const idPhotoX = contentLeft + formWidth + 15 + (idBoxWidth - idPhotoSize) / 2;
+  doc.roundedRect(idPhotoX, 122, idPhotoSize, idPhotoSize, 4).stroke();
   doc
     .font('Helvetica')
-    .fontSize(10)
-    .text('LATEST 2X2 ID PICTURE', contentLeft + formWidth + 15, 122 + 100, { width: idBoxWidth, align: 'center' });
+    .fontSize(9)
+    .text('LATEST 2X2 ID PICTURE', contentLeft + formWidth + 15, 122 + idPhotoSize + 10, { width: idBoxWidth, align: 'center' });
 
   // ---------- Certification + signatures ----------
   y += 6;

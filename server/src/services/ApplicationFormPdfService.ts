@@ -78,6 +78,13 @@ function draw(doc: PDFKit.PDFDocument, applicant: Applicant): void {
   const formWidth = contentWidth - idBoxWidth - 15;
   let y = 122;
 
+  // An actual 2x2 inch photo is a square -- computed here (rather than
+  // just before it's drawn) so other boxes can align their right edge
+  // to it, e.g. the Mobile No. box below.
+  const idPhotoSize = 130;
+  const idPhotoX = contentLeft + formWidth + 15 + (idBoxWidth - idPhotoSize) / 2;
+  const idPhotoRight = idPhotoX + idPhotoSize;
+
   const box = (label: string, height: number, drawFn: (x: number, y: number, w: number) => void) => {
     doc.roundedRect(contentLeft, y, formWidth, height, 4).stroke();
     doc.font('Helvetica-Bold').fontSize(10).text(label, contentLeft + 8, y + 6);
@@ -134,7 +141,9 @@ function draw(doc: PDFKit.PDFDocument, applicant: Applicant): void {
   {
     const rowHeight = 26;
     const courseBoxWidth = formWidth * 0.68;
-    const mobileBoxWidth = formWidth - courseBoxWidth - 8;
+    const mobileBoxX = contentLeft + courseBoxWidth + 8;
+    // Extends past formWidth so its right edge lines up with the 2x2 ID box.
+    const mobileBoxWidth = idPhotoRight - mobileBoxX;
 
     doc.roundedRect(contentLeft, y, courseBoxWidth, rowHeight, 4).stroke();
     doc.font('Helvetica-Bold').fontSize(10).text('COURSE:', contentLeft + 8, y + 6);
@@ -142,7 +151,6 @@ function draw(doc: PDFKit.PDFDocument, applicant: Applicant): void {
     doc.font('Helvetica-Bold').text('YEAR:', contentLeft + courseBoxWidth * 0.6, y + 6);
     value(doc, applicant.yearLevel ?? '', contentLeft + courseBoxWidth * 0.6 + 38, y + 6, courseBoxWidth * 0.4 - 38);
 
-    const mobileBoxX = contentLeft + courseBoxWidth + 8;
     doc.roundedRect(mobileBoxX, y, mobileBoxWidth, rowHeight, 4).stroke();
     doc.font('Helvetica-Bold').fontSize(10).text('MOBILE NO.:', mobileBoxX + 8, y + 6);
     value(doc, applicant.contactNumber ?? '', mobileBoxX + 8, y + 18, mobileBoxWidth - 16);
@@ -171,11 +179,7 @@ function draw(doc: PDFKit.PDFDocument, applicant: Applicant): void {
   });
 
   // ---------- 2x2 ID picture box ----------
-  // An actual 2x2 inch photo is a square (144x144pt) -- the reserved
-  // column is left slightly wider so the square can center within it.
   console.log('[ApplicationFormPdf] drawing ID box and footer');
-  const idPhotoSize = 130;
-  const idPhotoX = contentLeft + formWidth + 15 + (idBoxWidth - idPhotoSize) / 2;
   doc.roundedRect(idPhotoX, 122, idPhotoSize, idPhotoSize, 4).stroke();
   doc
     .font('Helvetica')

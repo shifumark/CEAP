@@ -85,12 +85,16 @@ function draw(doc: PDFKit.PDFDocument, applicant: Applicant): void {
   const idPhotoX = contentLeft + formWidth + 15 + (idBoxWidth - idPhotoSize) / 2;
   const idPhotoRight = idPhotoX + idPhotoSize;
 
-  const box = (label: string, height: number, drawFn: (x: number, y: number, w: number) => void) => {
-    doc.roundedRect(contentLeft, y, formWidth, height, 4).stroke();
+  const box = (label: string, height: number, drawFn: (x: number, y: number, w: number) => void, boxWidth = formWidth) => {
+    doc.roundedRect(contentLeft, y, boxWidth, height, 4).stroke();
     doc.font('Helvetica-Bold').fontSize(10).text(label, contentLeft + 8, y + 6);
-    drawFn(contentLeft + 8, y + 6, formWidth - 16);
+    drawFn(contentLeft + 8, y + 6, boxWidth - 16);
     y += height + 6;
   };
+  // Rows below the ID picture box have no column to their right to
+  // avoid, so they widen to fill the full content width, lining up
+  // with the Mobile No. box's right edge.
+  const fullRowWidth = idPhotoRight - contentLeft;
 
   box('NAME:', 40, (x, ty, w) => {
     const nameLabelWidth = 45;
@@ -164,13 +168,13 @@ function draw(doc: PDFKit.PDFDocument, applicant: Applicant): void {
     value(doc, applicant.father?.name ?? '', x + 95, ty, w * 0.55 - 95);
     doc.font('Helvetica-Bold').fontSize(10).text('OCCUPATION:', x + w * 0.6, ty);
     value(doc, applicant.father?.occupation ?? '', x + w * 0.6 + 80, ty, w * 0.4 - 80);
-  });
+  }, fullRowWidth);
 
   box("MOTHER'S NAME:", 26, (x, ty, w) => {
     value(doc, applicant.mother?.name ?? '', x + 95, ty, w * 0.55 - 95);
     doc.font('Helvetica-Bold').fontSize(10).text('OCCUPATION:', x + w * 0.6, ty);
     value(doc, applicant.mother?.occupation ?? '', x + w * 0.6 + 80, ty, w * 0.4 - 80);
-  });
+  }, fullRowWidth);
 
   box("GUARDIAN'S NAME:", 26, (x, ty, w) => {
     value(doc, applicant.guardian?.name ?? '', x + 105, ty, w * 0.45 - 105);
@@ -178,7 +182,7 @@ function draw(doc: PDFKit.PDFDocument, applicant: Applicant): void {
     // Left blank — relationship isn't captured in the profile; filled in by hand.
     doc.font('Helvetica-Bold').text('OCCUPATION:', x + w * 0.72, ty);
     value(doc, applicant.guardian?.occupation ?? '', x + w * 0.72 + 80, ty, w * 0.28 - 80);
-  });
+  }, fullRowWidth);
 
   // ---------- 2x2 ID picture box ----------
   console.log('[ApplicationFormPdf] drawing ID box and footer');

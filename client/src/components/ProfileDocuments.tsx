@@ -165,7 +165,10 @@ const ProfileDocuments = ({ onChange }: Props) => {
               key={documentType}
               style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem', flexWrap: 'wrap', gap: '0.5rem' }}
             >
-              <span>{documentType}</span>
+              <div>
+                <div>{documentType}</div>
+                {existing && <div style={{ fontSize: '0.75rem', color: '#6B7280', marginTop: '0.15rem' }}>{existing.fileName}</div>}
+              </div>
               {existing ? (
                 <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <button className="btn btn-outline btn-sm" onClick={() => handleView(existing.id)}>

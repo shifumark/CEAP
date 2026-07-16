@@ -52,6 +52,20 @@ const ProfileDocuments = ({ onChange }: Props) => {
     }
   };
 
+  const handleView = async (documentId: number) => {
+    setError('');
+    try {
+      const { blob } = await apiService.downloadDocument(documentId);
+      const objectUrl = URL.createObjectURL(blob);
+      window.open(objectUrl, '_blank', 'noopener');
+      // Revoked after a delay rather than immediately — the new tab needs
+      // time to actually load the blob URL before it's freed.
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
+    } catch (err: any) {
+      setError(err.message || 'Failed to open document');
+    }
+  };
+
   const handleDelete = async (documentId: number) => {
     setBusyKey(`delete:${documentId}`);
     setError('');
@@ -127,13 +141,18 @@ const ProfileDocuments = ({ onChange }: Props) => {
               style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', paddingLeft: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}
             >
               <span style={{ color: '#6B7280' }}>{doc.fileName}</span>
-              <button
-                className="btn btn-outline btn-sm"
-                disabled={busyKey === `delete:${doc.id}`}
-                onClick={() => handleDelete(doc.id)}
-              >
-                Remove
-              </button>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <button className="btn btn-outline btn-sm" onClick={() => handleView(doc.id)}>
+                  View File
+                </button>
+                <button
+                  className="btn btn-outline btn-sm"
+                  disabled={busyKey === `delete:${doc.id}`}
+                  onClick={() => handleDelete(doc.id)}
+                >
+                  Remove
+                </button>
+              </span>
             </div>
           ))}
         </div>
@@ -149,6 +168,9 @@ const ProfileDocuments = ({ onChange }: Props) => {
               <span>{documentType}</span>
               {existing ? (
                 <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <button className="btn btn-outline btn-sm" onClick={() => handleView(existing.id)}>
+                    View File
+                  </button>
                   <label className="btn btn-outline btn-sm" style={{ cursor: 'pointer', margin: 0 }}>
                     {busyKey === `upload:${documentType}` ? 'Uploading...' : 'Upload File'}
                     <input

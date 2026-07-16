@@ -279,12 +279,16 @@ router.get('/applicants/me/completeness', verifyToken, async (req: Authenticated
  */
 router.get('/applicants/me/application-form.pdf', verifyToken, async (req: AuthenticatedRequest, res) => {
   try {
+    console.log('[application-form.pdf] request start, user', req.user!.sub);
     const applicant = await applicantService.getOrCreateForUser(req.user!.sub);
+    console.log('[application-form.pdf] applicant loaded, generating PDF');
+    const buffer = await generateApplicationFormPdf(applicant);
+    console.log('[application-form.pdf] generated,', buffer.length, 'bytes');
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', 'inline; filename="CEAP-Application-Form.pdf"');
-    const doc = generateApplicationFormPdf(applicant);
-    doc.pipe(res);
+    res.send(buffer);
   } catch (error: any) {
+    console.error('[application-form.pdf] failed:', error);
     res.status(500).json({ error: error.message });
   }
 });

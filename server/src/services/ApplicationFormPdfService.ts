@@ -1,3 +1,4 @@
+import fs from 'fs';
 import path from 'path';
 import PDFDocument from 'pdfkit';
 import { Applicant } from '../types.js';
@@ -30,30 +31,39 @@ function value(doc: PDFKit.PDFDocument, text: string, x: number, y: number, w: n
   doc.font('Helvetica').fontSize(10).text(text, x, y, { width: w, height: 12, ellipsis: true });
 }
 
-/**
- * Draws the CEAP application form, pre-filled from the applicant's
- * profile, and pipes the finished PDF to the given writable stream.
- * Signature/date lines and the Mayor's name are left as static
- * form elements — those aren't profile data.
- */
-export function generateApplicationFormPdf(applicant: Applicant): PDFKit.PDFDocument {
-  const doc = new PDFDocument({ layout: 'landscape', size: 'letter', margin: 30 });
+// Read once at module load (not per-request) and reused as Buffers —
+// avoids pdfkit re-reading from disk on every single request, and lets
+// a missing/corrupt file fail loudly at startup instead of silently
+// during PDF generation.
+function loadLogo(logoPath: string, label: string): Buffer | undefined {
+  try {
+    const buf = fs.readFileSync(logoPath);
+    console.log(`[ApplicationFormPdf] loaded ${label}: ${buf.length} bytes from ${logoPath}`);
+    return buf;
+  } catch (err: any) {
+    console.error(`[ApplicationFormPdf] failed to load ${label} from ${logoPath}:`, err.message);
+    return undefined;
+  }
+}
+
+const connerSealBuffer = loadLogo(CONNER_SEAL_PATH, 'Conner seal');
+const bagongPilipinasBuffer = loadLogo(BAGONG_PILIPINAS_PATH, 'Bagong Pilipinas logo');
+
+function draw(doc: PDFKit.PDFDocument, applicant: Applicant): void {
   const pageWidth = doc.page.width;
   const contentLeft = 30;
   const contentWidth = pageWidth - 60;
 
   // ---------- Header ----------
-  try {
-    doc.image(CONNER_SEAL_PATH, contentLeft, 20, { width: 65, height: 65 });
-  } catch {
-    // Missing asset shouldn't block PDF generation — just skip the image.
+  console.log('[ApplicationFormPdf] drawing header images');
+  if (connerSealBuffer) {
+    doc.image(connerSealBuffer, contentLeft, 20, { width: 65, height: 65 });
   }
-  try {
-    doc.image(BAGONG_PILIPINAS_PATH, pageWidth - 30 - 70, 15, { width: 70, height: 70 });
-  } catch {
-    // Same as above.
+  if (bagongPilipinasBuffer) {
+    doc.image(bagongPilipinasBuffer, pageWidth - 30 - 70, 15, { width: 70, height: 70 });
   }
 
+  console.log('[ApplicationFormPdf] drawing header text');
   doc.font('Helvetica-Bold').fontSize(11).text('REPUBLIC OF THE PHILIPPINES', 0, 22, { align: 'center', width: pageWidth });
   doc.text('PROVINCE OF APAYAO', 0, 35, { align: 'center', width: pageWidth });
   doc.text('MUNICIPALITY OF CONNER', 0, 48, { align: 'center', width: pageWidth });
@@ -63,14 +73,15 @@ export function generateApplicationFormPdf(applicant: Applicant): PDFKit.PDFDocu
   doc.moveTo(contentLeft, 110).lineTo(pageWidth - 30, 110).lineWidth(1).stroke();
 
   // ---------- Field boxes ----------
+  console.log('[ApplicationFormPdf] drawing field boxes');
   const idBoxWidth = 130;
   const formWidth = contentWidth - idBoxWidth - 15;
   let y = 122;
 
-  const box = (label: string, height: number, draw: (x: number, y: number, w: number) => void) => {
+  const box = (label: string, height: number, drawFn: (x: number, y: number, w: number) => void) => {
     doc.roundedRect(contentLeft, y, formWidth, height, 4).stroke();
     doc.font('Helvetica-Bold').fontSize(10).text(label, contentLeft + 8, y + 6);
-    draw(contentLeft + 8, y + 6, formWidth - 16);
+    drawFn(contentLeft + 8, y + 6, formWidth - 16);
     y += height + 6;
   };
 
@@ -160,9 +171,8 @@ export function generateApplicationFormPdf(applicant: Applicant): PDFKit.PDFDocu
   });
 
   // ---------- 2x2 ID picture box ----------
-  doc
-    .roundedRect(contentLeft + formWidth + 15, 122, idBoxWidth, 220, 4)
-    .stroke();
+  console.log('[ApplicationFormPdf] drawing ID box and footer');
+  doc.roundedRect(contentLeft + formWidth + 15, 122, idBoxWidth, 220, 4).stroke();
   doc
     .font('Helvetica')
     .fontSize(10)
@@ -184,7 +194,42 @@ export function generateApplicationFormPdf(applicant: Applicant): PDFKit.PDFDocu
   doc.text('Signature of Applicant', contentLeft, y + 6, { width: colWidth - 20, align: 'center' });
   doc.text('Date Submitted', contentLeft + colWidth, y + 6, { width: colWidth - 20, align: 'center' });
   doc.text(MAYOR_TITLE, contentLeft + colWidth * 2, y + 6, { width: colWidth - 20, align: 'center' });
+  console.log('[ApplicationFormPdf] drawing complete');
+}
 
-  doc.end();
-  return doc;
+/**
+ * Draws the CEAP application form, pre-filled from the applicant's
+ * profile, and resolves with the finished PDF as a Buffer. Buffering
+ * fully in memory (rather than piping straight to the HTTP response)
+ * means a single-page form's worth of data (well under a memory
+ * concern) and lets the route apply a hard timeout instead of risking
+ * an indefinite hang reaching the client.
+ */
+export function generateApplicationFormPdf(applicant: Applicant, timeoutMs = 15000): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error(`PDF generation timed out after ${timeoutMs}ms`));
+    }, timeoutMs);
+
+    try {
+      const doc = new PDFDocument({ layout: 'landscape', size: 'letter', margin: 30 });
+      const chunks: Buffer[] = [];
+
+      doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+      doc.on('end', () => {
+        clearTimeout(timer);
+        resolve(Buffer.concat(chunks));
+      });
+      doc.on('error', (err: Error) => {
+        clearTimeout(timer);
+        reject(err);
+      });
+
+      draw(doc, applicant);
+      doc.end();
+    } catch (err) {
+      clearTimeout(timer);
+      reject(err as Error);
+    }
+  });
 }

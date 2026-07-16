@@ -270,6 +270,7 @@ const ProfilePage = () => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [downloadingForm, setDownloadingForm] = useState(false);
 
   const loadCompleteness = async () => {
     try {
@@ -323,6 +324,21 @@ const ProfilePage = () => {
       setError(err.message || 'Failed to save profile');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDownloadApplicationForm = async () => {
+    setDownloadingForm(true);
+    setError('');
+    try {
+      const blob = await apiService.downloadApplicationFormPdf();
+      const objectUrl = URL.createObjectURL(blob);
+      window.open(objectUrl, '_blank', 'noopener');
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
+    } catch (err: any) {
+      setError(err.message || 'Failed to generate application form');
+    } finally {
+      setDownloadingForm(false);
     }
   };
 
@@ -869,6 +885,27 @@ const ProfilePage = () => {
               <div className="card" style={{ marginBottom: '1.5rem' }}>
                 <div className="card-header">
                   <h3>VIII. Documentary Requirements</h3>
+                </div>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                    gap: '0.75rem',
+                    padding: '0.75rem',
+                    marginBottom: '1rem',
+                    background: 'rgba(139, 92, 246, 0.05)',
+                    borderRadius: 'var(--radius-md)'
+                  }}
+                >
+                  <p style={{ margin: 0, fontSize: '0.85rem', color: '#6B7280' }}>
+                    Don't have the official CEAP application form? Generate one pre-filled with your profile
+                    information, then print and sign it before uploading it below as your "Application Form".
+                  </p>
+                  <button type="button" className="btn btn-outline btn-sm" disabled={downloadingForm} onClick={handleDownloadApplicationForm}>
+                    {downloadingForm ? 'Generating...' : 'Download Application Form (PDF)'}
+                  </button>
                 </div>
                 <ProfileDocuments onChange={loadCompleteness} />
               </div>

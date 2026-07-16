@@ -276,6 +276,22 @@ class ApiService {
     return { blob: await response.blob(), fileName };
   }
 
+  async downloadApplicationFormPdf(): Promise<Blob> {
+    const headers: HeadersInit = {};
+    if (this.token) {
+      headers.Authorization = `Bearer ${this.token}`;
+    }
+
+    const response = await fetch(`${API_BASE_URL}/applicants/me/application-form.pdf`, { headers });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.error || error.message || 'Failed to generate application form');
+    }
+
+    return response.blob();
+  }
+
   async verifyDocument(
     documentId: number,
     status: DocumentVerificationStatus,

@@ -9,6 +9,7 @@ import { DocumentService } from './services/DocumentService.js';
 import { ScholarService } from './services/ScholarService.js';
 import { AnnouncementService } from './services/AnnouncementService.js';
 import { NotificationService } from './services/NotificationService.js';
+import { generateApplicationFormPdf } from './services/ApplicationFormPdfService.js';
 import { prisma } from './lib/prisma.js';
 import {
   UserRole,
@@ -266,6 +267,23 @@ router.get('/applicants/me/completeness', verifyToken, async (req: Authenticated
   try {
     const completeness = await applicantService.getProfileCompleteness(req.user!);
     res.json(completeness);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * Generates the CEAP application form as a PDF, pre-filled from the
+ * requesting user's own profile.
+ * Protected - self-scoped only
+ */
+router.get('/applicants/me/application-form.pdf', verifyToken, async (req: AuthenticatedRequest, res) => {
+  try {
+    const applicant = await applicantService.getOrCreateForUser(req.user!.sub);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'inline; filename="CEAP-Application-Form.pdf"');
+    const doc = generateApplicationFormPdf(applicant);
+    doc.pipe(res);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }

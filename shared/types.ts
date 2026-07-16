@@ -157,7 +157,7 @@ export interface Applicant {
   middleName?: string;
   suffix?: string;
   dateOfBirth: Date;
-  age: number;
+  age?: number;
   sex: string;
   civilStatus: string;
   contactNumber: string;

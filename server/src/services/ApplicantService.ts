@@ -7,8 +7,8 @@ import { Applicant, FamilyMemberDetail, ProfileCompleteness, UpdateApplicantProf
 const applicantInclude = { familyMembers: true, user: true } satisfies Prisma.ApplicantInclude;
 type ApplicantWithFamily = PrismaApplicant & { familyMembers: PrismaFamilyMember[]; user: PrismaUser };
 
-function computeAge(dateOfBirth: Date | null): number {
-  if (!dateOfBirth) return 0;
+function computeAge(dateOfBirth: Date | null): number | undefined {
+  if (!dateOfBirth) return undefined;
   const diffMs = Date.now() - dateOfBirth.getTime();
   return Math.floor(diffMs / (365.25 * 24 * 60 * 60 * 1000));
 }
@@ -36,7 +36,7 @@ function toApplicant(record: ApplicantWithFamily): Applicant {
     middleName: record.middleName ?? undefined,
     suffix: record.suffix ?? undefined,
     dateOfBirth: record.dateOfBirth ?? undefined,
-    age: computeAge(record.dateOfBirth),
+    age: record.age ?? computeAge(record.dateOfBirth),
     sex: record.sex ?? '',
     civilStatus: record.civilStatus ?? '',
     contactNumber: record.contactNumber ?? '',

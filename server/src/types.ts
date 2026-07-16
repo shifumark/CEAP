@@ -161,7 +161,7 @@ export interface Applicant {
   // Profile fields below are unset until the student fills out their
   // profile — the applicant row itself is created lazily on first use.
   dateOfBirth?: Date;
-  age: number;
+  age?: number;
   sex?: string;
   civilStatus?: string;
   contactNumber?: string;
@@ -245,6 +245,7 @@ export interface UpdateApplicantProfileRequest {
   middleName?: string;
   suffix?: string;
   dateOfBirth?: string;
+  age?: number;
   sex?: string;
   civilStatus?: string;
   contactNumber?: string;

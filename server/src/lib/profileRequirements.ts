@@ -50,6 +50,7 @@ const UNCONDITIONAL_RULES: FieldRule[] = [
   { label: 'Sex', present: (a) => !isEmpty(a.sex) },
   { label: 'Civil Status', present: (a) => !isEmpty(a.civilStatus) },
   { label: 'Date of Birth', present: (a) => !isEmpty(a.dateOfBirth) },
+  { label: 'Age', present: (a) => !isEmpty(a.age) },
   { label: 'Place of Birth', present: (a) => !isEmpty(a.placeOfBirth) },
   { label: 'Nationality', present: (a) => !isEmpty(a.nationality) },
   { label: 'Type of ID', present: (a) => !isEmpty(a.idType) },

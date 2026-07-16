@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "applicants" ADD COLUMN     "age" INTEGER;

@@ -156,7 +156,7 @@ export interface Applicant {
   middleName?: string;
   suffix?: string;
   dateOfBirth?: Date;
-  age: number;
+  age?: number;
   sex?: string;
   civilStatus?: string;
   contactNumber?: string;
@@ -240,6 +240,7 @@ export interface UpdateApplicantProfileRequest {
   middleName?: string;
   suffix?: string;
   dateOfBirth?: string;
+  age?: number;
   sex?: string;
   civilStatus?: string;
   contactNumber?: string;

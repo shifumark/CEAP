@@ -31,6 +31,7 @@ interface FormState {
   middleName: string;
   suffix: string;
   dateOfBirth: string;
+  age: string;
   sex: string;
   civilStatus: string;
   contactNumber: string;
@@ -80,6 +81,7 @@ const emptyForm: FormState = {
   middleName: '',
   suffix: '',
   dateOfBirth: '',
+  age: '',
   sex: '',
   civilStatus: '',
   contactNumber: '',
@@ -156,6 +158,7 @@ function applicantToForm(applicant: Applicant): FormState {
     middleName: applicant.middleName ?? '',
     suffix: applicant.suffix ?? '',
     dateOfBirth: toDateInputValue(applicant.dateOfBirth),
+    age: applicant.age !== undefined ? String(applicant.age) : '',
     sex: applicant.sex ?? '',
     civilStatus: applicant.civilStatus ?? '',
     contactNumber: applicant.contactNumber ?? '',
@@ -217,6 +220,7 @@ function formToRequest(form: FormState): UpdateApplicantProfileRequest {
     middleName: form.middleName || undefined,
     suffix: form.suffix || undefined,
     dateOfBirth: form.dateOfBirth || undefined,
+    age: num(form.age),
     sex: form.sex || undefined,
     civilStatus: form.civilStatus || undefined,
     contactNumber: form.contactNumber || undefined,
@@ -462,6 +466,16 @@ const ProfilePage = () => {
                     type="date"
                     value={form.dateOfBirth}
                     onChange={(e) => set('dateOfBirth', e.target.value)}
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="age">Age</label>
+                  <input
+                    id="age"
+                    type="number"
+                    min="0"
+                    value={form.age}
+                    onChange={(e) => set('age', e.target.value)}
                   />
                 </div>
                 <div className="form-group">

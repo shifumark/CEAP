@@ -137,6 +137,10 @@ model Applicant {
   middleName              String?   @map("middle_name")
   suffix                  String?
   dateOfBirth             DateTime? @map("date_of_birth") @db.Date
+  // Entered directly by the student (matches the source form's design —
+  // Age is its own field alongside Date of Birth, not purely derived).
+  // Falls back to a computed value from dateOfBirth if never set.
+  age                     Int?
   sex                     String?
   civilStatus             String?   @map("civil_status")
   contactNumber           String?   @map("contact_number")

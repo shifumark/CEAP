@@ -140,12 +140,11 @@ function draw(doc: PDFKit.PDFDocument, applicant: Applicant): void {
   // (Course/Year in one box, Mobile No. in its own narrower box).
   {
     const rowHeight = 26;
-    // Matches formWidth so its right edge lines up with the School
-    // Address box above; Mobile No. starts flush at that same boundary
-    // and extends past formWidth so its right edge lines up with the
-    // 2x2 ID box.
+    // Course box matches formWidth so its right edge lines up with the
+    // School Address box above. Mobile No. sits directly above the 2x2
+    // ID box, matching its left and right edges exactly.
     const courseBoxWidth = formWidth;
-    const mobileBoxX = contentLeft + formWidth;
+    const mobileBoxX = idPhotoX;
     const mobileBoxWidth = idPhotoRight - mobileBoxX;
 
     doc.roundedRect(contentLeft, y, courseBoxWidth, rowHeight, 4).stroke();

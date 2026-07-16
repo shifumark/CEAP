@@ -83,14 +83,6 @@ A production-ready web-based scholarship application and management platform for
    - Frontend: http://localhost:5173
    - Backend API: http://localhost:4000/api
 
-### Test Credentials
-
-| Role | Email | Password |
-|------|-------|----------|
-| Super Admin | superadmin@example.com | password123 |
-| Admin | admin@example.com | password123 |
-| Applicant | applicant@example.com | password123 |
-
 ## Project Structure
 
 ```

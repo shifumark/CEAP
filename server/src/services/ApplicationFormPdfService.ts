@@ -100,8 +100,8 @@ function draw(doc: PDFKit.PDFDocument, applicant: Applicant): void {
     const nameLabelWidth = 45;
     const nameX = x + nameLabelWidth;
     const nameW = w - nameLabelWidth;
-    // Column boundaries as fractions of nameW; value and label share the
-    // same column box and are both center-aligned within it.
+    // Column boundaries as fractions of nameW; label sits directly under
+    // its corresponding value, both left-aligned within their column.
     const boundaries = [0, 0.32, 0.6, 0.85, 1];
     const cols = [
       { value: applicant.firstName, label: '(FIRST NAME)' },
@@ -111,13 +111,16 @@ function draw(doc: PDFKit.PDFDocument, applicant: Applicant): void {
     ];
     const colX = (i: number) => nameX + nameW * boundaries[i];
     const colW = (i: number) => nameW * (boundaries[i + 1] - boundaries[i]);
+    // Vertically centered within the row (ty to the divider line at
+    // ty+20) instead of sitting flush at the top, which left a visible
+    // gap of empty space below the text.
     cols.forEach((col, i) => {
-      doc.font('Helvetica').fontSize(10).text(col.value, colX(i), ty, { width: colW(i), height: 12, ellipsis: true, align: 'center' });
+      doc.font('Helvetica').fontSize(10).text(col.value, colX(i), ty + 4, { width: colW(i), height: 12, ellipsis: true });
     });
     doc.moveTo(x, ty + 20).lineTo(x + w, ty + 20).lineWidth(0.5).stroke();
     doc.font('Helvetica').fontSize(7);
     cols.forEach((col, i) => {
-      doc.text(col.label, colX(i), ty + 23, { width: colW(i), align: 'center' });
+      doc.text(col.label, colX(i), ty + 23, { width: colW(i) });
     });
   });
 

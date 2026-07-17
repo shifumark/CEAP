@@ -20,7 +20,14 @@ function formatDate(value?: Date): string {
 }
 
 function joinNonEmpty(parts: (string | undefined)[], sep = ', '): string {
-  return parts.filter((p) => p && p.trim()).join(sep);
+  return parts.filter((p) => p && p.trim()).map((p) => capitalize(p as string)).join(sep);
+}
+
+// Applicants type values in freely (lowercase, all-caps, etc.); the form
+// always displays a leading capital regardless of how it was entered.
+function capitalize(text: string): string {
+  if (!text) return text;
+  return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
 // Single-line value text that truncates with an ellipsis instead of
@@ -28,7 +35,7 @@ function joinNonEmpty(parts: (string | undefined)[], sep = ', '): string {
 // height field box and collide with the row below it, since pdfkit
 // doesn't clip text to a box on its own.
 function value(doc: PDFKit.PDFDocument, text: string, x: number, y: number, w: number) {
-  doc.font('Helvetica').fontSize(10).text(text, x, y, { width: w, height: 12, ellipsis: true });
+  doc.font('Helvetica').fontSize(10).text(capitalize(text), x, y, { width: w, height: 12, ellipsis: true });
 }
 
 // Read once at module load (not per-request) and reused as Buffers —
@@ -116,7 +123,7 @@ function draw(doc: PDFKit.PDFDocument, applicant: Applicant): void {
     // gap of empty space below the text. Same +5 baseline nudge as every
     // other label/value pair on the form (see box() below).
     cols.forEach((col, i) => {
-      doc.font('Helvetica').fontSize(10).text(col.value, colX(i), ty + 5, { width: colW(i), height: 12, ellipsis: true });
+      doc.font('Helvetica').fontSize(10).text(capitalize(col.value), colX(i), ty + 5, { width: colW(i), height: 12, ellipsis: true });
     });
     doc.moveTo(x, ty + 20).lineTo(x + w, ty + 20).lineWidth(0.5).stroke();
     doc.font('Helvetica').fontSize(7);

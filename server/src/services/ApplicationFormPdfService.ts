@@ -111,10 +111,12 @@ function draw(doc: PDFKit.PDFDocument, applicant: Applicant): void {
     }
     doc.moveTo(x, ty + 20).lineTo(x + w, ty + 20).lineWidth(0.5).stroke();
     doc.font('Helvetica').fontSize(7);
-    doc.text('(FIRST NAME)', x, ty + 23);
-    doc.text('(MIDDLE NAME)', x + w * 0.3, ty + 23);
-    doc.text('(LAST NAME)', x + w * 0.58, ty + 23);
-    doc.text('(EXT. NAME)', x + w * 0.85, ty + 23);
+    // Same base (nameX/nameW/offset) as the value columns above so each
+    // label sits directly under its corresponding value.
+    doc.text('(FIRST NAME)', nameX + nameW * cols[0].offset, ty + 23);
+    doc.text('(MIDDLE NAME)', nameX + nameW * cols[1].offset, ty + 23);
+    doc.text('(LAST NAME)', nameX + nameW * cols[2].offset, ty + 23);
+    doc.text('(EXT. NAME)', nameX + nameW * cols[3].offset, ty + 23);
   });
 
   const address = joinNonEmpty([applicant.address, applicant.barangay, applicant.municipality, applicant.province]);

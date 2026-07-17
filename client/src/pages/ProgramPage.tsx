@@ -109,6 +109,22 @@ const ProgramPage = () => {
     }
   };
 
+  const handleDelete = async (program: ScholarshipProgram) => {
+    if (!window.confirm(`Delete "${program.name}"? This cannot be undone.`)) {
+      return;
+    }
+    setBusyId(program.id);
+    setError('');
+    try {
+      await apiService.deleteScholarship(program.id);
+      await load();
+    } catch (err: any) {
+      setError(err.message || 'Failed to delete program');
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   return (
     <div>
       <nav className="navbar">
@@ -174,14 +190,23 @@ const ProgramPage = () => {
                 </p>
 
                 {isAdmin && (
-                  <button
-                    className="btn btn-outline btn-sm"
-                    style={{ marginTop: '1rem' }}
-                    disabled={busyId === program.id}
-                    onClick={() => handleToggleStatus(program)}
-                  >
-                    {program.status === 'active' ? 'Close Program' : 'Reopen Program'}
-                  </button>
+                  <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem', flexWrap: 'wrap' }}>
+                    <button
+                      className="btn btn-outline btn-sm"
+                      disabled={busyId === program.id}
+                      onClick={() => handleToggleStatus(program)}
+                    >
+                      {program.status === 'active' ? 'Close Program' : 'Reopen Program'}
+                    </button>
+                    <button
+                      className="btn btn-outline btn-sm"
+                      style={{ color: '#DC2626', borderColor: '#DC2626' }}
+                      disabled={busyId === program.id}
+                      onClick={() => handleDelete(program)}
+                    >
+                      Delete Program
+                    </button>
+                  </div>
                 )}
 
                 {isApplicant && program.status === 'active' && (

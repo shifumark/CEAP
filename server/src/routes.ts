@@ -214,7 +214,7 @@ router.put('/scholarships/:id', verifyToken, requireAdmin, async (req: Authentic
  * Delete scholarship program
  * Protected - requires super admin role
  */
-router.delete('/scholarships/:id', verifyToken, requireSuperAdmin, async (req: AuthenticatedRequest, res) => {
+router.delete('/scholarships/:id', verifyToken, requireAdmin, async (req: AuthenticatedRequest, res) => {
   try {
     const success = await scholarshipService.deleteProgram(parseInt(req.params.id));
 
@@ -224,6 +224,9 @@ router.delete('/scholarships/:id', verifyToken, requireSuperAdmin, async (req: A
 
     res.json({ message: 'Scholarship deleted successfully' });
   } catch (error: any) {
+    if (error.message?.includes('cannot be deleted')) {
+      return res.status(409).json({ error: error.message });
+    }
     res.status(500).json({ error: error.message });
   }
 });

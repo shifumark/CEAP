@@ -108,8 +108,14 @@ export class ScholarshipService {
     try {
       await prisma.scholarshipProgram.delete({ where: { id } });
       return true;
-    } catch {
-      return false;
+    } catch (error: any) {
+      if (error?.code === 'P2025') {
+        return false;
+      }
+      if (error?.code === 'P2003') {
+        throw new Error('This program has applications on record and cannot be deleted. Close it instead.');
+      }
+      throw error;
     }
   }
 

@@ -100,23 +100,25 @@ function draw(doc: PDFKit.PDFDocument, applicant: Applicant): void {
     const nameLabelWidth = 45;
     const nameX = x + nameLabelWidth;
     const nameW = w - nameLabelWidth;
+    // Column boundaries as fractions of nameW; value and label share the
+    // same column box and are both center-aligned within it.
+    const boundaries = [0, 0.32, 0.6, 0.85, 1];
     const cols = [
-      { value: applicant.firstName, offset: 0 },
-      { value: applicant.middleName ?? '', offset: 0.32 },
-      { value: applicant.lastName, offset: 0.6 },
-      { value: applicant.suffix ?? '', offset: 0.85 }
+      { value: applicant.firstName, label: '(FIRST NAME)' },
+      { value: applicant.middleName ?? '', label: '(MIDDLE NAME)' },
+      { value: applicant.lastName, label: '(LAST NAME)' },
+      { value: applicant.suffix ?? '', label: '(EXT. NAME)' }
     ];
-    for (const col of cols) {
-      value(doc, col.value, nameX + nameW * col.offset, ty, nameW * 0.28);
-    }
+    const colX = (i: number) => nameX + nameW * boundaries[i];
+    const colW = (i: number) => nameW * (boundaries[i + 1] - boundaries[i]);
+    cols.forEach((col, i) => {
+      doc.font('Helvetica').fontSize(10).text(col.value, colX(i), ty, { width: colW(i), height: 12, ellipsis: true, align: 'center' });
+    });
     doc.moveTo(x, ty + 20).lineTo(x + w, ty + 20).lineWidth(0.5).stroke();
     doc.font('Helvetica').fontSize(7);
-    // Same base (nameX/nameW/offset) as the value columns above so each
-    // label sits directly under its corresponding value.
-    doc.text('(FIRST NAME)', nameX + nameW * cols[0].offset, ty + 23);
-    doc.text('(MIDDLE NAME)', nameX + nameW * cols[1].offset, ty + 23);
-    doc.text('(LAST NAME)', nameX + nameW * cols[2].offset, ty + 23);
-    doc.text('(EXT. NAME)', nameX + nameW * cols[3].offset, ty + 23);
+    cols.forEach((col, i) => {
+      doc.text(col.label, colX(i), ty + 23, { width: colW(i), align: 'center' });
+    });
   });
 
   const address = joinNonEmpty([applicant.address, applicant.barangay, applicant.municipality, applicant.province]);

@@ -113,16 +113,17 @@ function draw(doc: PDFKit.PDFDocument, applicant: Applicant): void {
     const colW = (i: number) => nameW * (boundaries[i + 1] - boundaries[i]);
     // Vertically centered within the row (ty to the divider line at
     // ty+20) instead of sitting flush at the top, which left a visible
-    // gap of empty space below the text.
+    // gap of empty space below the text. Same +5 baseline nudge as every
+    // other label/value pair on the form (see box() below).
     cols.forEach((col, i) => {
-      doc.font('Helvetica').fontSize(10).text(col.value, colX(i), ty + 4, { width: colW(i), height: 12, ellipsis: true });
+      doc.font('Helvetica').fontSize(10).text(col.value, colX(i), ty + 5, { width: colW(i), height: 12, ellipsis: true });
     });
     doc.moveTo(x, ty + 20).lineTo(x + w, ty + 20).lineWidth(0.5).stroke();
     doc.font('Helvetica').fontSize(7);
     cols.forEach((col, i) => {
       doc.text(col.label, colX(i), ty + 23, { width: colW(i) });
     });
-  });
+  }, formWidth, 5);
 
   const address = joinNonEmpty([applicant.address, applicant.barangay, applicant.municipality, applicant.province]);
   box('ADDRESS:', 26, (x, ty, w) => {
@@ -130,27 +131,30 @@ function draw(doc: PDFKit.PDFDocument, applicant: Applicant): void {
   }, formWidth, 5);
 
   box('BIRTHDATE:', 26, (x, ty, w) => {
-    value(doc, formatDate(applicant.dateOfBirth), x + 65, ty, 90);
-    doc.font('Helvetica-Bold').fontSize(10).text('AGE:', x + 160, ty);
-    value(doc, applicant.age !== undefined ? String(applicant.age) : '', x + 190, ty, 40);
-    doc.font('Helvetica-Bold').text('CIVIL STATUS:', x + 240, ty);
-    value(doc, applicant.civilStatus ?? '', x + 320, ty, 100);
-    doc.font('Helvetica-Bold').text('SEX:', x + 430, ty);
-    value(doc, applicant.sex ?? '', x + 460, ty, 80);
-  });
+    value(doc, formatDate(applicant.dateOfBirth), x + 65, ty + 5, 90);
+    doc.font('Helvetica-Bold').fontSize(10).text('AGE:', x + 160, ty + 5);
+    value(doc, applicant.age !== undefined ? String(applicant.age) : '', x + 190, ty + 5, 40);
+    doc.font('Helvetica-Bold').text('CIVIL STATUS:', x + 240, ty + 5);
+    value(doc, applicant.civilStatus ?? '', x + 320, ty + 5, 100);
+    doc.font('Helvetica-Bold').text('SEX:', x + 430, ty + 5);
+    value(doc, applicant.sex ?? '', x + 460, ty + 5, 80);
+  }, formWidth, 5);
 
   box('SCHOOL:', 26, (x, ty, w) => {
-    value(doc, applicant.schoolName ?? '', x + 55, ty, w - 55);
-  });
+    value(doc, applicant.schoolName ?? '', x + 55, ty + 5, w - 55);
+  }, formWidth, 5);
 
   box('SCHOOL ADDRESS:', 26, (x, ty, w) => {
-    value(doc, applicant.schoolAddress ?? '', x + 105, ty, w - 105);
-  });
+    value(doc, applicant.schoolAddress ?? '', x + 105, ty + 5, w - 105);
+  }, formWidth, 5);
 
   // Two separate boxes side by side, matching the source form's split
   // (Course/Year in one box, Mobile No. in its own narrower box).
   {
-    const rowHeight = 26;
+    // Taller than the other single-line rows since Mobile No.'s value
+    // sits on its own line below the label (narrow column, can't fit
+    // both side by side).
+    const rowHeight = 34;
     // Course box matches formWidth so its right edge lines up with the
     // School Address box above. Mobile No. sits directly above the 2x2
     // ID box, matching its left and right edges exactly.
@@ -159,37 +163,37 @@ function draw(doc: PDFKit.PDFDocument, applicant: Applicant): void {
     const mobileBoxWidth = idPhotoRight - mobileBoxX;
 
     doc.roundedRect(contentLeft, y, courseBoxWidth, rowHeight, 4).stroke();
-    doc.font('Helvetica-Bold').fontSize(10).text('COURSE:', contentLeft + 8, y + 6);
-    value(doc, applicant.courseName ?? '', contentLeft + 8 + 55, y + 6, courseBoxWidth * 0.55 - 55);
-    doc.font('Helvetica-Bold').text('YEAR:', contentLeft + courseBoxWidth * 0.6, y + 6);
-    value(doc, applicant.yearLevel ?? '', contentLeft + courseBoxWidth * 0.6 + 38, y + 6, courseBoxWidth * 0.4 - 38);
+    doc.font('Helvetica-Bold').fontSize(10).text('COURSE:', contentLeft + 8, y + 11);
+    value(doc, applicant.courseName ?? '', contentLeft + 8 + 55, y + 11, courseBoxWidth * 0.55 - 55);
+    doc.font('Helvetica-Bold').text('YEAR:', contentLeft + courseBoxWidth * 0.6, y + 11);
+    value(doc, applicant.yearLevel ?? '', contentLeft + courseBoxWidth * 0.6 + 38, y + 11, courseBoxWidth * 0.4 - 38);
 
     doc.roundedRect(mobileBoxX, y, mobileBoxWidth, rowHeight, 4).stroke();
-    doc.font('Helvetica-Bold').fontSize(10).text('MOBILE NO.:', mobileBoxX + 8, y + 6);
-    value(doc, applicant.contactNumber ?? '', mobileBoxX + 8, y + 18, mobileBoxWidth - 16);
+    doc.font('Helvetica-Bold').fontSize(10).text('MOBILE NO.:', mobileBoxX + 8, y + 11);
+    value(doc, applicant.contactNumber ?? '', mobileBoxX + 8, y + 24, mobileBoxWidth - 16);
 
     y += rowHeight + 6;
   }
 
   box("FATHER'S NAME:", 26, (x, ty, w) => {
-    value(doc, applicant.father?.name ?? '', x + 95, ty, w * 0.55 - 95);
-    doc.font('Helvetica-Bold').fontSize(10).text('OCCUPATION:', x + w * 0.6, ty);
-    value(doc, applicant.father?.occupation ?? '', x + w * 0.6 + 80, ty, w * 0.4 - 80);
-  }, fullRowWidth);
+    value(doc, applicant.father?.name ?? '', x + 95, ty + 5, w * 0.55 - 95);
+    doc.font('Helvetica-Bold').fontSize(10).text('OCCUPATION:', x + w * 0.6, ty + 5);
+    value(doc, applicant.father?.occupation ?? '', x + w * 0.6 + 80, ty + 5, w * 0.4 - 80);
+  }, fullRowWidth, 5);
 
   box("MOTHER'S NAME:", 26, (x, ty, w) => {
-    value(doc, applicant.mother?.name ?? '', x + 95, ty, w * 0.55 - 95);
-    doc.font('Helvetica-Bold').fontSize(10).text('OCCUPATION:', x + w * 0.6, ty);
-    value(doc, applicant.mother?.occupation ?? '', x + w * 0.6 + 80, ty, w * 0.4 - 80);
-  }, fullRowWidth);
+    value(doc, applicant.mother?.name ?? '', x + 95, ty + 5, w * 0.55 - 95);
+    doc.font('Helvetica-Bold').fontSize(10).text('OCCUPATION:', x + w * 0.6, ty + 5);
+    value(doc, applicant.mother?.occupation ?? '', x + w * 0.6 + 80, ty + 5, w * 0.4 - 80);
+  }, fullRowWidth, 5);
 
   box("GUARDIAN'S NAME:", 26, (x, ty, w) => {
-    value(doc, applicant.guardian?.name ?? '', x + 105, ty, w * 0.45 - 105);
-    doc.font('Helvetica-Bold').fontSize(10).text('RELATIONSHIP:', x + w * 0.48, ty);
+    value(doc, applicant.guardian?.name ?? '', x + 105, ty + 5, w * 0.45 - 105);
+    doc.font('Helvetica-Bold').fontSize(10).text('RELATIONSHIP:', x + w * 0.48, ty + 5);
     // Left blank — relationship isn't captured in the profile; filled in by hand.
-    doc.font('Helvetica-Bold').text('OCCUPATION:', x + w * 0.72, ty);
-    value(doc, applicant.guardian?.occupation ?? '', x + w * 0.72 + 80, ty, w * 0.28 - 80);
-  }, fullRowWidth);
+    doc.font('Helvetica-Bold').text('OCCUPATION:', x + w * 0.72, ty + 5);
+    value(doc, applicant.guardian?.occupation ?? '', x + w * 0.72 + 80, ty + 5, w * 0.28 - 80);
+  }, fullRowWidth, 5);
 
   // ---------- 2x2 ID picture box ----------
   console.log('[ApplicationFormPdf] drawing ID box and footer');

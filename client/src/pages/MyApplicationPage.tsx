@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { apiService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { Application, ApplicationStatus } from '../types';
-import ApplicationDocuments from '../components/ApplicationDocuments';
 import MyScholarshipPanel from '../components/MyScholarshipPanel';
 
 const DELETABLE_STATUSES = new Set<ApplicationStatus>([
@@ -199,8 +198,6 @@ const MyApplicationPage = () => {
                             </button>
                           )}
                         </div>
-
-                        <ApplicationDocuments applicationId={application.id} scholarshipId={application.scholarshipId} />
                       </div>
                     ))}
                   </div>

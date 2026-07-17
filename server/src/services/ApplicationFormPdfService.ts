@@ -85,9 +85,9 @@ function draw(doc: PDFKit.PDFDocument, applicant: Applicant): void {
   const idPhotoX = contentLeft + formWidth + 15 + (idBoxWidth - idPhotoSize) / 2;
   const idPhotoRight = idPhotoX + idPhotoSize;
 
-  const box = (label: string, height: number, drawFn: (x: number, y: number, w: number) => void, boxWidth = formWidth) => {
+  const box = (label: string, height: number, drawFn: (x: number, y: number, w: number) => void, boxWidth = formWidth, labelYOffset = 0) => {
     doc.roundedRect(contentLeft, y, boxWidth, height, 4).stroke();
-    doc.font('Helvetica-Bold').fontSize(10).text(label, contentLeft + 8, y + 6);
+    doc.font('Helvetica-Bold').fontSize(10).text(label, contentLeft + 8, y + 6 + labelYOffset);
     drawFn(contentLeft + 8, y + 6, boxWidth - 16);
     y += height + 6;
   };
@@ -127,7 +127,7 @@ function draw(doc: PDFKit.PDFDocument, applicant: Applicant): void {
   const address = joinNonEmpty([applicant.address, applicant.barangay, applicant.municipality, applicant.province]);
   box('ADDRESS:', 26, (x, ty, w) => {
     value(doc, address, x + 60, ty, w - 60);
-  });
+  }, formWidth, 2);
 
   box('BIRTHDATE:', 26, (x, ty, w) => {
     value(doc, formatDate(applicant.dateOfBirth), x + 65, ty, 90);

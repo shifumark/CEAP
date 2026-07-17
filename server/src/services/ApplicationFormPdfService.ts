@@ -126,7 +126,7 @@ function draw(doc: PDFKit.PDFDocument, applicant: Applicant): void {
 
   const address = joinNonEmpty([applicant.address, applicant.barangay, applicant.municipality, applicant.province]);
   box('ADDRESS:', 26, (x, ty, w) => {
-    value(doc, address, x + 60, ty + 3, w - 60);
+    value(doc, address, x + 60, ty + 5, w - 60);
   }, formWidth, 5);
 
   box('BIRTHDATE:', 26, (x, ty, w) => {

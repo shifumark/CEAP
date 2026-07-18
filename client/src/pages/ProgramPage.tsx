@@ -38,6 +38,8 @@ const ProgramPage = () => {
   const [saving, setSaving] = useState(false);
   const [busyId, setBusyId] = useState<number | null>(null);
   const [applyingTo, setApplyingTo] = useState<ScholarshipProgram | null>(null);
+  const [deletingProgram, setDeletingProgram] = useState<ScholarshipProgram | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const load = async () => {
     try {
@@ -109,19 +111,18 @@ const ProgramPage = () => {
     }
   };
 
-  const handleDelete = async (program: ScholarshipProgram) => {
-    if (!window.confirm(`Delete "${program.name}"? This cannot be undone.`)) {
-      return;
-    }
-    setBusyId(program.id);
+  const handleConfirmDelete = async () => {
+    if (!deletingProgram) return;
+    setDeleting(true);
     setError('');
     try {
-      await apiService.deleteScholarship(program.id);
+      await apiService.deleteScholarship(deletingProgram.id);
+      setDeletingProgram(null);
       await load();
     } catch (err: any) {
       setError(err.message || 'Failed to delete program');
     } finally {
-      setBusyId(null);
+      setDeleting(false);
     }
   };
 
@@ -202,7 +203,7 @@ const ProgramPage = () => {
                       className="btn btn-outline btn-sm"
                       style={{ color: '#DC2626', borderColor: '#DC2626' }}
                       disabled={busyId === program.id}
-                      onClick={() => handleDelete(program)}
+                      onClick={() => setDeletingProgram(program)}
                     >
                       Delete Program
                     </button>
@@ -341,6 +342,37 @@ const ProgramPage = () => {
 
       {applyingTo && (
         <ApplyModal scholarship={applyingTo} onClose={() => setApplyingTo(null)} onSuccess={handleApplySuccess} />
+      )}
+
+      {deletingProgram && (
+        <Modal title="Delete Program" onClose={() => setDeletingProgram(null)}>
+          <p
+            style={{
+              padding: '0.85rem',
+              background: 'rgba(239, 68, 68, 0.1)',
+              border: '1px solid rgba(239, 68, 68, 0.3)',
+              borderRadius: 'var(--radius-md)',
+              color: '#DC2626'
+            }}
+          >
+            Warning: Deleting <strong>{deletingProgram.name}</strong> permanently removes it along with every
+            application, scholar record, grade, renewal, allowance, and violation tied to it. This cannot be undone.
+          </p>
+          <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem' }}>
+            <button
+              className="btn btn-primary"
+              type="button"
+              style={{ background: '#DC2626' }}
+              disabled={deleting}
+              onClick={handleConfirmDelete}
+            >
+              {deleting ? 'Deleting...' : 'Delete Program'}
+            </button>
+            <button className="btn btn-outline" type="button" onClick={() => setDeletingProgram(null)} disabled={deleting}>
+              Cancel
+            </button>
+          </div>
+        </Modal>
       )}
     </div>
   );

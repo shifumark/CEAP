@@ -104,16 +104,25 @@ export class ScholarshipService {
     }
   }
 
+  // Deletes a program along with everything tied to it, even if
+  // applications or scholars already exist. Applications and Scholars
+  // reference scholarshipId without an onDelete cascade at the DB level
+  // (deliberately, so a plain delete fails loudly in the normal case) —
+  // this explicitly clears them first, in FK-safe order, inside a
+  // transaction. Their own children (status history, uploaded documents,
+  // grades, renewals, allowances, violations) cascade automatically once
+  // the Application/Scholar row itself is gone.
   async deleteProgram(id: number): Promise<boolean> {
     try {
-      await prisma.scholarshipProgram.delete({ where: { id } });
+      await prisma.$transaction([
+        prisma.application.deleteMany({ where: { scholarshipId: id } }),
+        prisma.scholar.deleteMany({ where: { scholarshipId: id } }),
+        prisma.scholarshipProgram.delete({ where: { id } })
+      ]);
       return true;
     } catch (error: any) {
       if (error?.code === 'P2025') {
         return false;
-      }
-      if (error?.code === 'P2003') {
-        throw new Error('This program has applications on record and cannot be deleted. Close it instead.');
       }
       throw error;
     }

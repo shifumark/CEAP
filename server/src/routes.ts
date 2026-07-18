@@ -224,9 +224,6 @@ router.delete('/scholarships/:id', verifyToken, requireAdmin, async (req: Authen
 
     res.json({ message: 'Scholarship deleted successfully' });
   } catch (error: any) {
-    if (error.message?.includes('cannot be deleted')) {
-      return res.status(409).json({ error: error.message });
-    }
     res.status(500).json({ error: error.message });
   }
 });

@@ -8,6 +8,9 @@ import {
   ScholarFilters,
   RequiredDocument
 } from '../types.js';
+import { NotificationService } from './NotificationService.js';
+
+const notificationService = new NotificationService();
 
 function toProgram(record: PrismaScholarshipProgram): ScholarshipProgram {
   return {
@@ -55,6 +58,10 @@ export class ScholarshipService {
             }
           : undefined
       }
+    });
+
+    notificationService.broadcastNewProgram(created.name).catch((error) => {
+      console.error('[NotificationService] Failed to broadcast new program', created.id, error);
     });
 
     return toProgram(created);

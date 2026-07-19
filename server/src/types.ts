@@ -78,6 +78,7 @@ export enum NotificationType {
   APPLICATION_REJECTED = 'application_rejected',
   RENEWAL_DUE = 'renewal_due',
   ANNOUNCEMENT_POSTED = 'announcement_posted',
+  SCHOLARSHIP_POSTED = 'scholarship_posted',
   SYSTEM_NOTIFICATION = 'system_notification'
 }
 

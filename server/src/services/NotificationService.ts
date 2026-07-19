@@ -1,6 +1,9 @@
 import type { Notification as PrismaNotification } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { Notification, NotificationType, JWTPayload } from '../types.js';
+import { EmailService } from './EmailService.js';
+
+const emailService = new EmailService();
 
 function toNotification(record: PrismaNotification): Notification {
   return {
@@ -74,5 +77,29 @@ export class NotificationService {
         actionUrl: '/announcements'
       }))
     });
+  }
+
+  /**
+   * Best-effort broadcast (in-app + email) to every Student when a new
+   * scholarship program is created. Callers wrap this in a catch.
+   */
+  async broadcastNewProgram(programName: string): Promise<void> {
+    const students = await prisma.user.findMany({ where: { role: 'applicant' }, select: { id: true, email: true } });
+    if (students.length === 0) return;
+
+    await prisma.notification.createMany({
+      data: students.map((s) => ({
+        userId: s.id,
+        notificationType: 'scholarship_posted' as const,
+        title: 'New Scholarship Program',
+        message: `${programName} is now open for applications.`,
+        actionUrl: '/programs'
+      }))
+    });
+
+    await emailService.sendNewProgramAnnouncement(
+      students.map((s) => s.email),
+      programName
+    );
   }
 }

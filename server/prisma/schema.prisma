@@ -93,6 +93,7 @@ enum NotificationType {
   application_rejected
   renewal_due
   announcement_posted
+  scholarship_posted
   system_notification
 }
 

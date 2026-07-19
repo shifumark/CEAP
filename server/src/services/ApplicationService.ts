@@ -15,12 +15,14 @@ import {
 import { ApplicantService } from './ApplicantService.js';
 import { ScholarService } from './ScholarService.js';
 import { NotificationService } from './NotificationService.js';
+import { EmailService } from './EmailService.js';
 import { supabaseAdmin, DOCUMENTS_BUCKET } from '../lib/supabase.js';
 import { drive } from '../lib/googleDrive.js';
 
 const applicantService = new ApplicantService();
 const scholarService = new ScholarService();
 const notificationService = new NotificationService();
+const emailService = new EmailService();
 
 const FINALIZED_STATUSES = ['approved', 'rejected'];
 
@@ -256,6 +258,14 @@ export class ApplicationService {
           '/my-application'
         )
         .catch((error) => console.error('[NotificationService] Failed to notify applicant', updated.id, error));
+
+      emailService
+        .sendApplicationStatusUpdate(
+          updated.applicant.user.email,
+          updated.scholarship?.name ?? 'a scholarship',
+          request.status
+        )
+        .catch((error) => console.error('[EmailService] Failed to email applicant', updated.id, error));
     }
 
     return toApplication(updated);

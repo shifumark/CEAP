@@ -355,7 +355,8 @@ const ProfilePage = () => {
     }
   };
 
-  const isCourseLevel = COLLEGE_YEAR_LEVELS.includes(form.yearLevel) || PROFESSIONAL_YEAR_LEVELS.includes(form.yearLevel);
+  const isCourseLevel =
+    COLLEGE_YEAR_LEVELS.includes(form.yearLevel) || PROFESSIONAL_YEAR_LEVELS.includes(form.yearLevel) || form.yearLevel === 'Other';
   const isSpecialCourse = form.yearLevel === 'Special Course';
   const specialCourseSelectValue = SPECIAL_COURSE_OPTIONS.includes(form.courseName)
     ? form.courseName
@@ -844,7 +845,7 @@ const ProfilePage = () => {
                 ) : (
                   isCourseLevel && (
                     <div className="form-group">
-                      <label htmlFor="courseName">Course</label>
+                      <label htmlFor="courseName">{form.yearLevel === 'Other' ? 'Related Course' : 'Course'}</label>
                       <input id="courseName" value={form.courseName} onChange={(e) => set('courseName', e.target.value)} />
                     </div>
                   )

@@ -29,9 +29,9 @@ export const COLLEGE_YEAR_LEVELS = [
 export const PROFESSIONAL_YEAR_LEVELS = ['First Year', 'Second Year', 'Third Year', 'Fourth Year'];
 
 // Year levels where courseName is conditionally required (College,
-// Professional/Post Graduate, and Special Course all collect it, just via
-// different input widgets client-side).
-const COURSE_REQUIRED_YEAR_LEVELS = [...COLLEGE_YEAR_LEVELS, ...PROFESSIONAL_YEAR_LEVELS, 'Special Course'];
+// Professional/Post Graduate, Special Course, and Other all collect it,
+// just via different input widgets client-side).
+const COURSE_REQUIRED_YEAR_LEVELS = [...COLLEGE_YEAR_LEVELS, ...PROFESSIONAL_YEAR_LEVELS, 'Special Course', 'Other'];
 
 function isEmpty(value: unknown): boolean {
   return value === undefined || value === null || value === '';

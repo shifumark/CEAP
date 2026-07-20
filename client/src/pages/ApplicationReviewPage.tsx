@@ -59,6 +59,7 @@ const ApplicationReviewPage = () => {
   const [documentActionId, setDocumentActionId] = useState<number | null>(null);
   const [applicantProfile, setApplicantProfile] = useState<Applicant | null>(null);
   const [profileLoading, setProfileLoading] = useState(false);
+  const [totalCount, setTotalCount] = useState(0);
 
   const loadApplications = async () => {
     setError('');
@@ -68,6 +69,7 @@ const ApplicationReviewPage = () => {
         ...(statusFilter ? { status: statusFilter as ApplicationStatus } : {})
       });
       setApplications(result.data);
+      setTotalCount(result.total);
     } catch (err: any) {
       setError(err.message || 'Failed to load applications');
     } finally {
@@ -167,7 +169,10 @@ const ApplicationReviewPage = () => {
       <div className="container">
         <div className="page-header">
           <h1>Application Review</h1>
-          <p>Review submitted applications and record a decision.</p>
+          <p>
+            Review submitted applications and record a decision.{' '}
+            {!loading && <strong>{totalCount.toLocaleString()} applicant{totalCount === 1 ? '' : 's'}</strong>}
+          </p>
         </div>
 
         {error && (
@@ -245,6 +250,10 @@ const ApplicationReviewPage = () => {
 
         {selected && (
           <Modal title={`Review: ${selected.applicantName} — ${selected.scholarshipName}`} onClose={() => setSelectedId(null)}>
+            <p style={{ fontSize: '0.85rem', color: '#6B7280', marginTop: 0 }}>
+              <strong>Date Submitted:</strong> {formatDate(selected.submissionDate)}
+            </p>
+
             <div style={{ marginBottom: '1.25rem' }}>
               <strong style={{ fontSize: '0.85rem' }}>Applicant Profile</strong>
               <ApplicantProfileView profile={applicantProfile} loading={profileLoading} email={selected.applicantEmail} />

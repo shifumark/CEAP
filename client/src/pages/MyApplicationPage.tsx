@@ -4,6 +4,7 @@ import { apiService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { Application, ApplicationStatus } from '../types';
 import MyScholarshipPanel from '../components/MyScholarshipPanel';
+import Modal from '../components/Modal';
 
 const DELETABLE_STATUSES = new Set<ApplicationStatus>([
   ApplicationStatus.DRAFT,
@@ -47,6 +48,8 @@ const MyApplicationPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [busyId, setBusyId] = useState<number | null>(null);
+  const [deletingApplication, setDeletingApplication] = useState<Application | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const loadData = async () => {
     setError('');
@@ -78,19 +81,18 @@ const MyApplicationPage = () => {
     }
   };
 
-  const handleDeleteApplication = async (applicationId: number, scholarshipName?: string) => {
-    if (!window.confirm(`Withdraw your application to ${scholarshipName ?? 'this scholarship'}? This cannot be undone.`)) {
-      return;
-    }
-    setBusyId(applicationId);
+  const handleConfirmDelete = async () => {
+    if (!deletingApplication) return;
+    setDeleting(true);
     setError('');
     try {
-      await apiService.deleteApplication(applicationId);
+      await apiService.deleteApplication(deletingApplication.id);
+      setDeletingApplication(null);
       await loadData();
     } catch (err: any) {
-      setError(err.message || 'Failed to withdraw application');
+      setError(err.message || 'Failed to delete application');
     } finally {
-      setBusyId(null);
+      setDeleting(false);
     }
   };
 
@@ -191,10 +193,11 @@ const MyApplicationPage = () => {
                           {DELETABLE_STATUSES.has(application.status) && (
                             <button
                               className="btn btn-outline btn-sm"
+                              style={{ color: '#DC2626', borderColor: '#DC2626' }}
                               disabled={busyId === application.id}
-                              onClick={() => handleDeleteApplication(application.id, application.scholarshipName)}
+                              onClick={() => setDeletingApplication(application)}
                             >
-                              Withdraw Application
+                              Delete Application
                             </button>
                           )}
                         </div>
@@ -207,6 +210,37 @@ const MyApplicationPage = () => {
           </>
         )}
       </div>
+
+      {deletingApplication && (
+        <Modal title="Delete Application" onClose={() => setDeletingApplication(null)}>
+          <p
+            style={{
+              padding: '0.85rem',
+              background: 'rgba(239, 68, 68, 0.1)',
+              border: '1px solid rgba(239, 68, 68, 0.3)',
+              borderRadius: 'var(--radius-md)',
+              color: '#DC2626'
+            }}
+          >
+            Delete your application to <strong>{deletingApplication.scholarshipName ?? 'this scholarship'}</strong>?
+            This cannot be undone.
+          </p>
+          <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem' }}>
+            <button
+              className="btn btn-primary"
+              type="button"
+              style={{ background: '#DC2626' }}
+              disabled={deleting}
+              onClick={handleConfirmDelete}
+            >
+              {deleting ? 'Deleting...' : 'Delete Application'}
+            </button>
+            <button className="btn btn-outline" type="button" onClick={() => setDeletingApplication(null)} disabled={deleting}>
+              Cancel
+            </button>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 };

@@ -60,7 +60,6 @@ interface FormState {
   schoolAddress: string;
   schoolType: string;
   gwa: string;
-  previousSchool: string;
   honorsAwards: string;
   academicStatus: string;
   currentlyReceivingAssistance: string;
@@ -109,7 +108,6 @@ const emptyForm: FormState = {
   schoolAddress: '',
   schoolType: '',
   gwa: '',
-  previousSchool: '',
   honorsAwards: '',
   academicStatus: '',
   currentlyReceivingAssistance: '',
@@ -200,7 +198,6 @@ function applicantToForm(applicant: Applicant): FormState {
     schoolAddress: applicant.schoolAddress ?? '',
     schoolType: applicant.schoolType ?? '',
     gwa: applicant.gwa !== undefined ? String(applicant.gwa) : '',
-    previousSchool: applicant.previousSchool ?? '',
     honorsAwards: applicant.honorsAwards ?? '',
     academicStatus: applicant.academicStatus ?? '',
     currentlyReceivingAssistance: toYesNo(applicant.currentlyReceivingAssistance),
@@ -260,7 +257,6 @@ function formToRequest(form: FormState): UpdateApplicantProfileRequest {
     schoolAddress: form.schoolAddress || undefined,
     schoolType: form.schoolType || undefined,
     gwa: num(form.gwa),
-    previousSchool: form.previousSchool || undefined,
     honorsAwards: form.honorsAwards || undefined,
     academicStatus: form.academicStatus || undefined,
     currentlyReceivingAssistance: fromYesNo(form.currentlyReceivingAssistance),
@@ -363,6 +359,7 @@ const ProfilePage = () => {
     : form.courseName
       ? 'Other'
       : '';
+  const hasBothParents = form.father.name.trim() !== '' && form.mother.name.trim() !== '';
 
   return (
     <div>
@@ -686,12 +683,18 @@ const ProfilePage = () => {
                 </div>
 
                 <h4>Guardian (if applicable)</h4>
+                {hasBothParents && (
+                  <p style={{ fontSize: '0.85rem', color: '#6B7280', marginTop: 0 }}>
+                    Not needed — Father and Mother information is already provided above.
+                  </p>
+                )}
                 <div className="form-group">
                   <label htmlFor="guardianName">Name</label>
                   <input
                     id="guardianName"
                     value={form.guardian.name}
                     onChange={(e) => setFamilyField('guardian', 'name', e.target.value)}
+                    disabled={hasBothParents}
                   />
                 </div>
                 <div className="form-group">
@@ -700,6 +703,7 @@ const ProfilePage = () => {
                     id="guardianOccupation"
                     value={form.guardian.occupation}
                     onChange={(e) => setFamilyField('guardian', 'occupation', e.target.value)}
+                    disabled={hasBothParents}
                   />
                 </div>
                 <div className="form-group">
@@ -709,6 +713,7 @@ const ProfilePage = () => {
                     type="number"
                     value={form.guardian.monthlyIncome}
                     onChange={(e) => setFamilyField('guardian', 'monthlyIncome', e.target.value)}
+                    disabled={hasBothParents}
                   />
                 </div>
                 <div className="form-group">
@@ -717,6 +722,7 @@ const ProfilePage = () => {
                     id="guardianEducation"
                     value={form.guardian.educationalAttainment}
                     onChange={(e) => setFamilyField('guardian', 'educationalAttainment', e.target.value)}
+                    disabled={hasBothParents}
                   />
                 </div>
 
@@ -853,10 +859,6 @@ const ProfilePage = () => {
                 <div className="form-group">
                   <label htmlFor="gwa">General Weighted Average (GWA)</label>
                   <input id="gwa" type="number" step="0.01" value={form.gwa} onChange={(e) => set('gwa', e.target.value)} />
-                </div>
-                <div className="form-group">
-                  <label htmlFor="previousSchool">Previous School</label>
-                  <input id="previousSchool" value={form.previousSchool} onChange={(e) => set('previousSchool', e.target.value)} />
                 </div>
                 <div className="form-group">
                   <label htmlFor="honorsAwards">Honors/Awards Received (optional)</label>

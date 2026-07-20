@@ -117,7 +117,6 @@ const ApplicantProfileView = ({ profile, loading, email }: Props) => {
         <Field label="Year Level" value={profile.yearLevel} />
         <Field label="Course" value={profile.courseName} />
         <Field label="GWA" value={profile.gwa} />
-        <Field label="Previous School" value={profile.previousSchool} />
         <Field label="Honors/Awards" value={profile.honorsAwards} />
         <Field label="Academic Status" value={profile.academicStatus} />
       </ProfileSection>

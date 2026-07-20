@@ -422,7 +422,10 @@ export interface Application {
 }
 
 // Flattened applicant profile + application row for the admin Reports
-// page — one row per application, spreadsheet-style.
+// page — one row per application, spreadsheet-style. Mirrors every field
+// collected on the Profile page (client/src/pages/ProfilePage.tsx),
+// excluding zipCode/previousSchool since those were deliberately removed
+// from the profile UI (deprecated, not "profile information" anymore).
 export interface ApplicationReportRow {
   applicationId: number;
   applicantId: number;
@@ -435,24 +438,50 @@ export interface ApplicationReportRow {
   dateOfBirth?: Date;
   age?: number;
   placeOfBirth?: string;
+  nationality?: string;
+  idType?: string;
+  idNumber?: string;
+  isIndigenousPeople?: boolean;
+  ipGroupTribe?: string;
   address?: string;
   barangay?: string;
   municipality?: string;
   province?: string;
   contactNumber?: string;
   email: string;
-  schoolName?: string;
-  courseName?: string;
-  yearLevel?: string;
-  schoolAddress?: string;
-  gwa?: number;
+  sectoralClassifications: string[];
+  sectoralClassificationOther?: string;
+  numberOfHouseholdMembers?: number;
+  numberOfDependentsStudying?: number;
+  parentalStatus?: string;
   fatherName?: string;
   fatherOccupation?: string;
+  fatherMonthlyIncome?: number;
+  fatherEducationalAttainment?: string;
   motherName?: string;
   motherOccupation?: string;
+  motherMonthlyIncome?: number;
+  motherEducationalAttainment?: string;
   guardianName?: string;
   guardianOccupation?: string;
+  guardianMonthlyIncome?: number;
+  guardianEducationalAttainment?: string;
   householdMonthlyIncome?: number;
+  schoolName?: string;
+  schoolAddress?: string;
+  schoolType?: string;
+  courseName?: string;
+  yearLevel?: string;
+  gwa?: number;
+  honorsAwards?: string;
+  academicStatus?: string;
+  currentlyReceivingAssistance?: boolean;
+  currentAssistanceProgram?: string;
+  currentAssistanceAmount?: number;
+  appliedOtherScholarship?: boolean;
+  otherScholarshipProgram?: string;
+  academicDistinctionExtracurricular?: string;
+  lbpAtmAccountNumber?: string;
   scholarshipName?: string;
   status: ApplicationStatus;
   submissionDate?: Date;

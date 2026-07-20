@@ -14,6 +14,7 @@ const STATUS_LABEL: Record<ApplicationStatus, string> = {
 };
 
 const COLUMNS: { key: keyof ApplicationReportRow; label: string }[] = [
+  // I. Personal Information
   { key: 'lastName', label: 'Last Name' },
   { key: 'firstName', label: 'First Name' },
   { key: 'middleName', label: 'Middle Name' },
@@ -23,24 +24,58 @@ const COLUMNS: { key: keyof ApplicationReportRow; label: string }[] = [
   { key: 'dateOfBirth', label: 'Date of Birth' },
   { key: 'age', label: 'Age' },
   { key: 'placeOfBirth', label: 'Place of Birth' },
+  { key: 'nationality', label: 'Nationality' },
+  { key: 'idType', label: 'Type of ID' },
+  { key: 'idNumber', label: 'ID Number' },
+  // II. IP Affiliation
+  { key: 'isIndigenousPeople', label: 'Indigenous Peoples (IP)' },
+  { key: 'ipGroupTribe', label: 'IP Group/Tribe' },
+  // III. Contact Details
   { key: 'address', label: 'Address' },
   { key: 'barangay', label: 'Barangay' },
   { key: 'municipality', label: 'Municipality' },
   { key: 'province', label: 'Province' },
   { key: 'contactNumber', label: 'Contact No.' },
   { key: 'email', label: 'Email' },
-  { key: 'schoolName', label: 'School' },
-  { key: 'courseName', label: 'Course' },
-  { key: 'yearLevel', label: 'Year Level' },
-  { key: 'schoolAddress', label: 'School Address' },
-  { key: 'gwa', label: 'GWA' },
+  // IV. Socio-economic classification
+  { key: 'sectoralClassifications', label: 'Sectoral Classifications' },
+  { key: 'sectoralClassificationOther', label: 'Sectoral Classification (Other)' },
+  // V. Family background
+  { key: 'numberOfHouseholdMembers', label: 'No. of Household Members' },
+  { key: 'numberOfDependentsStudying', label: 'No. of Dependents Studying' },
+  { key: 'parentalStatus', label: 'Parental Status' },
   { key: 'fatherName', label: "Father's Name" },
   { key: 'fatherOccupation', label: "Father's Occupation" },
+  { key: 'fatherMonthlyIncome', label: "Father's Monthly Income" },
+  { key: 'fatherEducationalAttainment', label: "Father's Educational Attainment" },
   { key: 'motherName', label: "Mother's Name" },
   { key: 'motherOccupation', label: "Mother's Occupation" },
+  { key: 'motherMonthlyIncome', label: "Mother's Monthly Income" },
+  { key: 'motherEducationalAttainment', label: "Mother's Educational Attainment" },
   { key: 'guardianName', label: "Guardian's Name" },
   { key: 'guardianOccupation', label: "Guardian's Occupation" },
+  { key: 'guardianMonthlyIncome', label: "Guardian's Monthly Income" },
+  { key: 'guardianEducationalAttainment', label: "Guardian's Educational Attainment" },
   { key: 'householdMonthlyIncome', label: 'Household Monthly Income' },
+  // VI. Educational background
+  { key: 'schoolName', label: 'School' },
+  { key: 'schoolAddress', label: 'School Address' },
+  { key: 'schoolType', label: 'School Type' },
+  { key: 'courseName', label: 'Course' },
+  { key: 'yearLevel', label: 'Year Level' },
+  { key: 'gwa', label: 'GWA' },
+  { key: 'honorsAwards', label: 'Honors/Awards' },
+  { key: 'academicStatus', label: 'Academic Status' },
+  // VII. Other educational assistance
+  { key: 'currentlyReceivingAssistance', label: 'Currently Receiving Assistance' },
+  { key: 'currentAssistanceProgram', label: 'Current Assistance Program' },
+  { key: 'currentAssistanceAmount', label: 'Current Assistance Amount' },
+  { key: 'appliedOtherScholarship', label: 'Applied for Other Scholarship' },
+  { key: 'otherScholarshipProgram', label: 'Other Scholarship Program' },
+  { key: 'academicDistinctionExtracurricular', label: 'Academic Distinction/Extracurricular' },
+  // IX. ATM
+  { key: 'lbpAtmAccountNumber', label: 'LBP ATM Account Number' },
+  // Application
   { key: 'scholarshipName', label: 'Scholarship Program' },
   { key: 'status', label: 'Application Status' },
   { key: 'submissionDate', label: 'Date Submitted' }
@@ -58,6 +93,12 @@ function formatCell(row: ApplicationReportRow, key: keyof ApplicationReportRow):
   if (key === 'status') return STATUS_LABEL[value as ApplicationStatus];
   if (key === 'dateOfBirth' || key === 'submissionDate') {
     return new Date(value as unknown as string).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+  }
+  if (key === 'isIndigenousPeople' || key === 'currentlyReceivingAssistance' || key === 'appliedOtherScholarship') {
+    return value ? 'Yes' : 'No';
+  }
+  if (key === 'sectoralClassifications') {
+    return Array.isArray(value) ? value.join('; ') : String(value);
   }
   return String(value);
 }

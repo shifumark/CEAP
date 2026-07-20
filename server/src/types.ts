@@ -428,6 +428,50 @@ export interface Application {
   applicantEmail?: string;
 }
 
+// Flattened applicant profile + application row for the admin Reports
+// page — one row per application, spreadsheet-style.
+export interface ApplicationReportRow {
+  applicationId: number;
+  applicantId: number;
+  lastName: string;
+  firstName: string;
+  middleName?: string;
+  suffix?: string;
+  sex?: string;
+  civilStatus?: string;
+  dateOfBirth?: Date;
+  age?: number;
+  placeOfBirth?: string;
+  address?: string;
+  barangay?: string;
+  municipality?: string;
+  province?: string;
+  contactNumber?: string;
+  email: string;
+  schoolName?: string;
+  courseName?: string;
+  yearLevel?: string;
+  schoolAddress?: string;
+  gwa?: number;
+  fatherName?: string;
+  fatherOccupation?: string;
+  motherName?: string;
+  motherOccupation?: string;
+  guardianName?: string;
+  guardianOccupation?: string;
+  householdMonthlyIncome?: number;
+  scholarshipName?: string;
+  status: ApplicationStatus;
+  submissionDate?: Date;
+  createdAt: Date;
+}
+
+export interface ApplicationReportFilters {
+  name?: string;
+  barangay?: string;
+  status?: ApplicationStatus;
+}
+
 export interface CreateApplicationRequest {
   scholarshipId: number;
 }

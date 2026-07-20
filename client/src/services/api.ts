@@ -8,6 +8,8 @@ import {
   Application,
   ApplicationStatusHistory,
   ApplicationFilters,
+  ApplicationReportRow,
+  ApplicationReportFilters,
   PaginatedResponse,
   ScholarshipProgram,
   UploadedDocument,
@@ -191,6 +193,14 @@ class ApiService {
 
   async getApplication(id: number): Promise<Application> {
     return this.request('GET', `/applications/${id}`);
+  }
+
+  async getApplicationReport(filters?: Partial<ApplicationReportFilters>): Promise<ApplicationReportRow[]> {
+    const params = new URLSearchParams();
+    if (filters?.name) params.set('name', filters.name);
+    if (filters?.barangay) params.set('barangay', filters.barangay);
+    if (filters?.status) params.set('status', filters.status);
+    return this.request('GET', `/applications/report?${params.toString()}`);
   }
 
   async getApplicationHistory(id: number): Promise<ApplicationStatusHistory[]> {

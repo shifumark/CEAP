@@ -354,6 +354,24 @@ router.get('/applications', verifyToken, async (req: AuthenticatedRequest, res) 
 });
 
 /**
+ * Admin Reports page — flattened applicant profile + application rows,
+ * filterable by name/barangay/status. Registered before /applications/:id
+ * so "report" is never swallowed as an :id param.
+ */
+router.get('/applications/report', verifyToken, requireAdmin, async (req: AuthenticatedRequest, res) => {
+  try {
+    const rows = await applicationService.getReport({
+      name: typeof req.query.name === 'string' && req.query.name ? req.query.name : undefined,
+      barangay: typeof req.query.barangay === 'string' && req.query.barangay ? req.query.barangay : undefined,
+      status: typeof req.query.status === 'string' && req.query.status ? (req.query.status as ApplicationStatus) : undefined
+    });
+    res.json(rows);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
  * Get a single application
  * Protected - ownership enforced server-side; a Student requesting another
  * applicant's id gets 404, never the record or a leaky 403.

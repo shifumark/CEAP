@@ -13,6 +13,7 @@ import ScholarManagementPage from './pages/ScholarManagementPage';
 import ScholarDetailPage from './pages/ScholarDetailPage';
 import AnnouncementsPage from './pages/AnnouncementsPage';
 import NotificationsPage from './pages/NotificationsPage';
+import ReportsPage from './pages/ReportsPage';
 import Sidebar from './components/Sidebar';
 import { UserRole } from './types';
 import './styles.css';
@@ -25,7 +26,8 @@ const SIDEBAR_PATHS = [
   '/profile',
   '/scholars',
   '/announcements',
-  '/notifications'
+  '/notifications',
+  '/reports'
 ];
 
 function AppLayout() {
@@ -96,6 +98,14 @@ function AppLayout() {
             element={
               <ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.SUPER_ADMIN]}>
                 <ScholarDetailPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/reports"
+            element={
+              <ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.SUPER_ADMIN]}>
+                <ReportsPage />
               </ProtectedRoute>
             }
           />

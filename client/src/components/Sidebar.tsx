@@ -9,6 +9,7 @@ const NAV_ITEMS_BY_ROLE: Record<UserRole, Array<{ path: string; label: string; i
     { path: '/programs', label: 'Programs', icon: '🎓' },
     { path: '/applications', label: 'Applications', icon: '📝' },
     { path: '/scholars', label: 'Scholars', icon: '👥' },
+    { path: '/reports', label: 'Reports', icon: '📋' },
     { path: '/announcements', label: 'Announcements', icon: '📢' },
     { path: '/notifications', label: 'Notifications', icon: '🔔' }
   ],
@@ -17,6 +18,7 @@ const NAV_ITEMS_BY_ROLE: Record<UserRole, Array<{ path: string; label: string; i
     { path: '/programs', label: 'Programs', icon: '🎓' },
     { path: '/applications', label: 'Applications', icon: '📝' },
     { path: '/scholars', label: 'Scholars', icon: '👥' },
+    { path: '/reports', label: 'Reports', icon: '📋' },
     { path: '/announcements', label: 'Announcements', icon: '📢' },
     { path: '/notifications', label: 'Notifications', icon: '🔔' }
   ],

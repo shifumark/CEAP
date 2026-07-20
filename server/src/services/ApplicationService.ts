@@ -7,6 +7,8 @@ import {
   CreateApplicationRequest,
   UpdateApplicationRequest,
   ApplicationFilters,
+  ApplicationReportRow,
+  ApplicationReportFilters,
   PaginatedResponse,
   JWTPayload,
   UserRole,
@@ -172,6 +174,83 @@ export class ApplicationService {
       pageSize,
       totalPages: Math.ceil(total / pageSize)
     };
+  }
+
+  /**
+   * Flattened applicant profile + application rows for the admin Reports
+   * page. Callers must already be admin-gated (route-level requireAdmin) —
+   * unlike listApplications, this has no self-scoping fallback since it's
+   * never called on behalf of a Student.
+   */
+  async getReport(filters: ApplicationReportFilters): Promise<ApplicationReportRow[]> {
+    const where: Prisma.ApplicationWhereInput = {};
+    if (filters.status) where.status = filters.status as any;
+    if (filters.barangay) {
+      where.applicant = { barangay: { contains: filters.barangay, mode: 'insensitive' } };
+    }
+    if (filters.name) {
+      where.applicant = {
+        ...(where.applicant as Prisma.ApplicantWhereInput | undefined),
+        user: {
+          OR: [
+            { firstName: { contains: filters.name, mode: 'insensitive' } },
+            { lastName: { contains: filters.name, mode: 'insensitive' } }
+          ]
+        }
+      };
+    }
+
+    const rows = await prisma.application.findMany({
+      where,
+      include: {
+        scholarship: true,
+        applicant: { include: { user: true, familyMembers: true } }
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 1000
+    });
+
+    return rows.map((r) => {
+      const father = r.applicant.familyMembers.find((m) => m.memberType === 'father');
+      const mother = r.applicant.familyMembers.find((m) => m.memberType === 'mother');
+      const guardian = r.applicant.familyMembers.find((m) => m.memberType === 'guardian');
+
+      return {
+        applicationId: r.id,
+        applicantId: r.applicantId,
+        lastName: r.applicant.user.lastName,
+        firstName: r.applicant.user.firstName,
+        middleName: r.applicant.middleName ?? undefined,
+        suffix: r.applicant.suffix ?? undefined,
+        sex: r.applicant.sex ?? undefined,
+        civilStatus: r.applicant.civilStatus ?? undefined,
+        dateOfBirth: r.applicant.dateOfBirth ?? undefined,
+        age: r.applicant.age ?? undefined,
+        placeOfBirth: r.applicant.placeOfBirth ?? undefined,
+        address: r.applicant.address ?? undefined,
+        barangay: r.applicant.barangay ?? undefined,
+        municipality: r.applicant.municipality ?? undefined,
+        province: r.applicant.province ?? undefined,
+        contactNumber: r.applicant.contactNumber ?? undefined,
+        email: r.applicant.user.email,
+        schoolName: r.applicant.schoolName ?? undefined,
+        courseName: r.applicant.courseName ?? undefined,
+        yearLevel: r.applicant.yearLevel ?? undefined,
+        schoolAddress: r.applicant.schoolAddress ?? undefined,
+        gwa: r.applicant.gwa ? Number(r.applicant.gwa) : undefined,
+        fatherName: father?.name,
+        fatherOccupation: father?.occupation ?? undefined,
+        motherName: mother?.name,
+        motherOccupation: mother?.occupation ?? undefined,
+        guardianName: guardian?.name,
+        guardianOccupation: guardian?.occupation ?? undefined,
+        householdMonthlyIncome: r.applicant.householdMonthlyIncome ? Number(r.applicant.householdMonthlyIncome) : undefined,
+        scholarshipName: r.scholarship?.name,
+        status: r.status as unknown as ApplicationStatus,
+        submissionDate: r.submissionDate ?? undefined,
+        createdAt: r.createdAt
+      };
+    });
   }
 
   async getById(user: JWTPayload, id: number): Promise<Application | undefined> {

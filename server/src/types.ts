@@ -470,6 +470,8 @@ export interface ApplicationReportFilters {
   name?: string;
   barangay?: string;
   status?: ApplicationStatus;
+  page?: number;
+  pageSize?: number;
 }
 
 export interface CreateApplicationRequest {

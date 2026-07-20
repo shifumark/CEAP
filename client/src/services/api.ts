@@ -195,11 +195,13 @@ class ApiService {
     return this.request('GET', `/applications/${id}`);
   }
 
-  async getApplicationReport(filters?: Partial<ApplicationReportFilters>): Promise<ApplicationReportRow[]> {
+  async getApplicationReport(filters?: Partial<ApplicationReportFilters>): Promise<PaginatedResponse<ApplicationReportRow>> {
     const params = new URLSearchParams();
     if (filters?.name) params.set('name', filters.name);
     if (filters?.barangay) params.set('barangay', filters.barangay);
     if (filters?.status) params.set('status', filters.status);
+    if (filters?.page) params.set('page', String(filters.page));
+    if (filters?.pageSize) params.set('pageSize', String(filters.pageSize));
     return this.request('GET', `/applications/report?${params.toString()}`);
   }
 

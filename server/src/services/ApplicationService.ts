@@ -180,9 +180,16 @@ export class ApplicationService {
    * Flattened applicant profile + application rows for the admin Reports
    * page. Callers must already be admin-gated (route-level requireAdmin) —
    * unlike listApplications, this has no self-scoping fallback since it's
-   * never called on behalf of a Student.
+   * never called on behalf of a Student. Properly paginated (not a
+   * hardcoded row cap) so a filter matching more rows than one page
+   * doesn't silently truncate — the client fetches every page in
+   * sequence when it needs the complete filtered set (e.g. for CSV
+   * export).
    */
-  async getReport(filters: ApplicationReportFilters): Promise<ApplicationReportRow[]> {
+  async getReport(filters: ApplicationReportFilters): Promise<PaginatedResponse<ApplicationReportRow>> {
+    const page = filters.page && filters.page > 0 ? filters.page : 1;
+    const pageSize = filters.pageSize && filters.pageSize > 0 ? Math.min(filters.pageSize, 1000) : 200;
+
     const where: Prisma.ApplicationWhereInput = {};
     if (filters.status) where.status = filters.status as any;
     if (filters.barangay) {
@@ -200,17 +207,21 @@ export class ApplicationService {
       };
     }
 
-    const rows = await prisma.application.findMany({
-      where,
-      include: {
-        scholarship: true,
-        applicant: { include: { user: true, familyMembers: true } }
-      },
-      orderBy: { createdAt: 'desc' },
-      take: 1000
-    });
+    const [rows, total] = await Promise.all([
+      prisma.application.findMany({
+        where,
+        include: {
+          scholarship: true,
+          applicant: { include: { user: true, familyMembers: true } }
+        },
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * pageSize,
+        take: pageSize
+      }),
+      prisma.application.count({ where })
+    ]);
 
-    return rows.map((r) => {
+    const data = rows.map((r) => {
       const father = r.applicant.familyMembers.find((m) => m.memberType === 'father');
       const mother = r.applicant.familyMembers.find((m) => m.memberType === 'mother');
       const guardian = r.applicant.familyMembers.find((m) => m.memberType === 'guardian');
@@ -251,6 +262,14 @@ export class ApplicationService {
         createdAt: r.createdAt
       };
     });
+
+    return {
+      data,
+      total,
+      page,
+      pageSize,
+      totalPages: Math.ceil(total / pageSize)
+    };
   }
 
   async getById(user: JWTPayload, id: number): Promise<Application | undefined> {

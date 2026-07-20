@@ -46,6 +46,12 @@ const COLUMNS: { key: keyof ApplicationReportRow; label: string }[] = [
   { key: 'submissionDate', label: 'Date Submitted' }
 ];
 
+// On-screen table page size. CSV export uses a much larger page size
+// internally (see handleDownloadCsv) since it needs every matching row,
+// not just what's currently on screen.
+const PAGE_SIZE = 100;
+const EXPORT_PAGE_SIZE = 1000;
+
 function formatCell(row: ApplicationReportRow, key: keyof ApplicationReportRow): string {
   const value = row[key];
   if (value === undefined || value === null || value === '') return '';
@@ -65,22 +71,31 @@ function toCsvValue(value: string): string {
 
 const ReportsPage = () => {
   const [rows, setRows] = useState<ApplicationReportRow[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
   const [error, setError] = useState('');
   const [nameFilter, setNameFilter] = useState('');
   const [barangayFilter, setBarangayFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
 
-  const load = async () => {
+  const currentFilters = () => ({
+    name: nameFilter || undefined,
+    barangay: barangayFilter || undefined,
+    status: (statusFilter as ApplicationStatus) || undefined
+  });
+
+  const load = async (targetPage: number) => {
     setLoading(true);
     setError('');
     try {
-      const result = await apiService.getApplicationReport({
-        name: nameFilter || undefined,
-        barangay: barangayFilter || undefined,
-        status: (statusFilter as ApplicationStatus) || undefined
-      });
-      setRows(result);
+      const result = await apiService.getApplicationReport({ ...currentFilters(), page: targetPage, pageSize: PAGE_SIZE });
+      setRows(result.data);
+      setTotalCount(result.total);
+      setTotalPages(Math.max(1, result.totalPages));
+      setPage(result.page);
     } catch (err: any) {
       setError(err.message || 'Failed to load report');
     } finally {
@@ -89,27 +104,48 @@ const ReportsPage = () => {
   };
 
   useEffect(() => {
-    load();
+    load(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleFilterSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    load();
+    load(1);
   };
 
-  const handleDownloadCsv = () => {
-    const header = COLUMNS.map((c) => c.label);
-    const lines = [header, ...rows.map((row) => COLUMNS.map((c) => formatCell(row, c.key)))].map((line) =>
-      line.map(toCsvValue).join(',')
-    );
-    const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `applicant-report-${new Date().toISOString().slice(0, 10)}.csv`;
-    link.click();
-    URL.revokeObjectURL(url);
+  // Pulls every page matching the current filters (not just what's on
+  // screen) so the exported file always contains the complete filtered
+  // dataset, regardless of on-screen pagination.
+  const handleDownloadCsv = async () => {
+    setExporting(true);
+    setError('');
+    try {
+      const allRows: ApplicationReportRow[] = [];
+      let exportPage = 1;
+      let exportTotalPages = 1;
+      do {
+        const result = await apiService.getApplicationReport({ ...currentFilters(), page: exportPage, pageSize: EXPORT_PAGE_SIZE });
+        allRows.push(...result.data);
+        exportTotalPages = Math.max(1, result.totalPages);
+        exportPage++;
+      } while (exportPage <= exportTotalPages);
+
+      const header = COLUMNS.map((c) => c.label);
+      const lines = [header, ...allRows.map((row) => COLUMNS.map((c) => formatCell(row, c.key)))].map((line) =>
+        line.map(toCsvValue).join(',')
+      );
+      const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `applicant-report-${new Date().toISOString().slice(0, 10)}.csv`;
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      setError(err.message || 'Failed to export report');
+    } finally {
+      setExporting(false);
+    }
   };
 
   return (
@@ -163,8 +199,8 @@ const ReportsPage = () => {
             <button className="btn btn-primary btn-sm" type="submit" disabled={loading}>
               {loading ? 'Loading...' : 'Apply Filters'}
             </button>
-            <button className="btn btn-outline btn-sm" type="button" onClick={handleDownloadCsv} disabled={loading || rows.length === 0}>
-              Download as Excel/CSV
+            <button className="btn btn-outline btn-sm" type="button" onClick={handleDownloadCsv} disabled={loading || exporting || totalCount === 0}>
+              {exporting ? 'Preparing export...' : 'Download as Excel/CSV'}
             </button>
           </form>
         </div>
@@ -176,9 +212,20 @@ const ReportsPage = () => {
             <p style={{ color: '#6B7280' }}>No applicants match this filter.</p>
           ) : (
             <>
-              <p style={{ fontSize: '0.85rem', color: '#6B7280' }}>
-                <strong>{rows.length.toLocaleString()}</strong> row{rows.length === 1 ? '' : 's'}
-              </p>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                <p style={{ fontSize: '0.85rem', color: '#6B7280', margin: 0 }}>
+                  <strong>{totalCount.toLocaleString()}</strong> row{totalCount === 1 ? '' : 's'} total — showing page {page} of{' '}
+                  {totalPages}
+                </p>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <button className="btn btn-outline btn-sm" disabled={page <= 1 || loading} onClick={() => load(page - 1)}>
+                    Previous
+                  </button>
+                  <button className="btn btn-outline btn-sm" disabled={page >= totalPages || loading} onClick={() => load(page + 1)}>
+                    Next
+                  </button>
+                </div>
+              </div>
               <table style={{ borderCollapse: 'collapse', width: '100%' }}>
                 <thead>
                   <tr>

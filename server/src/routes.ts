@@ -360,12 +360,14 @@ router.get('/applications', verifyToken, async (req: AuthenticatedRequest, res) 
  */
 router.get('/applications/report', verifyToken, requireAdmin, async (req: AuthenticatedRequest, res) => {
   try {
-    const rows = await applicationService.getReport({
+    const result = await applicationService.getReport({
       name: typeof req.query.name === 'string' && req.query.name ? req.query.name : undefined,
       barangay: typeof req.query.barangay === 'string' && req.query.barangay ? req.query.barangay : undefined,
-      status: typeof req.query.status === 'string' && req.query.status ? (req.query.status as ApplicationStatus) : undefined
+      status: typeof req.query.status === 'string' && req.query.status ? (req.query.status as ApplicationStatus) : undefined,
+      page: req.query.page ? parseInt(req.query.page as string) : undefined,
+      pageSize: req.query.pageSize ? parseInt(req.query.pageSize as string) : undefined
     });
-    res.json(rows);
+    res.json(result);
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }

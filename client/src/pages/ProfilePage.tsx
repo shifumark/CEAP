@@ -10,8 +10,10 @@ import {
   ID_TYPE_OPTIONS,
   SECTORAL_CLASSIFICATIONS,
   PARENTAL_STATUS_OPTIONS,
-  YEAR_LEVEL_OPTIONS,
+  SENIOR_HIGH_ALS_YEAR_LEVELS,
   COLLEGE_YEAR_LEVELS,
+  PROFESSIONAL_YEAR_LEVELS,
+  SPECIAL_COURSE_OPTIONS,
   SCHOOL_TYPE_OPTIONS,
   ACADEMIC_STATUS_OPTIONS
 } from '../constants/profileOptions';
@@ -353,7 +355,13 @@ const ProfilePage = () => {
     }
   };
 
-  const isCollegeLevel = COLLEGE_YEAR_LEVELS.includes(form.yearLevel);
+  const isCourseLevel = COLLEGE_YEAR_LEVELS.includes(form.yearLevel) || PROFESSIONAL_YEAR_LEVELS.includes(form.yearLevel);
+  const isSpecialCourse = form.yearLevel === 'Special Course';
+  const specialCourseSelectValue = SPECIAL_COURSE_OPTIONS.includes(form.courseName)
+    ? form.courseName
+    : form.courseName
+      ? 'Other'
+      : '';
 
   return (
     <div>
@@ -779,18 +787,67 @@ const ProfilePage = () => {
                   <label htmlFor="yearLevel">Year Level</label>
                   <select id="yearLevel" value={form.yearLevel} onChange={(e) => set('yearLevel', e.target.value)}>
                     <option value="">Select...</option>
-                    {YEAR_LEVEL_OPTIONS.map((o) => (
-                      <option key={o} value={o}>
-                        {o}
-                      </option>
-                    ))}
+                    <optgroup label="Senior High School / ALS">
+                      {SENIOR_HIGH_ALS_YEAR_LEVELS.map((o) => (
+                        <option key={o} value={o}>
+                          {o}
+                        </option>
+                      ))}
+                    </optgroup>
+                    <optgroup label="College">
+                      {COLLEGE_YEAR_LEVELS.map((o) => (
+                        <option key={o} value={o}>
+                          {o}
+                        </option>
+                      ))}
+                    </optgroup>
+                    <optgroup label="Professional/Post Graduate Course">
+                      {PROFESSIONAL_YEAR_LEVELS.map((o) => (
+                        <option key={o} value={o}>
+                          {o}
+                        </option>
+                      ))}
+                    </optgroup>
+                    <option value="Special Course">Special Course</option>
+                    <option value="Other">Other</option>
                   </select>
                 </div>
-                {isCollegeLevel && (
-                  <div className="form-group">
-                    <label htmlFor="courseName">Course</label>
-                    <input id="courseName" value={form.courseName} onChange={(e) => set('courseName', e.target.value)} />
-                  </div>
+                {isSpecialCourse ? (
+                  <>
+                    <div className="form-group">
+                      <label htmlFor="specialCourseSelect">Special Course</label>
+                      <select
+                        id="specialCourseSelect"
+                        value={specialCourseSelectValue}
+                        onChange={(e) => set('courseName', e.target.value === 'Other' ? '' : e.target.value)}
+                      >
+                        <option value="">Select...</option>
+                        {SPECIAL_COURSE_OPTIONS.map((o) => (
+                          <option key={o} value={o}>
+                            {o}
+                          </option>
+                        ))}
+                        <option value="Other">Other</option>
+                      </select>
+                    </div>
+                    {specialCourseSelectValue === 'Other' && (
+                      <div className="form-group">
+                        <label htmlFor="specialCourseOther">Please specify your special course</label>
+                        <input
+                          id="specialCourseOther"
+                          value={form.courseName}
+                          onChange={(e) => set('courseName', e.target.value)}
+                        />
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  isCourseLevel && (
+                    <div className="form-group">
+                      <label htmlFor="courseName">Course</label>
+                      <input id="courseName" value={form.courseName} onChange={(e) => set('courseName', e.target.value)} />
+                    </div>
+                  )
                 )}
                 <div className="form-group">
                   <label htmlFor="gwa">General Weighted Average (GWA)</label>

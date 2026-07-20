@@ -26,27 +26,34 @@ export const PARENTAL_STATUS_OPTIONS = [
   'Other'
 ];
 
+// Grouped together in the Year Level dropdown (Senior High + ALS).
+export const SENIOR_HIGH_ALS_YEAR_LEVELS = ['Grade 11', 'Grade 12', 'Alternative Learning System'];
+
 // Must stay in sync with server/src/lib/profileRequirements.ts's
 // COLLEGE_YEAR_LEVELS — used to conditionally require Course.
-export const YEAR_LEVEL_OPTIONS = [
-  'Grade 11',
-  'Grade 12',
-  '1st Year College',
-  '2nd Year College',
-  '3rd Year College',
-  '4th Year College',
-  '5th Year College',
-  'Special Course',
-  'Alternative Learning System',
-  'Other'
-];
-
 export const COLLEGE_YEAR_LEVELS = [
   '1st Year College',
   '2nd Year College',
   '3rd Year College',
   '4th Year College',
   '5th Year College'
+];
+
+// Must stay in sync with server/src/lib/profileRequirements.ts's
+// PROFESSIONAL_YEAR_LEVELS — used to conditionally require Course.
+export const PROFESSIONAL_YEAR_LEVELS = ['First Year', 'Second Year', 'Third Year', 'Fourth Year'];
+
+// Shown as a dropdown (plus a free-text "Other") when Year Level is
+// "Special Course" — selection is stored in the same courseName field
+// used for College/Professional courses.
+export const SPECIAL_COURSE_OPTIONS = ['Juris Doctor', 'Doctor of Veterinary Medicine', 'Doctor of Medicine'];
+
+export const YEAR_LEVEL_OPTIONS = [
+  ...SENIOR_HIGH_ALS_YEAR_LEVELS,
+  ...COLLEGE_YEAR_LEVELS,
+  ...PROFESSIONAL_YEAR_LEVELS,
+  'Special Course',
+  'Other'
 ];
 
 export const SCHOOL_TYPE_OPTIONS = ['Private', 'Public'];

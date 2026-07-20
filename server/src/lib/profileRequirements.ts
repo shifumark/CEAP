@@ -25,6 +25,14 @@ export const COLLEGE_YEAR_LEVELS = [
   '5th Year College'
 ];
 
+// Mirrored in client/src/constants/profileOptions.ts.
+export const PROFESSIONAL_YEAR_LEVELS = ['First Year', 'Second Year', 'Third Year', 'Fourth Year'];
+
+// Year levels where courseName is conditionally required (College,
+// Professional/Post Graduate, and Special Course all collect it, just via
+// different input widgets client-side).
+const COURSE_REQUIRED_YEAR_LEVELS = [...COLLEGE_YEAR_LEVELS, ...PROFESSIONAL_YEAR_LEVELS, 'Special Course'];
+
 function isEmpty(value: unknown): boolean {
   return value === undefined || value === null || value === '';
 }
@@ -103,7 +111,7 @@ const CONDITIONAL_RULES: FieldRule[] = [
   },
   {
     label: 'Course',
-    present: (a) => !a.yearLevel || !COLLEGE_YEAR_LEVELS.includes(a.yearLevel) || !isEmpty(a.courseName)
+    present: (a) => !a.yearLevel || !COURSE_REQUIRED_YEAR_LEVELS.includes(a.yearLevel) || !isEmpty(a.courseName)
   },
   {
     label: 'Current Scholarship/Assistance Program',

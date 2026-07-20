@@ -75,7 +75,6 @@ const ApplicantProfileView = ({ profile, loading, email }: Props) => {
         <Field label="Barangay" value={profile.barangay} />
         <Field label="Municipality/City" value={profile.municipality} />
         <Field label="Province" value={profile.province} />
-        <Field label="Zip Code" value={profile.zipCode} />
         <Field label="Phone Number" value={profile.contactNumber} />
         <Field label="Email" value={email} />
       </ProfileSection>

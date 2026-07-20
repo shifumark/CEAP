@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { apiService } from '../services/api';
 import { Applicant, ProfileCompleteness, UpdateApplicantProfileRequest } from '../types';
 import ProfileDocuments from '../components/ProfileDocuments';
+import ValidIdUpload from '../components/ValidIdUpload';
 import {
   SEX_OPTIONS,
   CIVIL_STATUS_OPTIONS,
@@ -41,7 +42,6 @@ interface FormState {
   yearLevel: string;
   municipality: string;
   barangay: string;
-  zipCode: string;
   householdMonthlyIncome: string;
   placeOfBirth: string;
   nationality: string;
@@ -89,9 +89,8 @@ const emptyForm: FormState = {
   schoolName: '',
   courseName: '',
   yearLevel: '',
-  municipality: '',
+  municipality: 'Conner',
   barangay: '',
-  zipCode: '',
   householdMonthlyIncome: '',
   placeOfBirth: '',
   nationality: '',
@@ -99,7 +98,7 @@ const emptyForm: FormState = {
   idNumber: '',
   isIndigenousPeople: '',
   ipGroupTribe: '',
-  province: '',
+  province: 'Apayao',
   sectoralClassifications: [],
   sectoralClassificationOther: '',
   numberOfHouseholdMembers: '',
@@ -136,6 +135,20 @@ function toYesNo(value?: boolean): string {
   return '';
 }
 
+// Age is derived from Date of Birth rather than typed in directly, so the
+// two values can never drift apart.
+function calculateAge(dateOfBirth: string): string {
+  if (!dateOfBirth) return '';
+  const dob = new Date(dateOfBirth);
+  if (Number.isNaN(dob.getTime())) return '';
+  const today = new Date();
+  let age = today.getFullYear() - dob.getFullYear();
+  const hasHadBirthdayThisYear =
+    today.getMonth() > dob.getMonth() || (today.getMonth() === dob.getMonth() && today.getDate() >= dob.getDate());
+  if (!hasHadBirthdayThisYear) age -= 1;
+  return age >= 0 ? String(age) : '';
+}
+
 function fromYesNo(value: string): boolean | undefined {
   if (value === 'yes') return true;
   if (value === 'no') return false;
@@ -158,7 +171,7 @@ function applicantToForm(applicant: Applicant): FormState {
     middleName: applicant.middleName ?? '',
     suffix: applicant.suffix ?? '',
     dateOfBirth: toDateInputValue(applicant.dateOfBirth),
-    age: applicant.age !== undefined ? String(applicant.age) : '',
+    age: calculateAge(toDateInputValue(applicant.dateOfBirth)) || (applicant.age !== undefined ? String(applicant.age) : ''),
     sex: applicant.sex ?? '',
     civilStatus: applicant.civilStatus ?? '',
     contactNumber: applicant.contactNumber ?? '',
@@ -166,9 +179,8 @@ function applicantToForm(applicant: Applicant): FormState {
     schoolName: applicant.schoolName ?? '',
     courseName: applicant.courseName ?? '',
     yearLevel: applicant.yearLevel ?? '',
-    municipality: applicant.municipality ?? '',
+    municipality: applicant.municipality || 'Conner',
     barangay: applicant.barangay ?? '',
-    zipCode: applicant.zipCode ?? '',
     householdMonthlyIncome: applicant.householdMonthlyIncome !== undefined ? String(applicant.householdMonthlyIncome) : '',
     placeOfBirth: applicant.placeOfBirth ?? '',
     nationality: applicant.nationality ?? '',
@@ -176,7 +188,7 @@ function applicantToForm(applicant: Applicant): FormState {
     idNumber: applicant.idNumber ?? '',
     isIndigenousPeople: toYesNo(applicant.isIndigenousPeople),
     ipGroupTribe: applicant.ipGroupTribe ?? '',
-    province: applicant.province ?? '',
+    province: applicant.province || 'Apayao',
     sectoralClassifications: applicant.sectoralClassifications ?? [],
     sectoralClassificationOther: applicant.sectoralClassificationOther ?? '',
     numberOfHouseholdMembers: applicant.numberOfHouseholdMembers !== undefined ? String(applicant.numberOfHouseholdMembers) : '',
@@ -230,7 +242,6 @@ function formToRequest(form: FormState): UpdateApplicantProfileRequest {
     yearLevel: form.yearLevel || undefined,
     municipality: form.municipality || undefined,
     barangay: form.barangay || undefined,
-    zipCode: form.zipCode || undefined,
     householdMonthlyIncome: num(form.householdMonthlyIncome),
     placeOfBirth: form.placeOfBirth || undefined,
     nationality: form.nationality || undefined,
@@ -481,18 +492,15 @@ const ProfilePage = () => {
                     id="dateOfBirth"
                     type="date"
                     value={form.dateOfBirth}
-                    onChange={(e) => set('dateOfBirth', e.target.value)}
+                    onChange={(e) =>
+                      setForm((prev) => ({ ...prev, dateOfBirth: e.target.value, age: calculateAge(e.target.value) }))
+                    }
                   />
                 </div>
                 <div className="form-group">
                   <label htmlFor="age">Age</label>
-                  <input
-                    id="age"
-                    type="number"
-                    min="0"
-                    value={form.age}
-                    onChange={(e) => set('age', e.target.value)}
-                  />
+                  <input id="age" type="number" value={form.age} disabled />
+                  <small style={{ color: '#6B7280' }}>Computed automatically from Date of Birth</small>
                 </div>
                 <div className="form-group">
                   <label htmlFor="placeOfBirth">Place of Birth</label>
@@ -513,6 +521,7 @@ const ProfilePage = () => {
                     ))}
                   </select>
                 </div>
+                <ValidIdUpload onChange={loadCompleteness} />
                 <div className="form-group">
                   <label htmlFor="idNumber">Valid ID Number</label>
                   <input id="idNumber" value={form.idNumber} onChange={(e) => set('idNumber', e.target.value)} />
@@ -564,10 +573,6 @@ const ProfilePage = () => {
                   <input id="province" value={form.province} onChange={(e) => set('province', e.target.value)} />
                 </div>
                 <div className="form-group">
-                  <label htmlFor="zipCode">Zip Code</label>
-                  <input id="zipCode" value={form.zipCode} onChange={(e) => set('zipCode', e.target.value)} />
-                </div>
-                <div className="form-group">
                   <label htmlFor="contactNumber">Phone No.</label>
                   <input id="contactNumber" value={form.contactNumber} onChange={(e) => set('contactNumber', e.target.value)} />
                 </div>
@@ -611,6 +616,7 @@ const ProfilePage = () => {
                 <div className="form-group">
                   <label htmlFor="fatherName">Name</label>
                   <input id="fatherName" value={form.father.name} onChange={(e) => setFamilyField('father', 'name', e.target.value)} />
+                  <small style={{ color: '#6B7280' }}>Format: First Name, Middle Initial, Last Name</small>
                 </div>
                 <div className="form-group">
                   <label htmlFor="fatherOccupation">Occupation</label>
@@ -642,6 +648,7 @@ const ProfilePage = () => {
                 <div className="form-group">
                   <label htmlFor="motherName">Name</label>
                   <input id="motherName" value={form.mother.name} onChange={(e) => setFamilyField('mother', 'name', e.target.value)} />
+                  <small style={{ color: '#6B7280' }}>Format: First Name, Middle Initial, Last Name</small>
                 </div>
                 <div className="form-group">
                   <label htmlFor="motherOccupation">Occupation</label>

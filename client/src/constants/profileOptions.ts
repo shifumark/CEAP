@@ -4,7 +4,7 @@ export const CIVIL_STATUS_OPTIONS = ['Single', 'Married', 'Other'];
 
 export const SUFFIX_OPTIONS = ['None', 'Jr.', 'Sr.', 'Other'];
 
-export const ID_TYPE_OPTIONS = ["Driver's License", 'PhilID/National ID', "Voter's ID", 'Other'];
+export const ID_TYPE_OPTIONS = ["Driver's License", 'PhilID/National ID', "Voter's ID", 'Others'];
 
 export const SECTORAL_CLASSIFICATIONS = [
   '4Ps Beneficiary (Pantawid Pamilyang Pilipino Program)',
@@ -36,6 +36,7 @@ export const YEAR_LEVEL_OPTIONS = [
   '3rd Year College',
   '4th Year College',
   '5th Year College',
+  'Special Course',
   'Alternative Learning System',
   'Other'
 ];

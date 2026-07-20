@@ -575,6 +575,10 @@ export interface DashboardStats {
   rejectedApplications: number;
   scholarshipUtilization: number;
   renewalsDue: number;
+  seniorHighApplicants: number;
+  collegeApplicants: number;
+  specialCourseApplicants: number;
+  alsApplicants: number;
 }
 
 // API RESPONSE WRAPPERS

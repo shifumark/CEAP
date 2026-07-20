@@ -11,6 +11,7 @@ import { AnnouncementService } from './services/AnnouncementService.js';
 import { NotificationService } from './services/NotificationService.js';
 import { generateApplicationFormPdf } from './services/ApplicationFormPdfService.js';
 import { prisma } from './lib/prisma.js';
+import { COLLEGE_YEAR_LEVELS } from './lib/profileRequirements.js';
 import {
   UserRole,
   UserStatus,
@@ -908,18 +909,33 @@ router.get('/dashboard/stats', verifyToken, async (req: AuthenticatedRequest, re
     let stats: any;
 
     if (isAdmin) {
-      const [pending, approved, rejected, totalScholars, activeScholars, graduatedScholars, renewalsDue] =
-        await Promise.all([
-          prisma.application.count({
-            where: { status: { in: ['submitted', 'under_review', 'document_verification', 'interview'] } }
-          }),
-          prisma.application.count({ where: { status: 'approved' } }),
-          prisma.application.count({ where: { status: 'rejected' } }),
-          prisma.scholar.count(),
-          prisma.scholar.count({ where: { status: 'active' } }),
-          prisma.scholar.count({ where: { status: 'graduated' } }),
-          prisma.renewal.count({ where: { status: 'pending' } })
-        ]);
+      const [
+        pending,
+        approved,
+        rejected,
+        totalScholars,
+        activeScholars,
+        graduatedScholars,
+        renewalsDue,
+        seniorHighApplicants,
+        collegeApplicants,
+        specialCourseApplicants,
+        alsApplicants
+      ] = await Promise.all([
+        prisma.application.count({
+          where: { status: { in: ['submitted', 'under_review', 'document_verification', 'interview'] } }
+        }),
+        prisma.application.count({ where: { status: 'approved' } }),
+        prisma.application.count({ where: { status: 'rejected' } }),
+        prisma.scholar.count(),
+        prisma.scholar.count({ where: { status: 'active' } }),
+        prisma.scholar.count({ where: { status: 'graduated' } }),
+        prisma.renewal.count({ where: { status: 'pending' } }),
+        prisma.applicant.count({ where: { yearLevel: { in: ['Grade 11', 'Grade 12'] } } }),
+        prisma.applicant.count({ where: { yearLevel: { in: COLLEGE_YEAR_LEVELS } } }),
+        prisma.applicant.count({ where: { yearLevel: 'Special Course' } }),
+        prisma.applicant.count({ where: { yearLevel: 'Alternative Learning System' } })
+      ]);
 
       stats = {
         totalScholars,
@@ -931,7 +947,11 @@ router.get('/dashboard/stats', verifyToken, async (req: AuthenticatedRequest, re
         // No per-program capacity target is tracked yet to compute a
         // meaningful utilization percentage against.
         scholarshipUtilization: 0,
-        renewalsDue
+        renewalsDue,
+        seniorHighApplicants,
+        collegeApplicants,
+        specialCourseApplicants,
+        alsApplicants
       };
     } else {
       // Student view — most recently created application, if any.

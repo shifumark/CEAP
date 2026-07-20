@@ -111,12 +111,28 @@ export class DocumentService {
     return toDocument(created);
   }
 
+  /**
+   * Documents relevant to reviewing this application: anything actually
+   * attached to the application record itself, plus the applicant's
+   * profile-level uploads (Valid ID, Grades, etc.) — which is where every
+   * document is uploaded today (ProfileDocuments/ValidIdUpload always
+   * omit applicationId, reused across every application the student
+   * makes). Without the profile-level half, an admin reviewing an
+   * application would see no documents at all.
+   */
   async listByApplication(user: JWTPayload, applicationId: number): Promise<UploadedDocument[]> {
     const application = await applicationService.getById(user, applicationId);
     if (!application) return [];
 
+    const applicant = await prisma.applicant.findUnique({
+      where: { id: application.applicantId },
+      select: { userId: true }
+    });
+
     const docs = await prisma.uploadedDocument.findMany({
-      where: { applicationId },
+      where: {
+        OR: [{ applicationId }, ...(applicant ? [{ userId: applicant.userId, applicationId: null }] : [])]
+      },
       orderBy: { createdAt: 'asc' }
     });
     return docs.map(toDocument);

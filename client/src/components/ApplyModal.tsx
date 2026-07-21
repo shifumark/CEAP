@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { apiService } from '../services/api';
 import { ScholarshipProgram } from '../types';
 import Modal from './Modal';
+import ProfileDocuments from './ProfileDocuments';
 
 interface Props {
   scholarship: ScholarshipProgram;
@@ -55,6 +56,15 @@ const ApplyModal = ({ scholarship, onClose, onSuccess }: Props) => {
         This creates a draft application for <strong>{scholarship.name}</strong>. Complete your profile and upload
         the required documents before submitting it for review.
       </p>
+
+      <div style={{ marginBottom: '1.25rem' }}>
+        <strong style={{ fontSize: '0.85rem' }}>Documents</strong>
+        <p style={{ fontSize: '0.8rem', color: '#6B7280', margin: '0.25rem 0 0.6rem' }}>
+          Upload any missing document here — it's saved to your profile, so it's reused for every application and
+          also appears under "VIII. Documentary Requirements" on your Profile page.
+        </p>
+        <ProfileDocuments />
+      </div>
 
       <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem' }}>
         <button className="btn btn-primary" type="button" disabled={submitting} onClick={handleSubmit}>

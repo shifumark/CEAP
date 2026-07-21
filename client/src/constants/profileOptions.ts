@@ -60,16 +60,3 @@ export const ACADEMIC_STATUS_OPTIONS = [
   'With failed subject/s (30% or more of total subjects)',
   'Dropped subject/s'
 ];
-
-// Must stay in sync with server/src/lib/profileRequirements.ts's
-// REQUIRED_PROFILE_DOCUMENT_TYPES.
-export const REQUIRED_PROFILE_DOCUMENT_TYPES = [
-  'Valid ID',
-  'Certificate of Indigency',
-  'Voters Certificate',
-  'Enrolment Form',
-  'Grades',
-  'Real Property Tax Receipt / Certificate of No Land Holding',
-  'Application Form',
-  'LBP ATM Card Photocopy'
-];

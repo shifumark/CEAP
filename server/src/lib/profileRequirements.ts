@@ -1,20 +1,5 @@
 import { Applicant } from '../types.js';
 
-// Fixed document-type strings a student must upload (profile-level,
-// applicationId: null) before any application can be submitted. Mirrored
-// client-side in client/src/constants/profileOptions.ts for the upload UI
-// — keep both lists identical since types aren't runtime-shared.
-export const REQUIRED_PROFILE_DOCUMENT_TYPES = [
-  'Valid ID',
-  'Certificate of Indigency',
-  'Voters Certificate',
-  'Enrolment Form',
-  'Grades',
-  'Real Property Tax Receipt / Certificate of No Land Holding',
-  'Application Form',
-  'LBP ATM Card Photocopy'
-] as const;
-
 // Year levels considered "college" for the conditional courseName
 // requirement — mirrored in client/src/constants/profileOptions.ts.
 export const COLLEGE_YEAR_LEVELS = [
@@ -133,7 +118,9 @@ export function computeMissingFields(applicant: Applicant): string[] {
     .map((rule) => rule.label);
 }
 
-export function computeMissingDocuments(uploadedDocumentTypes: string[]): string[] {
+// requiredDocumentTypes now comes from the admin-managed DocumentRequirement
+// table (see DocumentRequirementService) rather than a hardcoded list.
+export function computeMissingDocuments(uploadedDocumentTypes: string[], requiredDocumentTypes: string[]): string[] {
   const uploaded = new Set(uploadedDocumentTypes);
-  return REQUIRED_PROFILE_DOCUMENT_TYPES.filter((docType) => !uploaded.has(docType));
+  return requiredDocumentTypes.filter((docType) => !uploaded.has(docType));
 }

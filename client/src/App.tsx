@@ -11,6 +11,7 @@ import MyApplicationPage from './pages/MyApplicationPage';
 import ProfilePage from './pages/ProfilePage';
 import ScholarManagementPage from './pages/ScholarManagementPage';
 import ScholarDetailPage from './pages/ScholarDetailPage';
+import DocumentRequirementsPage from './pages/DocumentRequirementsPage';
 import AnnouncementsPage from './pages/AnnouncementsPage';
 import NotificationsPage from './pages/NotificationsPage';
 import ReportsPage from './pages/ReportsPage';
@@ -26,6 +27,7 @@ const SIDEBAR_PATHS = [
   '/my-application',
   '/profile',
   '/scholars',
+  '/document-requirements',
   '/announcements',
   '/notifications',
   '/reports',
@@ -100,6 +102,14 @@ function AppLayout() {
             element={
               <ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.SUPER_ADMIN]}>
                 <ScholarDetailPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/document-requirements"
+            element={
+              <ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.SUPER_ADMIN]}>
+                <DocumentRequirementsPage />
               </ProtectedRoute>
             }
           />

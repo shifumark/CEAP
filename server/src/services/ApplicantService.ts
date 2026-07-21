@@ -3,6 +3,9 @@ import type { Applicant as PrismaApplicant, FamilyMember as PrismaFamilyMember, 
 import { prisma } from '../lib/prisma.js';
 import { computeMissingFields, computeMissingDocuments } from '../lib/profileRequirements.js';
 import { Applicant, FamilyMemberDetail, ProfileCompleteness, UpdateApplicantProfileRequest, JWTPayload } from '../types.js';
+import { DocumentRequirementService } from './DocumentRequirementService.js';
+
+const documentRequirementService = new DocumentRequirementService();
 
 const applicantInclude = { familyMembers: true, user: true } satisfies Prisma.ApplicantInclude;
 type ApplicantWithFamily = PrismaApplicant & { familyMembers: PrismaFamilyMember[]; user: PrismaUser };
@@ -174,9 +177,11 @@ export class ApplicantService {
       select: { documentType: true }
     });
     const uploadedTypes = documents.map((d) => d.documentType).filter((t): t is string => !!t);
+    const requiredDocuments = await documentRequirementService.list();
+    const requiredTypes = requiredDocuments.map((d) => d.documentType);
 
     const missingFields = computeMissingFields(applicant);
-    const missingDocuments = computeMissingDocuments(uploadedTypes);
+    const missingDocuments = computeMissingDocuments(uploadedTypes, requiredTypes);
 
     return {
       complete: missingFields.length === 0 && missingDocuments.length === 0,

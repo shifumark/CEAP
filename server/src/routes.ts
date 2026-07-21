@@ -9,6 +9,7 @@ import { DocumentService } from './services/DocumentService.js';
 import { ScholarService } from './services/ScholarService.js';
 import { AnnouncementService } from './services/AnnouncementService.js';
 import { NotificationService } from './services/NotificationService.js';
+import { DocumentRequirementService } from './services/DocumentRequirementService.js';
 import { generateApplicationFormPdf } from './services/ApplicationFormPdfService.js';
 import { prisma } from './lib/prisma.js';
 import { COLLEGE_YEAR_LEVELS, PROFESSIONAL_YEAR_LEVELS } from './lib/profileRequirements.js';
@@ -41,6 +42,7 @@ const documentService = new DocumentService();
 const scholarService = new ScholarService();
 const announcementService = new AnnouncementService();
 const notificationService = new NotificationService();
+const documentRequirementService = new DocumentRequirementService();
 
 // ============== AUTHENTICATION ROUTES ==============
 
@@ -224,6 +226,54 @@ router.delete('/scholarships/:id', verifyToken, requireAdmin, async (req: Authen
     }
 
     res.json({ message: 'Scholarship deleted successfully' });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ============== DOCUMENT REQUIREMENTS ROUTES ==============
+// Global list of document types every applicant must upload to their
+// profile — distinct from the per-program /scholarships/:id/required-documents.
+
+/**
+ * List document requirements
+ * Protected - any authenticated user (drives Section VIII of the profile page)
+ */
+router.get('/document-requirements', verifyToken, async (_req: AuthenticatedRequest, res) => {
+  try {
+    const requirements = await documentRequirementService.list();
+    res.json(requirements);
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * Add a document requirement
+ * Protected - requires admin or super admin role
+ */
+router.post('/document-requirements', verifyToken, requireAdmin, async (req: AuthenticatedRequest, res) => {
+  try {
+    const created = await documentRequirementService.create(req.body.documentType);
+    res.status(201).json(created);
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+/**
+ * Delete a document requirement
+ * Protected - requires admin or super admin role
+ */
+router.delete('/document-requirements/:id', verifyToken, requireAdmin, async (req: AuthenticatedRequest, res) => {
+  try {
+    const success = await documentRequirementService.delete(parseInt(req.params.id));
+
+    if (!success) {
+      return res.status(404).json({ error: 'Document requirement not found' });
+    }
+
+    res.json({ message: 'Document requirement deleted successfully' });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }

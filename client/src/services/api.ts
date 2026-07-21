@@ -15,6 +15,7 @@ import {
   ScholarshipProgram,
   UploadedDocument,
   RequiredDocument,
+  DocumentRequirement,
   DocumentVerificationStatus,
   Scholar,
   ScholarFilters,
@@ -171,6 +172,20 @@ class ApiService {
 
   async getRequiredDocuments(scholarshipId: number): Promise<RequiredDocument[]> {
     return this.request('GET', `/scholarships/${scholarshipId}/required-documents`);
+  }
+
+  // ============== DOCUMENT REQUIREMENTS (global, profile-level) ==============
+
+  async getDocumentRequirements(): Promise<DocumentRequirement[]> {
+    return this.request('GET', '/document-requirements');
+  }
+
+  async createDocumentRequirement(documentType: string): Promise<DocumentRequirement> {
+    return this.request('POST', '/document-requirements', { documentType });
+  }
+
+  async deleteDocumentRequirement(id: number): Promise<{ message: string }> {
+    return this.request('DELETE', `/document-requirements/${id}`);
   }
 
   async createScholarship(data: CreateScholarshipProgramRequest): Promise<ScholarshipProgram> {

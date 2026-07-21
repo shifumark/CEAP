@@ -415,6 +415,15 @@ export interface RequiredDocument {
   updatedAt: Date;
 }
 
+// Global (not per-program) list of document types every applicant must
+// upload to their profile before submitting any application.
+export interface DocumentRequirement {
+  id: number;
+  documentType: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 // APPLICATION
 export interface Application {
   id: number;

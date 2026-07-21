@@ -332,6 +332,19 @@ model RequiredDocument {
   @@map("required_documents")
 }
 
+// Global list of document types every applicant must upload to their
+// profile (applicationId: null) before submitting any application —
+// admin/super-admin managed (add/delete). Distinct from RequiredDocument
+// above, which is per-program and unrelated to this list.
+model DocumentRequirement {
+  id           Int      @id @default(autoincrement())
+  documentType String   @unique @map("document_type")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("document_requirements")
+}
+
 // ============== APPLICATIONS ==============
 
 model Application {

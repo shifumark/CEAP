@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { apiService } from '../services/api';
 import { UploadedDocument } from '../types';
-import { REQUIRED_PROFILE_DOCUMENT_TYPES } from '../constants/profileOptions';
 
 const VALID_ID_TYPE = 'Valid ID';
 
@@ -15,17 +14,26 @@ interface Props {
  * needed. "Valid ID" itself is handled separately by ValidIdUpload,
  * inline in Section I of the profile form — excluded from this list so
  * it isn't shown twice.
+ *
+ * The list of required types is admin-managed (DocumentRequirementService)
+ * rather than hardcoded — newly added requirements automatically get an
+ * upload row here for any scholar who hasn't uploaded that type yet.
  */
 const ProfileDocuments = ({ onChange }: Props) => {
   const [uploaded, setUploaded] = useState<UploadedDocument[]>([]);
+  const [requiredTypes, setRequiredTypes] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [busyKey, setBusyKey] = useState<string | null>(null);
 
   const load = async () => {
     try {
-      const docs = await apiService.getMyProfileDocuments();
+      const [docs, requirements] = await Promise.all([
+        apiService.getMyProfileDocuments(),
+        apiService.getDocumentRequirements()
+      ]);
       setUploaded(docs);
+      setRequiredTypes(requirements.map((r) => r.documentType));
     } catch (err: any) {
       setError(err.message || 'Failed to load documents');
     } finally {
@@ -103,7 +111,7 @@ const ProfileDocuments = ({ onChange }: Props) => {
     return <p style={{ fontSize: '0.85rem', color: '#6B7280' }}>Loading documents...</p>;
   }
 
-  const otherRequiredTypes = REQUIRED_PROFILE_DOCUMENT_TYPES.filter((t) => t !== VALID_ID_TYPE);
+  const otherRequiredTypes = requiredTypes.filter((t) => t !== VALID_ID_TYPE);
 
   return (
     <div>

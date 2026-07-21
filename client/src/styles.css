@@ -84,6 +84,16 @@ a { color: inherit; text-decoration: none; }
   background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
 }
 
+/* Public pages (Home, Login, Register) render directly inside #root,
+   which is height:100vh + overflow:hidden for the sidebar layout's
+   benefit — without their own scroll region, content taller than the
+   viewport would be permanently clipped with no way to scroll to it. */
+.page-scroll {
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+}
+
 /* ===========================
    SIDEBAR NAVIGATION
    =========================== */

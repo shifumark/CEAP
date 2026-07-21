@@ -40,6 +40,11 @@ const STATUS_BADGE: Record<ApplicationStatus, string> = {
   [ApplicationStatus.NEEDS_REVISION]: 'badge-warning'
 };
 
+// Drafts are the student's own in-progress work and are never shown to
+// admins (server enforces this too) — excluded from both the filter and
+// the decision dropdown.
+const REVIEWABLE_STATUSES = Object.values(ApplicationStatus).filter((status) => status !== ApplicationStatus.DRAFT);
+
 function formatDate(value?: string | Date) {
   if (!value) return '—';
   return new Date(value).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
@@ -195,7 +200,7 @@ const ApplicationReviewPage = () => {
             <label htmlFor="statusFilter">Filter by status</label>
             <select id="statusFilter" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
               <option value="">All statuses</option>
-              {Object.values(ApplicationStatus).map((status) => (
+              {REVIEWABLE_STATUSES.map((status) => (
                 <option key={status} value={status}>
                   {STATUS_LABEL[status]}
                 </option>
@@ -322,7 +327,7 @@ const ApplicationReviewPage = () => {
                 onChange={(e) => setDraftStatus(e.target.value as ApplicationStatus)}
                 autoFocus
               >
-                {Object.values(ApplicationStatus).map((status) => (
+                {REVIEWABLE_STATUSES.map((status) => (
                   <option key={status} value={status}>
                     {STATUS_LABEL[status]}
                   </option>

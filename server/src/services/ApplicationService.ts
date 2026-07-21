@@ -152,8 +152,12 @@ export class ApplicationService {
       // what filters were requested.
       const applicant = await applicantService.getOrCreateForUser(user.sub);
       where.applicantId = applicant.id;
-    } else if (filters?.applicantId) {
-      where.applicantId = filters.applicantId;
+    } else {
+      if (filters?.applicantId) where.applicantId = filters.applicantId;
+      // Admins never see draft applications — a draft hasn't been
+      // submitted yet and is still the student's own in-progress work.
+      // This overrides even an explicit status=draft filter request.
+      where.status = filters?.status && (filters.status as unknown as string) !== 'draft' ? (filters.status as any) : { not: 'draft' };
     }
 
     const [items, total] = await Promise.all([
@@ -326,6 +330,10 @@ export class ApplicationService {
 
     const application = await prisma.application.findUnique({ where: { id } });
     if (!application) return undefined;
+
+    if (application.status === 'draft') {
+      throw new Error('This application is still a draft — the student must submit it before it can be reviewed.');
+    }
 
     const updated = await prisma.$transaction(async (tx) => {
       const app = await tx.application.update({

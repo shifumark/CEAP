@@ -804,7 +804,20 @@ const ProfilePage = () => {
                 </div>
                 <div className="form-group">
                   <label htmlFor="yearLevel">Year Level</label>
-                  <select id="yearLevel" value={form.yearLevel} onChange={(e) => set('yearLevel', e.target.value)}>
+                  <select
+                    id="yearLevel"
+                    value={form.yearLevel}
+                    onChange={(e) => {
+                      // Clears any leftover Course value from a previous
+                      // Year Level — otherwise a stale courseName that
+                      // doesn't match Juris Doctor/Vet Med/Medicine makes
+                      // the Special Course dropdown falsely default to
+                      // "Other" instead of the blank placeholder.
+                      set('yearLevel', e.target.value);
+                      set('courseName', '');
+                      setSpecialCourseOtherSelected(false);
+                    }}
+                  >
                     <option value="">Select...</option>
                     <optgroup label="Senior High School / ALS">
                       {SENIOR_HIGH_ALS_YEAR_LEVELS.map((o) => (
@@ -863,7 +876,7 @@ const ProfilePage = () => {
                           set('courseName', isOther ? '' : e.target.value);
                         }}
                       >
-                        <option value="">Select...</option>
+                        <option value="">Please Select</option>
                         {SPECIAL_COURSE_OPTIONS.map((o) => (
                           <option key={o} value={o}>
                             {o}

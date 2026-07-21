@@ -130,9 +130,16 @@ const ProgramPage = () => {
     requiredDocuments: ''
   });
 
-  const openEdit = (program: ScholarshipProgram) => {
+  const openEdit = async (program: ScholarshipProgram) => {
     setEditingProgram(program);
     setEditForm(toEditForm(program));
+    try {
+      const docs = await apiService.getRequiredDocuments(program.id);
+      setEditForm((prev) => ({ ...prev, requiredDocuments: docs.map((d) => d.documentType).join(', ') }));
+    } catch {
+      // Non-fatal — the field just starts blank if this fails, same as
+      // a brand-new program with no required documents yet.
+    }
   };
 
   const handleUpdate = async (e: React.FormEvent) => {
@@ -151,7 +158,10 @@ const ProgramPage = () => {
         eligibilityRequirements: editForm.eligibilityRequirements,
         openingDate: editForm.openingDate,
         closingDate: editForm.closingDate,
-        academicYear: editForm.academicYear
+        academicYear: editForm.academicYear,
+        requiredDocuments: editForm.requiredDocuments
+          ? editForm.requiredDocuments.split(',').map((d) => d.trim()).filter(Boolean)
+          : []
       });
       setEditingProgram(null);
       await load();
@@ -573,6 +583,15 @@ const ProgramPage = () => {
                 value={editForm.academicYear}
                 onChange={(e) => setEditForm({ ...editForm, academicYear: e.target.value })}
                 required
+              />
+            </div>
+            <div className="form-group">
+              <label htmlFor="editDocs">Required Documents (comma-separated)</label>
+              <input
+                id="editDocs"
+                placeholder="Transcript of Records, Certificate of Enrollment"
+                value={editForm.requiredDocuments}
+                onChange={(e) => setEditForm({ ...editForm, requiredDocuments: e.target.value })}
               />
             </div>
             <div style={{ display: 'flex', gap: '0.75rem' }}>

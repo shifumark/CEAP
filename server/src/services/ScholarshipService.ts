@@ -125,10 +125,18 @@ export class ScholarshipService {
       // whenever a caller updated a date (a latent bug — no existing
       // caller touched dates via this path until the +/- extension
       // feature and the edit form started sending them).
-      const { openingDate, closingDate, ...rest } = request;
+      const { openingDate, closingDate, requiredDocuments, ...rest } = request;
       const data: Record<string, unknown> = { ...rest };
       if (openingDate !== undefined) data.openingDate = new Date(openingDate);
       if (closingDate !== undefined) data.closingDate = new Date(closingDate);
+      // Comma-separated field in the edit form — a full replace rather
+      // than an incremental add/delete, matching how it works at creation.
+      if (requiredDocuments !== undefined) {
+        data.requiredDocuments = {
+          deleteMany: {},
+          create: requiredDocuments.map((documentType) => ({ documentType }))
+        };
+      }
 
       const updated = await prisma.scholarshipProgram.update({
         where: { id },

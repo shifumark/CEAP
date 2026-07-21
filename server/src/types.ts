@@ -402,6 +402,9 @@ export interface UpdateScholarshipProgramRequest {
   status?: string;
   numberOfSlots?: number;
   maxApplicants?: number;
+  // When provided, fully replaces this program's required-document list
+  // (matches the comma-separated overwrite semantics used at creation).
+  requiredDocuments?: string[];
 }
 
 // REQUIRED DOCUMENT

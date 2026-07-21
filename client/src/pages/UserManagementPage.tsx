@@ -40,6 +40,16 @@ const UserManagementPage = () => {
   const [resettingUser, setResettingUser] = useState<User | null>(null);
   const [resetting, setResetting] = useState(false);
   const [temporaryPassword, setTemporaryPassword] = useState('');
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [createForm, setCreateForm] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    password: '',
+    role: UserRole.ADMIN
+  });
+  const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState('');
 
   const load = () => {
     setLoading(true);
@@ -101,6 +111,27 @@ const UserManagementPage = () => {
     setTemporaryPassword('');
   };
 
+  const closeCreateForm = () => {
+    setShowCreateForm(false);
+    setCreateForm({ firstName: '', lastName: '', email: '', password: '', role: UserRole.ADMIN });
+    setCreateError('');
+  };
+
+  const handleCreateUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCreating(true);
+    setCreateError('');
+    try {
+      await apiService.createUser(createForm);
+      closeCreateForm();
+      load();
+    } catch (err: any) {
+      setCreateError(err.message || 'Failed to create user');
+    } finally {
+      setCreating(false);
+    }
+  };
+
   const filtered = users.filter((u) => {
     if (roleFilter && u.role !== roleFilter) return false;
     if (statusFilter && u.status !== statusFilter) return false;
@@ -117,6 +148,11 @@ const UserManagementPage = () => {
     <div>
       <nav className="navbar">
         <div className="navbar-brand">Users</div>
+        <div className="navbar-actions">
+          <button className="btn btn-primary btn-sm" onClick={() => setShowCreateForm(true)}>
+            Register New Admin
+          </button>
+        </div>
       </nav>
 
       <div className="container">
@@ -298,6 +334,90 @@ const UserManagementPage = () => {
               </div>
             </>
           )}
+        </Modal>
+      )}
+
+      {showCreateForm && (
+        <Modal title="Register New Admin" onClose={closeCreateForm}>
+          <form onSubmit={handleCreateUser}>
+            {createError && (
+              <p
+                style={{
+                  padding: '0.75rem',
+                  background: 'rgba(239, 68, 68, 0.1)',
+                  border: '1px solid rgba(239, 68, 68, 0.3)',
+                  borderRadius: 'var(--radius-md)',
+                  color: '#DC2626',
+                  marginBottom: '1rem'
+                }}
+              >
+                {createError}
+              </p>
+            )}
+            <div className="form-group">
+              <label htmlFor="createFirstName">First Name</label>
+              <input
+                id="createFirstName"
+                value={createForm.firstName}
+                onChange={(e) => setCreateForm({ ...createForm, firstName: e.target.value })}
+                required
+                autoFocus
+              />
+            </div>
+            <div className="form-group">
+              <label htmlFor="createLastName">Last Name</label>
+              <input
+                id="createLastName"
+                value={createForm.lastName}
+                onChange={(e) => setCreateForm({ ...createForm, lastName: e.target.value })}
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label htmlFor="createEmail">Email</label>
+              <input
+                id="createEmail"
+                type="email"
+                value={createForm.email}
+                onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })}
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label htmlFor="createPassword">Password</label>
+              <input
+                id="createPassword"
+                type="text"
+                value={createForm.password}
+                onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
+                minLength={8}
+                required
+              />
+              <small style={{ color: '#6B7280' }}>At least 8 characters. Share this with them directly.</small>
+            </div>
+            <div className="form-group">
+              <label htmlFor="createRole">Role</label>
+              <select
+                id="createRole"
+                value={createForm.role}
+                onChange={(e) => setCreateForm({ ...createForm, role: e.target.value as UserRole })}
+              >
+                {ASSIGNABLE_ROLES.map((role) => (
+                  <option key={role} value={role}>
+                    {ROLE_LABEL[role]}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem' }}>
+              <button className="btn btn-primary" type="submit" disabled={creating}>
+                {creating ? 'Creating...' : 'Create Account'}
+              </button>
+              <button className="btn btn-outline" type="button" onClick={closeCreateForm} disabled={creating}>
+                Cancel
+              </button>
+            </div>
+          </form>
         </Modal>
       )}
     </div>

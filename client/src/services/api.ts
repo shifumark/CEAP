@@ -5,6 +5,7 @@ import {
   User,
   UserRole,
   UserStatus,
+  CreateUserRequest,
   Application,
   ApplicationStatusHistory,
   ApplicationFilters,
@@ -400,7 +401,7 @@ class ApiService {
     return this.request('GET', `/users/${id}`);
   }
 
-  async createUser(data: any) {
+  async createUser(data: CreateUserRequest): Promise<User> {
     return this.request('POST', '/users', data);
   }
 

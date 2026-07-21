@@ -11,7 +11,7 @@ import { AnnouncementService } from './services/AnnouncementService.js';
 import { NotificationService } from './services/NotificationService.js';
 import { generateApplicationFormPdf } from './services/ApplicationFormPdfService.js';
 import { prisma } from './lib/prisma.js';
-import { COLLEGE_YEAR_LEVELS } from './lib/profileRequirements.js';
+import { COLLEGE_YEAR_LEVELS, PROFESSIONAL_YEAR_LEVELS } from './lib/profileRequirements.js';
 import {
   UserRole,
   UserStatus,
@@ -971,7 +971,7 @@ router.get('/dashboard/stats', verifyToken, async (req: AuthenticatedRequest, re
         prisma.renewal.count({ where: { status: 'pending' } }),
         prisma.applicant.count({ where: { yearLevel: { in: ['Grade 11', 'Grade 12'] } } }),
         prisma.applicant.count({ where: { yearLevel: { in: COLLEGE_YEAR_LEVELS } } }),
-        prisma.applicant.count({ where: { yearLevel: 'Special Course' } }),
+        prisma.applicant.count({ where: { yearLevel: { in: PROFESSIONAL_YEAR_LEVELS } } }),
         prisma.applicant.count({ where: { yearLevel: 'Alternative Learning System' } })
       ]);
 

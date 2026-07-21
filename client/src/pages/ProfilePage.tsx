@@ -351,9 +351,11 @@ const ProfilePage = () => {
     }
   };
 
-  const isCourseLevel =
-    COLLEGE_YEAR_LEVELS.includes(form.yearLevel) || PROFESSIONAL_YEAR_LEVELS.includes(form.yearLevel) || form.yearLevel === 'Other';
-  const isSpecialCourse = form.yearLevel === 'Special Course';
+  const isCourseLevel = COLLEGE_YEAR_LEVELS.includes(form.yearLevel) || form.yearLevel === 'Other';
+  // "Special Course" is now the group heading for the Professional/Post
+  // Graduate year levels — selecting any of them shows the
+  // Juris Doctor/Vet Med/Medicine dropdown instead of a plain Course input.
+  const isSpecialCourse = PROFESSIONAL_YEAR_LEVELS.includes(form.yearLevel);
   const specialCourseSelectValue = SPECIAL_COURSE_OPTIONS.includes(form.courseName)
     ? form.courseName
     : form.courseName
@@ -808,14 +810,13 @@ const ProfilePage = () => {
                         </option>
                       ))}
                     </optgroup>
-                    <optgroup label="Professional/Post Graduate Course">
+                    <optgroup label="Special Course">
                       {PROFESSIONAL_YEAR_LEVELS.map((o) => (
                         <option key={o} value={o}>
                           {o}
                         </option>
                       ))}
                     </optgroup>
-                    <option value="Special Course">Special Course</option>
                     <option value="Other">Other</option>
                   </select>
                 </div>

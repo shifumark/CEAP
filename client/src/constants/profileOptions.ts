@@ -39,22 +39,17 @@ export const COLLEGE_YEAR_LEVELS = [
   '5th Year College'
 ];
 
+// Grouped under the "Special Course" heading in the Year Level dropdown.
 // Must stay in sync with server/src/lib/profileRequirements.ts's
 // PROFESSIONAL_YEAR_LEVELS — used to conditionally require Course.
 export const PROFESSIONAL_YEAR_LEVELS = ['First Year', 'Second Year', 'Third Year', 'Fourth Year'];
 
-// Shown as a dropdown (plus a free-text "Other") when Year Level is
-// "Special Course" — selection is stored in the same courseName field
-// used for College/Professional courses.
+// Shown as a dropdown (plus a free-text "Other") once one of the
+// PROFESSIONAL_YEAR_LEVELS above is selected — selection is stored in the
+// same courseName field used for College courses.
 export const SPECIAL_COURSE_OPTIONS = ['Juris Doctor', 'Doctor of Veterinary Medicine', 'Doctor of Medicine'];
 
-export const YEAR_LEVEL_OPTIONS = [
-  ...SENIOR_HIGH_ALS_YEAR_LEVELS,
-  ...COLLEGE_YEAR_LEVELS,
-  ...PROFESSIONAL_YEAR_LEVELS,
-  'Special Course',
-  'Other'
-];
+export const YEAR_LEVEL_OPTIONS = [...SENIOR_HIGH_ALS_YEAR_LEVELS, ...COLLEGE_YEAR_LEVELS, ...PROFESSIONAL_YEAR_LEVELS, 'Other'];
 
 export const SCHOOL_TYPE_OPTIONS = ['Private', 'Public'];
 

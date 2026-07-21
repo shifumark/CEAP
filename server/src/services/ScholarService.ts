@@ -178,14 +178,18 @@ export class ScholarService {
     // application's submissionDate/receivedDate (used to order scholars
     // within a program by who submitted first, and to display both dates)
     // is looked up separately, keyed by (applicantId, scholarshipId) — a
-    // single bulk query rather than N+1.
+    // single bulk query rather than N+1. Not filtered by status: a Scholar
+    // stays on record even if an admin later reopens the application (e.g.
+    // back to under_review) for further review, and createApplication
+    // already rejects a second application for the same (applicant,
+    // scholarship) pair, so this key is unique regardless of status.
     const applicantIds = items
       .map((item) => item.user?.applicant?.id)
       .filter((id): id is number => id !== undefined);
 
     const applications = applicantIds.length
       ? await prisma.application.findMany({
-          where: { applicantId: { in: applicantIds }, status: 'approved' },
+          where: { applicantId: { in: applicantIds } },
           select: { applicantId: true, scholarshipId: true, submissionDate: true, receivedDate: true }
         })
       : [];
@@ -228,12 +232,14 @@ export class ScholarService {
   }
 
   /**
-   * Deletes both the Scholar record and the approved Application that
-   * created it (looked up the same way as the submissionDate join above,
-   * since Scholar has no direct applicationId FK). Each side's own
-   * children cascade automatically at the DB level once the parent row
-   * is gone — grades/renewals/allowances/violations for the Scholar,
-   * status history and application-scoped documents for the Application.
+   * Deletes both the Scholar record and the Application that created it
+   * (looked up the same way as the submissionDate join above, since
+   * Scholar has no direct applicationId FK — not filtered by status, since
+   * an admin may have reopened it for further review after the Scholar
+   * was created). Each side's own children cascade automatically at the
+   * DB level once the parent row is gone — grades/renewals/allowances/
+   * violations for the Scholar, status history and application-scoped
+   * documents for the Application.
    */
   async deleteScholar(user: JWTPayload, scholarId: number): Promise<boolean> {
     if (!isPrivileged(user)) {
@@ -251,7 +257,7 @@ export class ScholarService {
     await prisma.$transaction(async (tx) => {
       if (applicantId !== undefined) {
         await tx.application.deleteMany({
-          where: { applicantId, scholarshipId: scholar.scholarshipId, status: 'approved' }
+          where: { applicantId, scholarshipId: scholar.scholarshipId }
         });
       }
       await tx.scholar.delete({ where: { id: scholarId } });

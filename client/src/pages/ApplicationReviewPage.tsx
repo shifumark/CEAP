@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { apiService } from '../services/api';
-import { Application, ApplicationStatus, UploadedDocument, DocumentVerificationStatus, Applicant } from '../types';
+import { Application, ApplicationStatus, UploadedDocument, DocumentVerificationStatus, Applicant, ScholarshipProgram } from '../types';
 import Modal from '../components/Modal';
 import ApplicantProfileView from '../components/ApplicantProfileView';
 
@@ -67,6 +67,8 @@ const ApplicationReviewPage = () => {
   const [totalCount, setTotalCount] = useState(0);
   const [nameSearch, setNameSearch] = useState('');
   const [barangaySearch, setBarangaySearch] = useState('');
+  const [programs, setPrograms] = useState<ScholarshipProgram[]>([]);
+  const [programFilter, setProgramFilter] = useState<string>('');
 
   const loadApplications = async () => {
     setError('');
@@ -90,11 +92,21 @@ const ApplicationReviewPage = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [statusFilter]);
 
+  useEffect(() => {
+    apiService
+      .getScholarships(1, 100)
+      .then((result) => setPrograms(result.data))
+      .catch(() => {
+        // Non-fatal — the Program filter just won't have options if this fails.
+      });
+  }, []);
+
   const selected = applications.find((a) => a.id === selectedId) ?? null;
 
   const filteredApplications = applications.filter((application) => {
     if (nameSearch && !application.applicantName?.toLowerCase().includes(nameSearch.toLowerCase())) return false;
     if (barangaySearch && !application.applicantBarangay?.toLowerCase().includes(barangaySearch.toLowerCase())) return false;
+    if (programFilter && application.scholarshipId !== Number(programFilter)) return false;
     return true;
   });
 
@@ -212,6 +224,17 @@ const ApplicationReviewPage = () => {
             <div className="form-group" style={{ margin: 0, minWidth: '200px' }}>
               <label htmlFor="barangaySearch">Search by Barangay</label>
               <input id="barangaySearch" value={barangaySearch} onChange={(e) => setBarangaySearch(e.target.value)} />
+            </div>
+            <div className="form-group" style={{ margin: 0, minWidth: '220px' }}>
+              <label htmlFor="programFilter">Filter by Program</label>
+              <select id="programFilter" value={programFilter} onChange={(e) => setProgramFilter(e.target.value)}>
+                <option value="">All programs</option>
+                {programs.map((program) => (
+                  <option key={program.id} value={program.id}>
+                    {program.name}
+                  </option>
+                ))}
+              </select>
             </div>
             <div className="form-group" style={{ margin: 0, maxWidth: '280px' }}>
               <label htmlFor="statusFilter">Filter by status</label>

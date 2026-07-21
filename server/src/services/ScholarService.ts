@@ -48,6 +48,7 @@ function toScholar(record: ScholarWithRelations, submissionDate?: Date): Scholar
     scholarshipName: record.scholarship?.name,
     studentName: record.user ? `${record.user.firstName} ${record.user.lastName}` : undefined,
     studentEmail: record.user?.email,
+    studentBarangay: record.user?.applicant?.barangay ?? undefined,
     submissionDate
   };
 }

@@ -572,6 +572,7 @@ export interface Scholar {
   scholarshipName?: string;
   studentName?: string;
   studentEmail?: string;
+  studentBarangay?: string;
   // The originating (approved) application's submissionDate — lets the
   // Scholar Management page order scholars within a program by who
   // submitted first.

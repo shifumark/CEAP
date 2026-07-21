@@ -60,6 +60,7 @@ const ScholarManagementPage = () => {
   // among current scholars.
   const [programFilter, setProgramFilter] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
+  const [barangaySearch, setBarangaySearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [deletingScholar, setDeletingScholar] = useState<Scholar | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -102,6 +103,7 @@ const ScholarManagementPage = () => {
   const filtered = scholars.filter((scholar) => {
     if (programFilter && scholar.scholarshipId !== Number(programFilter)) return false;
     if (statusFilter && scholar.status !== statusFilter) return false;
+    if (barangaySearch && !scholar.studentBarangay?.toLowerCase().includes(barangaySearch.toLowerCase())) return false;
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       const matchesName = scholar.studentName?.toLowerCase().includes(q);
@@ -162,6 +164,14 @@ const ScholarManagementPage = () => {
                     placeholder="Student name or email"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                </div>
+                <div className="form-group" style={{ margin: 0, minWidth: '200px' }}>
+                  <label htmlFor="scholarBarangaySearch">Search by Barangay</label>
+                  <input
+                    id="scholarBarangaySearch"
+                    value={barangaySearch}
+                    onChange={(e) => setBarangaySearch(e.target.value)}
                   />
                 </div>
                 <div className="form-group" style={{ margin: 0, minWidth: '220px' }}>

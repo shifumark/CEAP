@@ -87,7 +87,6 @@ const UNCONDITIONAL_RULES: FieldRule[] = [
   { label: 'School Type', present: (a) => !isEmpty(a.schoolType) },
   { label: 'Year Level', present: (a) => !isEmpty(a.yearLevel) },
   { label: 'General Weighted Average (GWA)', present: (a) => !isEmpty(a.gwa) },
-  { label: 'Previous School', present: (a) => !isEmpty(a.previousSchool) },
   { label: 'Academic Status', present: (a) => !isEmpty(a.academicStatus) },
   {
     label: 'Currently receiving any scholarship/assistance?',

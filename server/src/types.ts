@@ -393,6 +393,12 @@ export interface CreateScholarshipProgramRequest {
 export interface UpdateScholarshipProgramRequest {
   name?: string;
   description?: string;
+  sponsor?: string;
+  benefits?: string;
+  eligibilityRequirements?: string;
+  openingDate?: string;
+  closingDate?: string;
+  academicYear?: string;
   status?: string;
   numberOfSlots?: number;
   maxApplicants?: number;

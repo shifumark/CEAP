@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { apiService } from '../services/api';
-import { Scholar } from '../types';
+import { Scholar, ScholarshipProgram } from '../types';
 import Modal from '../components/Modal';
 
 const STATUS_BADGE: Record<string, string> = {
@@ -51,9 +51,14 @@ function groupByProgram(scholars: Scholar[]): ProgramGroup[] {
 
 const ScholarManagementPage = () => {
   const [scholars, setScholars] = useState<Scholar[]>([]);
+  const [programs, setPrograms] = useState<ScholarshipProgram[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [selectedProgram, setSelectedProgram] = useState<string | null>(null);
+  // Stores a scholarshipId (as a string, to match <select> values) so
+  // every existing AND newly created program is selectable — including
+  // ones with zero scholars yet — not just programs already represented
+  // among current scholars.
+  const [programFilter, setProgramFilter] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [deletingScholar, setDeletingScholar] = useState<Scholar | null>(null);
@@ -71,6 +76,12 @@ const ScholarManagementPage = () => {
 
   useEffect(() => {
     load();
+    apiService
+      .getScholarships(1, 100)
+      .then((result) => setPrograms(result.data))
+      .catch(() => {
+        // Non-fatal — the Program filter just won't have options if this fails.
+      });
   }, []);
 
   const handleConfirmDelete = async () => {
@@ -88,12 +99,8 @@ const ScholarManagementPage = () => {
     }
   };
 
-  // Folder tab counts always reflect the full scholar list (stable
-  // navigation chrome), independent of the search/status filters below.
-  const allGroups = groupByProgram(scholars);
-
   const filtered = scholars.filter((scholar) => {
-    if (selectedProgram && programKey(scholar) !== selectedProgram) return false;
+    if (programFilter && scholar.scholarshipId !== Number(programFilter)) return false;
     if (statusFilter && scholar.status !== statusFilter) return false;
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
@@ -115,7 +122,10 @@ const ScholarManagementPage = () => {
       <div className="container">
         <div className="page-header">
           <h1>Scholar Management</h1>
-          <p>Track grades, renewals, allowances, and compliance for active scholars.</p>
+          <p>
+            Track grades, renewals, allowances, and compliance for active scholars.{' '}
+            {!loading && <strong>Total: {scholars.length.toLocaleString()} scholar{scholars.length === 1 ? '' : 's'}</strong>}
+          </p>
         </div>
 
         {error && (
@@ -143,26 +153,6 @@ const ScholarManagementPage = () => {
           </div>
         ) : (
           <>
-            {/* Program "folders" */}
-            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '1rem' }}>
-              <button
-                className={`btn btn-sm ${selectedProgram === null ? 'btn-primary' : 'btn-outline'}`}
-                onClick={() => setSelectedProgram(null)}
-              >
-                📁 All Programs ({scholars.length})
-              </button>
-              {allGroups.map((group) => (
-                <button
-                  key={group.scholarshipName}
-                  className={`btn btn-sm ${selectedProgram === group.scholarshipName ? 'btn-primary' : 'btn-outline'}`}
-                  onClick={() => setSelectedProgram(group.scholarshipName)}
-                >
-                  📁 {group.scholarshipName} ({group.scholars.length})
-                </button>
-              ))}
-            </div>
-
-            {/* Search + status filter */}
             <div className="card" style={{ marginBottom: '1.5rem' }}>
               <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
                 <div className="form-group" style={{ margin: 0, minWidth: '220px' }}>
@@ -173,6 +163,17 @@ const ScholarManagementPage = () => {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
+                </div>
+                <div className="form-group" style={{ margin: 0, minWidth: '220px' }}>
+                  <label htmlFor="programFilter">Filter by Program</label>
+                  <select id="programFilter" value={programFilter} onChange={(e) => setProgramFilter(e.target.value)}>
+                    <option value="">All programs</option>
+                    {programs.map((program) => (
+                      <option key={program.id} value={program.id}>
+                        {program.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div className="form-group" style={{ margin: 0, minWidth: '180px' }}>
                   <label htmlFor="scholarStatusFilter">Status</label>

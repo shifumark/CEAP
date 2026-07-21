@@ -42,6 +42,9 @@ const ProgramPage = () => {
   const [deleting, setDeleting] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [editingProgram, setEditingProgram] = useState<ScholarshipProgram | null>(null);
+  const [editForm, setEditForm] = useState(emptyForm);
+  const [savingEdit, setSavingEdit] = useState(false);
 
   const load = async () => {
     try {
@@ -108,6 +111,72 @@ const ProgramPage = () => {
       await load();
     } catch (err: any) {
       setError(err.message || 'Failed to update program');
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const toEditForm = (program: ScholarshipProgram) => ({
+    name: program.name,
+    description: program.description,
+    sponsor: program.sponsor,
+    benefits: program.benefits,
+    numberOfSlots: String(program.numberOfSlots),
+    maxApplicants: String(program.maxApplicants),
+    eligibilityRequirements: program.eligibilityRequirements,
+    openingDate: new Date(program.openingDate).toISOString().slice(0, 10),
+    closingDate: new Date(program.closingDate).toISOString().slice(0, 10),
+    academicYear: program.academicYear,
+    requiredDocuments: ''
+  });
+
+  const openEdit = (program: ScholarshipProgram) => {
+    setEditingProgram(program);
+    setEditForm(toEditForm(program));
+  };
+
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingProgram) return;
+    setSavingEdit(true);
+    setError('');
+    try {
+      await apiService.updateScholarship(editingProgram.id, {
+        name: editForm.name,
+        description: editForm.description,
+        sponsor: editForm.sponsor,
+        benefits: editForm.benefits,
+        numberOfSlots: parseInt(editForm.numberOfSlots, 10),
+        maxApplicants: parseInt(editForm.maxApplicants, 10),
+        eligibilityRequirements: editForm.eligibilityRequirements,
+        openingDate: editForm.openingDate,
+        closingDate: editForm.closingDate,
+        academicYear: editForm.academicYear
+      });
+      setEditingProgram(null);
+      await load();
+    } catch (err: any) {
+      setError(err.message || 'Failed to update program');
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
+  // +1/-1 day increments on the closing date. Shortening it enough to
+  // land in the past is allowed on purpose — the next load() picks up
+  // the server's auto-close (any active program whose closingDate has
+  // passed flips to "closed" on read), so this is also how an admin can
+  // deliberately force-close a program early.
+  const handleAdjustClosingDate = async (program: ScholarshipProgram, deltaDays: number) => {
+    setBusyId(program.id);
+    setError('');
+    try {
+      const nextDate = new Date(program.closingDate);
+      nextDate.setDate(nextDate.getDate() + deltaDays);
+      await apiService.updateScholarship(program.id, { closingDate: nextDate.toISOString().slice(0, 10) });
+      await load();
+    } catch (err: any) {
+      setError(err.message || 'Failed to adjust closing date');
     } finally {
       setBusyId(null);
     }
@@ -225,9 +294,17 @@ const ProgramPage = () => {
                 <p style={{ fontSize: '0.9rem', color: '#6B7280' }}>
                   {program.numberOfSlots} slots · {formatDate(program.openingDate)} – {formatDate(program.closingDate)}
                 </p>
+                <p style={{ fontSize: '0.8rem', color: '#6B7280' }}>Created: {formatDate(program.createdAt)}</p>
 
                 {isAdmin && (
-                  <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem', flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                    <button
+                      className="btn btn-outline btn-sm"
+                      disabled={busyId === program.id}
+                      onClick={() => openEdit(program)}
+                    >
+                      Edit Program
+                    </button>
                     <button
                       className="btn btn-outline btn-sm"
                       disabled={busyId === program.id}
@@ -235,6 +312,24 @@ const ProgramPage = () => {
                     >
                       {program.status === 'active' ? 'Close Program' : 'Reopen Program'}
                     </button>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                      <button
+                        className="btn btn-outline btn-sm"
+                        title="Shorten closing date by 1 day"
+                        disabled={busyId === program.id}
+                        onClick={() => handleAdjustClosingDate(program, -1)}
+                      >
+                        −1 Day
+                      </button>
+                      <button
+                        className="btn btn-outline btn-sm"
+                        title="Extend closing date by 1 day"
+                        disabled={busyId === program.id}
+                        onClick={() => handleAdjustClosingDate(program, 1)}
+                      >
+                        +1 Day
+                      </button>
+                    </span>
                     <button
                       className="btn btn-outline btn-sm"
                       style={{ color: '#DC2626', borderColor: '#DC2626' }}
@@ -369,6 +464,122 @@ const ProgramPage = () => {
                 {saving ? 'Creating...' : 'Create Program'}
               </button>
               <button className="btn btn-outline" type="button" onClick={() => setShowForm(false)} disabled={saving}>
+                Cancel
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
+
+      {editingProgram && (
+        <Modal title={`Edit: ${editingProgram.name}`} onClose={() => setEditingProgram(null)}>
+          <form onSubmit={handleUpdate}>
+            <div className="form-group">
+              <label htmlFor="editName">Name</label>
+              <input
+                id="editName"
+                value={editForm.name}
+                onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                required
+                autoFocus
+              />
+            </div>
+            <div className="form-group">
+              <label htmlFor="editDescription">Description</label>
+              <textarea
+                id="editDescription"
+                rows={2}
+                value={editForm.description}
+                onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label htmlFor="editSponsor">Sponsor</label>
+              <input
+                id="editSponsor"
+                value={editForm.sponsor}
+                onChange={(e) => setEditForm({ ...editForm, sponsor: e.target.value })}
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label htmlFor="editBenefits">Benefits</label>
+              <input
+                id="editBenefits"
+                value={editForm.benefits}
+                onChange={(e) => setEditForm({ ...editForm, benefits: e.target.value })}
+                required
+              />
+            </div>
+            <div style={{ display: 'flex', gap: '0.75rem' }}>
+              <div className="form-group" style={{ flex: 1 }}>
+                <label htmlFor="editSlots">Number of Slots</label>
+                <input
+                  id="editSlots"
+                  type="number"
+                  value={editForm.numberOfSlots}
+                  onChange={(e) => setEditForm({ ...editForm, numberOfSlots: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="form-group" style={{ flex: 1 }}>
+                <label htmlFor="editMaxApplicants">Max Applicants</label>
+                <input
+                  id="editMaxApplicants"
+                  type="number"
+                  value={editForm.maxApplicants}
+                  onChange={(e) => setEditForm({ ...editForm, maxApplicants: e.target.value })}
+                  required
+                />
+              </div>
+            </div>
+            <div className="form-group">
+              <label htmlFor="editEligibility">Eligibility Requirements</label>
+              <input
+                id="editEligibility"
+                value={editForm.eligibilityRequirements}
+                onChange={(e) => setEditForm({ ...editForm, eligibilityRequirements: e.target.value })}
+                required
+              />
+            </div>
+            <div style={{ display: 'flex', gap: '0.75rem' }}>
+              <div className="form-group" style={{ flex: 1 }}>
+                <label htmlFor="editOpening">Opening Date</label>
+                <input
+                  id="editOpening"
+                  type="date"
+                  value={editForm.openingDate}
+                  onChange={(e) => setEditForm({ ...editForm, openingDate: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="form-group" style={{ flex: 1 }}>
+                <label htmlFor="editClosing">Closing Date</label>
+                <input
+                  id="editClosing"
+                  type="date"
+                  value={editForm.closingDate}
+                  onChange={(e) => setEditForm({ ...editForm, closingDate: e.target.value })}
+                  required
+                />
+              </div>
+            </div>
+            <div className="form-group">
+              <label htmlFor="editAcademicYear">Academic Year</label>
+              <input
+                id="editAcademicYear"
+                placeholder="2025-2026"
+                value={editForm.academicYear}
+                onChange={(e) => setEditForm({ ...editForm, academicYear: e.target.value })}
+                required
+              />
+            </div>
+            <div style={{ display: 'flex', gap: '0.75rem' }}>
+              <button className="btn btn-primary" type="submit" disabled={savingEdit}>
+                {savingEdit ? 'Saving...' : 'Save Changes'}
+              </button>
+              <button className="btn btn-outline" type="button" onClick={() => setEditingProgram(null)} disabled={savingEdit}>
                 Cancel
               </button>
             </div>

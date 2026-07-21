@@ -103,12 +103,23 @@ const ApplicationReviewPage = () => {
 
   const selected = applications.find((a) => a.id === selectedId) ?? null;
 
-  const filteredApplications = applications.filter((application) => {
-    if (nameSearch && !application.applicantName?.toLowerCase().includes(nameSearch.toLowerCase())) return false;
-    if (barangaySearch && !application.applicantBarangay?.toLowerCase().includes(barangaySearch.toLowerCase())) return false;
-    if (programFilter && application.scholarshipId !== Number(programFilter)) return false;
-    return true;
-  });
+  // Numbered by submission order (earliest first) — same "who submitted
+  // first" convention used in Scholar Management. Applications with no
+  // submissionDate (drafts can't reach here; only possible for records
+  // an admin fast-tracked without a formal submission) sort last.
+  const filteredApplications = applications
+    .filter((application) => {
+      if (nameSearch && !application.applicantName?.toLowerCase().includes(nameSearch.toLowerCase())) return false;
+      if (barangaySearch && !application.applicantBarangay?.toLowerCase().includes(barangaySearch.toLowerCase())) return false;
+      if (programFilter && application.scholarshipId !== Number(programFilter)) return false;
+      return true;
+    })
+    .sort((a, b) => {
+      if (!a.submissionDate && !b.submissionDate) return 0;
+      if (!a.submissionDate) return 1;
+      if (!b.submissionDate) return -1;
+      return new Date(a.submissionDate).getTime() - new Date(b.submissionDate).getTime();
+    });
 
   const loadDocuments = async (applicationId: number) => {
     setDocumentsLoading(true);
@@ -196,7 +207,7 @@ const ApplicationReviewPage = () => {
           <h1>Application Review</h1>
           <p>
             Review submitted applications and record a decision.{' '}
-            {!loading && <strong>{totalCount.toLocaleString()} applicant{totalCount === 1 ? '' : 's'}</strong>}
+            {!loading && <strong>Total: {totalCount.toLocaleString()} applicant{totalCount === 1 ? '' : 's'}</strong>}
           </p>
         </div>
 
@@ -261,6 +272,7 @@ const ApplicationReviewPage = () => {
             <table>
               <thead>
                 <tr>
+                  <th>No.</th>
                   <th>Applicant</th>
                   <th>Scholarship</th>
                   <th>Status</th>
@@ -269,8 +281,9 @@ const ApplicationReviewPage = () => {
                 </tr>
               </thead>
               <tbody>
-                {filteredApplications.map((application) => (
+                {filteredApplications.map((application, index) => (
                   <tr key={application.id}>
+                    <td>{index + 1}</td>
                     <td>
                       <div>{application.applicantName ?? `Applicant #${application.applicantId}`}</div>
                       <div style={{ fontSize: '0.8rem', color: '#6B7280' }}>{application.applicantEmail}</div>

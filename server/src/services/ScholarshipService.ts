@@ -67,7 +67,24 @@ export class ScholarshipService {
     return toProgram(created);
   }
 
+  // No dedicated scheduler in this app's infra, so expiry is enforced
+  // lazily: every read path closes any active program whose closingDate
+  // has passed before returning results. A single bulk updateMany rather
+  // than a loop — cheap even called on every list/detail fetch.
+  private async autoCloseExpiredPrograms(onlyId?: number): Promise<void> {
+    await prisma.scholarshipProgram.updateMany({
+      where: {
+        status: 'active',
+        closingDate: { lt: new Date() },
+        ...(onlyId !== undefined ? { id: onlyId } : {})
+      },
+      data: { status: 'closed' }
+    });
+  }
+
   async getPrograms(filters?: ScholarFilters): Promise<PaginatedResponse<ScholarshipProgram>> {
+    await this.autoCloseExpiredPrograms();
+
     const page = filters?.page || 1;
     const pageSize = filters?.pageSize || 10;
     const where = filters?.status ? { status: filters.status } : {};
@@ -92,6 +109,7 @@ export class ScholarshipService {
   }
 
   async getProgramById(id: number): Promise<ScholarshipProgram | undefined> {
+    await this.autoCloseExpiredPrograms(id);
     const program = await prisma.scholarshipProgram.findUnique({ where: { id } });
     return program ? toProgram(program) : undefined;
   }
@@ -101,9 +119,20 @@ export class ScholarshipService {
     request: UpdateScholarshipProgramRequest
   ): Promise<ScholarshipProgram | undefined> {
     try {
+      // openingDate/closingDate arrive as plain date strings (matching
+      // createProgram's request shape) — Prisma needs real Date objects,
+      // and this previously passed the raw string straight through
+      // whenever a caller updated a date (a latent bug — no existing
+      // caller touched dates via this path until the +/- extension
+      // feature and the edit form started sending them).
+      const { openingDate, closingDate, ...rest } = request;
+      const data: Record<string, unknown> = { ...rest };
+      if (openingDate !== undefined) data.openingDate = new Date(openingDate);
+      if (closingDate !== undefined) data.closingDate = new Date(closingDate);
+
       const updated = await prisma.scholarshipProgram.update({
         where: { id },
-        data: request
+        data
       });
       return toProgram(updated);
     } catch {

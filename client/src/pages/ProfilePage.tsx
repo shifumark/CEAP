@@ -280,6 +280,13 @@ const ProfilePage = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [downloadingForm, setDownloadingForm] = useState(false);
+  // Tracks an explicit "Other" click on the Special Course sub-dropdown,
+  // independent of courseName — courseName is cleared to '' right after
+  // choosing "Other" (so the text field starts blank), and deriving the
+  // dropdown's displayed value purely from courseName would snap it back
+  // to "Select..." the instant it's cleared, making "Other" look
+  // unclickable.
+  const [specialCourseOtherSelected, setSpecialCourseOtherSelected] = useState(false);
 
   const loadCompleteness = async () => {
     try {
@@ -294,6 +301,7 @@ const ProfilePage = () => {
     try {
       const [profile] = await Promise.all([apiService.getMyProfile(), loadCompleteness()]);
       setForm(applicantToForm(profile));
+      setSpecialCourseOtherSelected(false);
     } catch (err: any) {
       setError(err.message || 'Failed to load profile');
     } finally {
@@ -356,11 +364,13 @@ const ProfilePage = () => {
   // Graduate year levels — selecting any of them shows the
   // Juris Doctor/Vet Med/Medicine dropdown instead of a plain Course input.
   const isSpecialCourse = PROFESSIONAL_YEAR_LEVELS.includes(form.yearLevel);
-  const specialCourseSelectValue = SPECIAL_COURSE_OPTIONS.includes(form.courseName)
-    ? form.courseName
-    : form.courseName
-      ? 'Other'
-      : '';
+  const specialCourseSelectValue = specialCourseOtherSelected
+    ? 'Other'
+    : SPECIAL_COURSE_OPTIONS.includes(form.courseName)
+      ? form.courseName
+      : form.courseName
+        ? 'Other'
+        : '';
   const hasBothParents = form.father.name.trim() !== '' && form.mother.name.trim() !== '';
 
   return (
@@ -826,7 +836,11 @@ const ProfilePage = () => {
                       <select
                         id="specialCourseSelect"
                         value={specialCourseSelectValue}
-                        onChange={(e) => set('courseName', e.target.value === 'Other' ? '' : e.target.value)}
+                        onChange={(e) => {
+                          const isOther = e.target.value === 'Other';
+                          setSpecialCourseOtherSelected(isOther);
+                          set('courseName', isOther ? '' : e.target.value);
+                        }}
                       >
                         <option value="">Select...</option>
                         {SPECIAL_COURSE_OPTIONS.map((o) => (

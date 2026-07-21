@@ -351,7 +351,7 @@ const ProfilePage = () => {
     }
   };
 
-  const isCourseLevel = COLLEGE_YEAR_LEVELS.includes(form.yearLevel) || form.yearLevel === 'Other';
+  const isCourseLevel = COLLEGE_YEAR_LEVELS.includes(form.yearLevel);
   // "Special Course" is now the group heading for the Professional/Post
   // Graduate year levels — selecting any of them shows the
   // Juris Doctor/Vet Med/Medicine dropdown instead of a plain Course input.
@@ -817,7 +817,6 @@ const ProfilePage = () => {
                         </option>
                       ))}
                     </optgroup>
-                    <option value="Other">Other</option>
                   </select>
                 </div>
                 {isSpecialCourse ? (
@@ -852,7 +851,7 @@ const ProfilePage = () => {
                 ) : (
                   isCourseLevel && (
                     <div className="form-group">
-                      <label htmlFor="courseName">{form.yearLevel === 'Other' ? 'Related Course' : 'Course'}</label>
+                      <label htmlFor="courseName">Course</label>
                       <input id="courseName" value={form.courseName} onChange={(e) => set('courseName', e.target.value)} />
                     </div>
                   )

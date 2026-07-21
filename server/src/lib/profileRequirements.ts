@@ -29,10 +29,10 @@ export const COLLEGE_YEAR_LEVELS = [
 // client/src/constants/profileOptions.ts as PROFESSIONAL_YEAR_LEVELS.
 export const PROFESSIONAL_YEAR_LEVELS = ['First Year', 'Second Year', 'Third Year', 'Fourth Year'];
 
-// Year levels where courseName is conditionally required (College,
-// Special Course, and Other all collect it, just via different input
-// widgets client-side).
-const COURSE_REQUIRED_YEAR_LEVELS = [...COLLEGE_YEAR_LEVELS, ...PROFESSIONAL_YEAR_LEVELS, 'Other'];
+// Year levels where courseName is conditionally required (College and
+// Special Course collect it, just via different input widgets
+// client-side).
+const COURSE_REQUIRED_YEAR_LEVELS = [...COLLEGE_YEAR_LEVELS, ...PROFESSIONAL_YEAR_LEVELS];
 
 function isEmpty(value: unknown): boolean {
   return value === undefined || value === null || value === '';

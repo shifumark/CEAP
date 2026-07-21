@@ -49,7 +49,7 @@ export const PROFESSIONAL_YEAR_LEVELS = ['First Year', 'Second Year', 'Third Yea
 // same courseName field used for College courses.
 export const SPECIAL_COURSE_OPTIONS = ['Juris Doctor', 'Doctor of Veterinary Medicine', 'Doctor of Medicine'];
 
-export const YEAR_LEVEL_OPTIONS = [...SENIOR_HIGH_ALS_YEAR_LEVELS, ...COLLEGE_YEAR_LEVELS, ...PROFESSIONAL_YEAR_LEVELS, 'Other'];
+export const YEAR_LEVEL_OPTIONS = [...SENIOR_HIGH_ALS_YEAR_LEVELS, ...COLLEGE_YEAR_LEVELS, ...PROFESSIONAL_YEAR_LEVELS];
 
 export const SCHOOL_TYPE_OPTIONS = ['Private', 'Public'];
 

@@ -65,6 +65,8 @@ const ApplicationReviewPage = () => {
   const [applicantProfile, setApplicantProfile] = useState<Applicant | null>(null);
   const [profileLoading, setProfileLoading] = useState(false);
   const [totalCount, setTotalCount] = useState(0);
+  const [nameSearch, setNameSearch] = useState('');
+  const [barangaySearch, setBarangaySearch] = useState('');
 
   const loadApplications = async () => {
     setError('');
@@ -89,6 +91,12 @@ const ApplicationReviewPage = () => {
   }, [statusFilter]);
 
   const selected = applications.find((a) => a.id === selectedId) ?? null;
+
+  const filteredApplications = applications.filter((application) => {
+    if (nameSearch && !application.applicantName?.toLowerCase().includes(nameSearch.toLowerCase())) return false;
+    if (barangaySearch && !application.applicantBarangay?.toLowerCase().includes(barangaySearch.toLowerCase())) return false;
+    return true;
+  });
 
   const loadDocuments = async (applicationId: number) => {
     setDocumentsLoading(true);
@@ -196,22 +204,32 @@ const ApplicationReviewPage = () => {
         )}
 
         <div className="card" style={{ marginBottom: '1.5rem' }}>
-          <div className="form-group" style={{ maxWidth: '280px', margin: 0 }}>
-            <label htmlFor="statusFilter">Filter by status</label>
-            <select id="statusFilter" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-              <option value="">All statuses</option>
-              {REVIEWABLE_STATUSES.map((status) => (
-                <option key={status} value={status}>
-                  {STATUS_LABEL[status]}
-                </option>
-              ))}
-            </select>
+          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+            <div className="form-group" style={{ margin: 0, minWidth: '220px' }}>
+              <label htmlFor="nameSearch">Search by Name</label>
+              <input id="nameSearch" placeholder="Applicant name" value={nameSearch} onChange={(e) => setNameSearch(e.target.value)} />
+            </div>
+            <div className="form-group" style={{ margin: 0, minWidth: '200px' }}>
+              <label htmlFor="barangaySearch">Search by Barangay</label>
+              <input id="barangaySearch" value={barangaySearch} onChange={(e) => setBarangaySearch(e.target.value)} />
+            </div>
+            <div className="form-group" style={{ margin: 0, maxWidth: '280px' }}>
+              <label htmlFor="statusFilter">Filter by status</label>
+              <select id="statusFilter" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+                <option value="">All statuses</option>
+                {REVIEWABLE_STATUSES.map((status) => (
+                  <option key={status} value={status}>
+                    {STATUS_LABEL[status]}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
 
         {loading ? (
           <p>Loading...</p>
-        ) : applications.length === 0 ? (
+        ) : filteredApplications.length === 0 ? (
           <div className="card">
             <p style={{ color: '#6B7280' }}>No applications match this filter.</p>
           </div>
@@ -228,7 +246,7 @@ const ApplicationReviewPage = () => {
                 </tr>
               </thead>
               <tbody>
-                {applications.map((application) => (
+                {filteredApplications.map((application) => (
                   <tr key={application.id}>
                     <td>
                       <div>{application.applicantName ?? `Applicant #${application.applicantId}`}</div>

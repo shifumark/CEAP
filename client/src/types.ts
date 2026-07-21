@@ -419,6 +419,7 @@ export interface Application {
   scholarshipName?: string;
   applicantName?: string;
   applicantEmail?: string;
+  applicantBarangay?: string;
 }
 
 // Flattened applicant profile + application row for the admin Reports

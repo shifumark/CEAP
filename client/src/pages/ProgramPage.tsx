@@ -40,6 +40,8 @@ const ProgramPage = () => {
   const [applyingTo, setApplyingTo] = useState<ScholarshipProgram | null>(null);
   const [deletingProgram, setDeletingProgram] = useState<ScholarshipProgram | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
 
   const load = async () => {
     try {
@@ -126,6 +128,12 @@ const ProgramPage = () => {
     }
   };
 
+  const filteredPrograms = programs.filter((program) => {
+    if (statusFilter && program.status !== statusFilter) return false;
+    if (searchQuery && !program.name.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+    return true;
+  });
+
   return (
     <div>
       <nav className="navbar">
@@ -160,15 +168,43 @@ const ProgramPage = () => {
           </div>
         )}
 
+        {!loading && programs.length > 0 && (
+          <div className="card" style={{ marginBottom: '1.5rem' }}>
+            <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+              <div className="form-group" style={{ margin: 0, minWidth: '220px' }}>
+                <label htmlFor="programSearch">Search</label>
+                <input
+                  id="programSearch"
+                  placeholder="Program name"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+              <div className="form-group" style={{ margin: 0, minWidth: '180px' }}>
+                <label htmlFor="programStatusFilter">Status</label>
+                <select id="programStatusFilter" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+                  <option value="">All statuses</option>
+                  <option value="active">Active</option>
+                  <option value="closed">Closed</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        )}
+
         {loading ? (
           <p>Loading...</p>
         ) : programs.length === 0 ? (
           <div className="card">
             <p style={{ color: '#6B7280' }}>No scholarship programs yet.</p>
           </div>
+        ) : filteredPrograms.length === 0 ? (
+          <div className="card">
+            <p style={{ color: '#6B7280' }}>No programs match this filter.</p>
+          </div>
         ) : (
           <div className="grid grid-2">
-            {programs.map((program) => (
+            {filteredPrograms.map((program) => (
               <div className="card" key={program.id}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem' }}>
                   <h3>{program.name}</h3>

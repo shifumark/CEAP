@@ -51,7 +51,8 @@ function toApplication(record: ApplicationWithRelations): Application {
     applicantName: record.applicant?.user
       ? `${record.applicant.user.firstName} ${record.applicant.user.lastName}`
       : undefined,
-    applicantEmail: record.applicant?.user?.email
+    applicantEmail: record.applicant?.user?.email,
+    applicantBarangay: record.applicant?.barangay ?? undefined
   };
 }
 

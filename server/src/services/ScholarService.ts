@@ -216,6 +216,39 @@ export class ScholarService {
     return record ? toScholar(record) : undefined;
   }
 
+  /**
+   * Deletes both the Scholar record and the approved Application that
+   * created it (looked up the same way as the submissionDate join above,
+   * since Scholar has no direct applicationId FK). Each side's own
+   * children cascade automatically at the DB level once the parent row
+   * is gone — grades/renewals/allowances/violations for the Scholar,
+   * status history and application-scoped documents for the Application.
+   */
+  async deleteScholar(user: JWTPayload, scholarId: number): Promise<boolean> {
+    if (!isPrivileged(user)) {
+      throw new Error('Not authorized to delete scholars');
+    }
+
+    const scholar = await prisma.scholar.findUnique({
+      where: { id: scholarId },
+      include: { user: { include: { applicant: true } } }
+    });
+    if (!scholar) return false;
+
+    const applicantId = scholar.user?.applicant?.id;
+
+    await prisma.$transaction(async (tx) => {
+      if (applicantId !== undefined) {
+        await tx.application.deleteMany({
+          where: { applicantId, scholarshipId: scholar.scholarshipId, status: 'approved' }
+        });
+      }
+      await tx.scholar.delete({ where: { id: scholarId } });
+    });
+
+    return true;
+  }
+
   // ---------------- Grades ----------------
 
   async submitGrade(user: JWTPayload, request: SubmitGradeRequest): Promise<Grade> {

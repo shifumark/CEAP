@@ -674,6 +674,24 @@ router.get('/scholars/:id', verifyToken, async (req: AuthenticatedRequest, res) 
 });
 
 /**
+ * Delete a scholar and the approved application that created them.
+ * Protected - Admin/Super Admin only.
+ */
+router.delete('/scholars/:id', verifyToken, requireAdmin, async (req: AuthenticatedRequest, res) => {
+  try {
+    const success = await scholarService.deleteScholar(req.user!, parseInt(req.params.id));
+
+    if (!success) {
+      return res.status(404).json({ error: 'Scholar not found' });
+    }
+
+    res.json({ message: 'Scholar deleted successfully' });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
  * Grades
  */
 router.get('/scholars/:id/grades', verifyToken, async (req: AuthenticatedRequest, res) => {

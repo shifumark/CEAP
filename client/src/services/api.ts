@@ -331,6 +331,10 @@ class ApiService {
     return this.request('GET', `/scholars/${id}`);
   }
 
+  async deleteScholar(id: number) {
+    return this.request('DELETE', `/scholars/${id}`);
+  }
+
   async getGrades(scholarId: number): Promise<Grade[]> {
     return this.request('GET', `/scholars/${scholarId}/grades`);
   }

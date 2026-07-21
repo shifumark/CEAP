@@ -830,9 +830,30 @@ const ProfilePage = () => {
                   </select>
                 </div>
                 {isSpecialCourse ? (
-                  <>
-                    <div className="form-group">
-                      <label htmlFor="specialCourseSelect">Special Course</label>
+                  <div className="form-group">
+                    <label htmlFor="specialCourseSelect">Special Course</label>
+                    {specialCourseOtherSelected ? (
+                      <>
+                        <input
+                          id="specialCourseSelect"
+                          value={form.courseName}
+                          onChange={(e) => set('courseName', e.target.value)}
+                          placeholder="Type your special course"
+                          autoFocus
+                        />
+                        <button
+                          type="button"
+                          className="btn btn-outline btn-sm"
+                          style={{ marginTop: '0.5rem' }}
+                          onClick={() => {
+                            setSpecialCourseOtherSelected(false);
+                            set('courseName', '');
+                          }}
+                        >
+                          Choose from list instead
+                        </button>
+                      </>
+                    ) : (
                       <select
                         id="specialCourseSelect"
                         value={specialCourseSelectValue}
@@ -850,18 +871,8 @@ const ProfilePage = () => {
                         ))}
                         <option value="Other">Other</option>
                       </select>
-                    </div>
-                    {specialCourseSelectValue === 'Other' && (
-                      <div className="form-group">
-                        <label htmlFor="specialCourseOther">Please specify your special course</label>
-                        <input
-                          id="specialCourseOther"
-                          value={form.courseName}
-                          onChange={(e) => set('courseName', e.target.value)}
-                        />
-                      </div>
                     )}
-                  </>
+                  </div>
                 ) : (
                   isCourseLevel && (
                     <div className="form-group">

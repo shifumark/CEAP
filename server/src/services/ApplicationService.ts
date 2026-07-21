@@ -52,7 +52,12 @@ function toApplication(record: ApplicationWithRelations): Application {
       ? `${record.applicant.user.firstName} ${record.applicant.user.lastName}`
       : undefined,
     applicantEmail: record.applicant?.user?.email,
-    applicantBarangay: record.applicant?.barangay ?? undefined
+    applicantBarangay: record.applicant?.barangay ?? undefined,
+    // Fallback for applicants whose location was entered as free text under
+    // the legacy `address` field instead of the structured barangay field —
+    // the Barangay search matches against this too, so those records are
+    // still findable.
+    applicantAddress: record.applicant?.address ?? undefined
   };
 }
 

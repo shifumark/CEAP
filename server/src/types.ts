@@ -433,6 +433,7 @@ export interface Application {
   applicantName?: string;
   applicantEmail?: string;
   applicantBarangay?: string;
+  applicantAddress?: string;
 }
 
 // Flattened applicant profile + application row for the admin Reports
@@ -573,6 +574,7 @@ export interface Scholar {
   studentName?: string;
   studentEmail?: string;
   studentBarangay?: string;
+  studentAddress?: string;
   // The originating (approved) application's submissionDate — lets the
   // Scholar Management page order scholars within a program by who
   // submitted first.

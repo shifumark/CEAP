@@ -103,7 +103,15 @@ const ScholarManagementPage = () => {
   const filtered = scholars.filter((scholar) => {
     if (programFilter && scholar.scholarshipId !== Number(programFilter)) return false;
     if (statusFilter && scholar.status !== statusFilter) return false;
-    if (barangaySearch && !scholar.studentBarangay?.toLowerCase().includes(barangaySearch.toLowerCase())) return false;
+    if (barangaySearch) {
+      const q = barangaySearch.toLowerCase();
+      const matchesBarangay = scholar.studentBarangay?.toLowerCase().includes(q);
+      // Some applicants entered their barangay as free text under the
+      // legacy address field instead of the structured barangay field —
+      // fall back to matching that too, so they're still findable.
+      const matchesAddress = scholar.studentAddress?.toLowerCase().includes(q);
+      if (!matchesBarangay && !matchesAddress) return false;
+    }
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       const matchesName = scholar.studentName?.toLowerCase().includes(q);

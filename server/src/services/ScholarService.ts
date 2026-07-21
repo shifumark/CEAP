@@ -49,6 +49,11 @@ function toScholar(record: ScholarWithRelations, submissionDate?: Date): Scholar
     studentName: record.user ? `${record.user.firstName} ${record.user.lastName}` : undefined,
     studentEmail: record.user?.email,
     studentBarangay: record.user?.applicant?.barangay ?? undefined,
+    // Fallback for scholars whose location was entered as free text under
+    // the legacy `address` field instead of the structured barangay field —
+    // the Barangay search matches against this too, so those records are
+    // still findable.
+    studentAddress: record.user?.applicant?.address ?? undefined,
     submissionDate
   };
 }

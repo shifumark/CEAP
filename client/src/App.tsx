@@ -124,7 +124,7 @@ function AppLayout() {
           <Route
             path="/users"
             element={
-              <ProtectedRoute allowedRoles={[UserRole.SUPER_ADMIN]}>
+              <ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.SUPER_ADMIN]}>
                 <UserManagementPage />
               </ProtectedRoute>
             }

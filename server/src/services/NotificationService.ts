@@ -1,6 +1,6 @@
 import type { Notification as PrismaNotification } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
-import { Notification, NotificationType, JWTPayload } from '../types.js';
+import { Notification, NotificationType, JWTPayload, UserRole } from '../types.js';
 import { EmailService } from './EmailService.js';
 
 const emailService = new EmailService();
@@ -26,13 +26,45 @@ export class NotificationService {
     });
   }
 
+  // No dedicated scheduler in this app's infra (same lazy-expiry pattern
+  // used for auto-closing scholarship programs), so Student notifications
+  // older than 2 days are cleaned up on read rather than on a timer.
+  // Admin/Super Admin notifications are exempt — they don't get the same
+  // "disappears after 2 days" treatment Students see, since staff rely on
+  // them as a durable record of new applicants.
+  private static readonly STUDENT_NOTIFICATION_LIFETIME_MS = 2 * 24 * 60 * 60 * 1000;
+
   async listForUser(user: JWTPayload): Promise<Notification[]> {
+    if (user.role === UserRole.APPLICANT) {
+      await prisma.notification.deleteMany({
+        where: {
+          userId: user.sub,
+          createdAt: { lt: new Date(Date.now() - NotificationService.STUDENT_NOTIFICATION_LIFETIME_MS) }
+        }
+      });
+    }
+
     const notifications = await prisma.notification.findMany({
       where: { userId: user.sub },
       orderBy: { createdAt: 'desc' },
       take: 50
     });
     return notifications.map(toNotification);
+  }
+
+  /**
+   * Ownership predicate is the query itself (deleteMany scoped to
+   * userId) — a user can never delete someone else's notification, even
+   * by guessing an id.
+   */
+  async delete(user: JWTPayload, id: number): Promise<boolean> {
+    const result = await prisma.notification.deleteMany({ where: { id, userId: user.sub } });
+    return result.count > 0;
+  }
+
+  async deleteAll(user: JWTPayload): Promise<number> {
+    const result = await prisma.notification.deleteMany({ where: { userId: user.sub } });
+    return result.count;
   }
 
   /**
@@ -75,6 +107,30 @@ export class NotificationService {
         title: 'New Announcement',
         message: title,
         actionUrl: '/announcements'
+      }))
+    });
+  }
+
+  /**
+   * Best-effort broadcast to every Admin and Super Admin when a student
+   * submits an application. Unlike Student-facing notifications, these
+   * are never auto-expired (see listForUser's 2-day cleanup, which only
+   * applies to applicant-role recipients) — callers wrap this in a catch.
+   */
+  async notifyAdminsOfNewApplication(applicantName: string, scholarshipName: string): Promise<void> {
+    const staff = await prisma.user.findMany({
+      where: { role: { in: ['admin', 'super_admin'] } },
+      select: { id: true }
+    });
+    if (staff.length === 0) return;
+
+    await prisma.notification.createMany({
+      data: staff.map((s) => ({
+        userId: s.id,
+        notificationType: 'application_submitted' as const,
+        title: 'New Application Submitted',
+        message: `${applicantName} submitted an application for ${scholarshipName}.`,
+        actionUrl: '/applications'
       }))
     });
   }

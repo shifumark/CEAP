@@ -142,6 +142,13 @@ export class ApplicationService {
       return app;
     });
 
+    const applicantName = updated.applicant?.user
+      ? `${updated.applicant.user.firstName} ${updated.applicant.user.lastName}`
+      : 'An applicant';
+    notificationService
+      .notifyAdminsOfNewApplication(applicantName, updated.scholarship?.name ?? 'a scholarship')
+      .catch((error) => console.error('[NotificationService] Failed to notify admins of new application', updated.id, error));
+
     return toApplication(updated);
   }
 

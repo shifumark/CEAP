@@ -288,6 +288,11 @@ const ProfilePage = () => {
   // unclickable.
   const [specialCourseOtherSelected, setSpecialCourseOtherSelected] = useState(false);
 
+  const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [passwordError, setPasswordError] = useState('');
+  const [passwordSuccess, setPasswordSuccess] = useState('');
+
   const loadCompleteness = async () => {
     try {
       setCompleteness(await apiService.getProfileCompleteness());
@@ -341,6 +346,26 @@ const ProfilePage = () => {
       setError(err.message || 'Failed to save profile');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordError('');
+    setPasswordSuccess('');
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setPasswordError('New password and confirmation do not match');
+      return;
+    }
+    setChangingPassword(true);
+    try {
+      await apiService.changePassword(passwordForm.currentPassword, passwordForm.newPassword);
+      setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      setPasswordSuccess('Password changed successfully.');
+    } catch (err: any) {
+      setPasswordError(err.message || 'Failed to change password');
+    } finally {
+      setChangingPassword(false);
     }
   };
 
@@ -1036,6 +1061,58 @@ const ProfilePage = () => {
                 {saving ? 'Saving...' : 'Save Profile'}
               </button>
             </form>
+
+            <div className="card" style={{ marginTop: '1.5rem' }}>
+              <div className="card-header">
+                <h3>Change Password</h3>
+              </div>
+              <p style={{ fontSize: '0.85rem', color: '#6B7280' }}>
+                If an admin gave you a temporary password, sign in with it and use this form to set your own.
+              </p>
+              {passwordError && (
+                <p style={{ color: '#DC2626', fontSize: '0.85rem', marginBottom: '0.75rem' }}>{passwordError}</p>
+              )}
+              {passwordSuccess && (
+                <p style={{ color: '#065F46', fontSize: '0.85rem', marginBottom: '0.75rem' }}>{passwordSuccess}</p>
+              )}
+              <form onSubmit={handleChangePassword}>
+                <div className="form-group">
+                  <label htmlFor="currentPassword">Current (or Temporary) Password</label>
+                  <input
+                    id="currentPassword"
+                    type="password"
+                    value={passwordForm.currentPassword}
+                    onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="newPassword">New Password</label>
+                  <input
+                    id="newPassword"
+                    type="password"
+                    value={passwordForm.newPassword}
+                    onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
+                    minLength={8}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="confirmPassword">Confirm New Password</label>
+                  <input
+                    id="confirmPassword"
+                    type="password"
+                    value={passwordForm.confirmPassword}
+                    onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
+                    minLength={8}
+                    required
+                  />
+                </div>
+                <button className="btn btn-primary" type="submit" disabled={changingPassword}>
+                  {changingPassword ? 'Changing...' : 'Change Password'}
+                </button>
+              </form>
+            </div>
           </>
         )}
       </div>

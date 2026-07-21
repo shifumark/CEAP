@@ -90,6 +90,25 @@ export class AuthService {
     });
   }
 
+  /**
+   * Self-service password change — lets a user (e.g. a scholar who just
+   * logged in with a temporary password an admin gave them) set their own
+   * new password. Requires the current/temporary password, unlike
+   * resetPassword above which is a trusted-caller-only helper with no
+   * verification of its own.
+   */
+  async changeOwnPassword(userId: number, currentPassword: string, newPassword: string): Promise<void> {
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user || !bcrypt.compareSync(currentPassword, user.passwordHash)) {
+      throw new Error('Current password is incorrect');
+    }
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: { passwordHash: bcrypt.hashSync(newPassword, 10) }
+    });
+  }
+
   private generateToken(user: PrismaUser): string {
     return jwt.sign(
       {

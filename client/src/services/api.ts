@@ -138,6 +138,13 @@ class ApiService {
     });
   }
 
+  async changePassword(currentPassword: string, newPassword: string): Promise<{ message: string }> {
+    return this.request<{ message: string }>('POST', '/auth/change-password', {
+      currentPassword,
+      newPassword
+    });
+  }
+
   // ============== APPLICANT PROFILE ==============
 
   async getMyProfile(): Promise<Applicant> {
@@ -463,6 +470,14 @@ class ApiService {
 
   async markAllNotificationsAsRead(): Promise<{ updated: number }> {
     return this.request('POST', '/notifications/read-all', {});
+  }
+
+  async deleteNotification(id: number): Promise<{ message: string }> {
+    return this.request('DELETE', `/notifications/${id}`);
+  }
+
+  async deleteAllNotifications(): Promise<{ deleted: number }> {
+    return this.request('DELETE', '/notifications');
   }
 
   // ============== HEALTH ==============

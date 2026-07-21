@@ -4,9 +4,11 @@ import { useAuth } from '../context/AuthContext';
 import { User, UserRole, UserStatus } from '../types';
 import Modal from '../components/Modal';
 
-// A Super Admin can promote/demote between these two roles only — Super
-// Admin itself is deliberately excluded to prevent uncontrolled
-// self-service escalation to the highest privilege level.
+// An Admin or Super Admin can promote/demote between these two roles
+// only — Super Admin itself is deliberately excluded from this UI
+// entirely (for every viewer, including a genuine Super Admin) so there
+// is no self-service path to the highest privilege level. The server
+// enforces this independently — see targetVisibleToCaller in routes.ts.
 const ASSIGNABLE_ROLES = [UserRole.APPLICANT, UserRole.ADMIN];
 
 const ROLE_LABEL: Record<UserRole, string> = {
@@ -46,7 +48,7 @@ const UserManagementPage = () => {
     lastName: '',
     email: '',
     password: '',
-    role: UserRole.ADMIN
+    role: UserRole.APPLICANT
   });
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState('');
@@ -150,7 +152,7 @@ const UserManagementPage = () => {
         <div className="navbar-brand">Users</div>
         <div className="navbar-actions">
           <button className="btn btn-primary btn-sm" onClick={() => setShowCreateForm(true)}>
-            Register New Admin
+            Register New User
           </button>
         </div>
       </nav>
@@ -188,6 +190,7 @@ const UserManagementPage = () => {
                 <option value="">All roles</option>
                 {Object.values(UserRole)
                   .filter((r) => r !== UserRole.GUEST)
+                  .filter((r) => r !== UserRole.SUPER_ADMIN || currentUser?.role === UserRole.SUPER_ADMIN)
                   .map((role) => (
                     <option key={role} value={role}>
                       {ROLE_LABEL[role]}
@@ -338,7 +341,7 @@ const UserManagementPage = () => {
       )}
 
       {showCreateForm && (
-        <Modal title="Register New Admin" onClose={closeCreateForm}>
+        <Modal title="Register New User" onClose={closeCreateForm}>
           <form onSubmit={handleCreateUser}>
             {createError && (
               <p

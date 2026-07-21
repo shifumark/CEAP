@@ -127,6 +127,28 @@ router.post('/auth/forgot-password', async (req, res) => {
   }
 });
 
+/**
+ * Change your own password — e.g. a scholar setting a real password
+ * after logging in with a temporary one an admin gave them.
+ * Protected - self-scoped only, requires the current/temporary password.
+ */
+router.post('/auth/change-password', verifyToken, async (req: AuthenticatedRequest, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ error: 'Current and new password are required' });
+    }
+    if (newPassword.length < 8) {
+      return res.status(400).json({ error: 'New password must be at least 8 characters' });
+    }
+
+    await authService.changeOwnPassword(req.user!.sub, currentPassword, newPassword);
+    res.json({ message: 'Password changed successfully' });
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
 // ============== SCHOLARSHIP PROGRAM ROUTES ==============
 
 /**
@@ -979,6 +1001,33 @@ router.post('/notifications/:id/read', verifyToken, async (req: AuthenticatedReq
   }
 });
 
+/**
+ * Delete all of the requesting user's own notifications
+ * Protected - self-scoped only
+ */
+router.delete('/notifications', verifyToken, async (req: AuthenticatedRequest, res) => {
+  try {
+    const count = await notificationService.deleteAll(req.user!);
+    res.json({ deleted: count });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.delete('/notifications/:id', verifyToken, async (req: AuthenticatedRequest, res) => {
+  try {
+    const deleted = await notificationService.delete(req.user!, parseInt(req.params.id));
+
+    if (!deleted) {
+      return res.status(404).json({ error: 'Notification not found' });
+    }
+
+    res.json({ message: 'Notification deleted successfully' });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // ============== DASHBOARD ROUTES ==============
 
 /**
@@ -1061,7 +1110,23 @@ router.get('/dashboard/stats', verifyToken, async (req: AuthenticatedRequest, re
   }
 });
 
-// ============== USER MANAGEMENT ROUTES (Super Admin Only) ==============
+// ============== USER MANAGEMENT ROUTES ==============
+// Open to both Admin and Super Admin, but Super Admin accounts are
+// invisible to (and unmodifiable by) an Admin caller at every layer
+// below — list filtering (getAllUsers' includeHidden) and the
+// per-target checks in the mutation routes below.
+
+/**
+ * A non-Super-Admin caller must never see or affect a Super Admin
+ * account, even by guessing its id directly — returns true (safe to
+ * proceed) for a Super Admin caller, or for a target that isn't a Super
+ * Admin account.
+ */
+async function targetVisibleToCaller(req: AuthenticatedRequest, userId: number): Promise<boolean> {
+  if (req.user!.role === UserRole.SUPER_ADMIN) return true;
+  const target = await authService.getUser(userId);
+  return !!target && target.role !== UserRole.SUPER_ADMIN;
+}
 
 /**
  * List all users (Admin/Super Admin only; excludes Super Admin accounts from Admin view)
@@ -1095,11 +1160,12 @@ router.get('/users/:id', verifyToken, requireSuperAdmin, async (req: Authenticat
 });
 
 /**
- * Reassign a user's role and/or enable/disable their account
- * (Super Admin only). A Super Admin can never change their own account
- * this way, to rule out an accidental self-lockout.
+ * Reassign a user's role and/or enable/disable their account (Admin or
+ * Super Admin). A caller can never change their own account this way, to
+ * rule out an accidental self-lockout. An Admin caller can only assign
+ * Student/Admin roles and can never target a Super Admin account.
  */
-router.patch('/users/:id', verifyToken, requireSuperAdmin, async (req: AuthenticatedRequest, res) => {
+router.patch('/users/:id', verifyToken, requireAdmin, async (req: AuthenticatedRequest, res) => {
   try {
     const userId = parseInt(req.params.id);
     if (userId === req.user!.sub) {
@@ -1114,6 +1180,15 @@ router.patch('/users/:id', verifyToken, requireSuperAdmin, async (req: Authentic
       return res.status(400).json({ error: 'Invalid status' });
     }
 
+    if (req.user!.role !== UserRole.SUPER_ADMIN) {
+      if (role === UserRole.SUPER_ADMIN) {
+        return res.status(400).json({ error: 'Invalid role' });
+      }
+      if (!(await targetVisibleToCaller(req, userId))) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+    }
+
     const updated = await authService.updateUserAccount(userId, { role, status });
     res.json(updated);
   } catch (error: any) {
@@ -1122,15 +1197,19 @@ router.patch('/users/:id', verifyToken, requireSuperAdmin, async (req: Authentic
 });
 
 /**
- * Reset a user's password to a freshly generated random value (Super
- * Admin only) — stands in for self-service "forgot password" since this
+ * Reset a user's password to a freshly generated random value (Admin or
+ * Super Admin) — stands in for self-service "forgot password" since this
  * app has no outbound email capability. Returns the plaintext temporary
  * password exactly once; it is never retrievable again after this
- * response.
+ * response. An Admin caller can never target a Super Admin account.
  */
-router.post('/users/:id/reset-password', verifyToken, requireSuperAdmin, async (req: AuthenticatedRequest, res) => {
+router.post('/users/:id/reset-password', verifyToken, requireAdmin, async (req: AuthenticatedRequest, res) => {
   try {
     const userId = parseInt(req.params.id);
+    if (!(await targetVisibleToCaller(req, userId))) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
     const result = await authService.adminResetPassword(userId);
     res.json(result);
   } catch (error: any) {
@@ -1139,14 +1218,19 @@ router.post('/users/:id/reset-password', verifyToken, requireSuperAdmin, async (
 });
 
 /**
- * Create new user (Super Admin only)
+ * Create new user (Admin or Super Admin). An Admin caller can only
+ * create Student/Admin accounts, never a Super Admin.
  */
-router.post('/users', verifyToken, requireSuperAdmin, async (req: AuthenticatedRequest, res) => {
+router.post('/users', verifyToken, requireAdmin, async (req: AuthenticatedRequest, res) => {
   try {
     const { email, password, firstName, lastName, role } = req.body;
 
     if (!email || !password || !firstName || !lastName) {
       return res.status(400).json({ error: 'All fields are required' });
+    }
+
+    if (req.user!.role !== UserRole.SUPER_ADMIN && role === UserRole.SUPER_ADMIN) {
+      return res.status(400).json({ error: 'Invalid role' });
     }
 
     const user = await authService.register({

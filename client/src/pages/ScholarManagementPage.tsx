@@ -13,6 +13,11 @@ const STATUS_BADGE: Record<string, string> = {
 
 const STATUS_OPTIONS = ['active', 'inactive', 'graduated', 'terminated'];
 
+function formatDate(value?: string | Date) {
+  if (!value) return '—';
+  return new Date(value).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
 interface ProgramGroup {
   scholarshipName: string;
   scholars: Scholar[];
@@ -228,6 +233,8 @@ const ScholarManagementPage = () => {
                           <th>Scholar ID</th>
                           <th>Student</th>
                           <th>Status</th>
+                          <th>Date Submitted</th>
+                          <th>Date Received</th>
                           <th></th>
                         </tr>
                       </thead>
@@ -245,6 +252,8 @@ const ScholarManagementPage = () => {
                                 {scholar.status}
                               </span>
                             </td>
+                            <td>{formatDate(scholar.submissionDate)}</td>
+                            <td>{formatDate(scholar.receivedDate)}</td>
                             <td>
                               <div style={{ display: 'flex', gap: '0.5rem' }}>
                                 <Link className="btn btn-outline btn-sm" to={`/scholars/${scholar.id}`}>

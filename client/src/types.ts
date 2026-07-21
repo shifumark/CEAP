@@ -417,6 +417,7 @@ export interface Application {
   scholarshipId: number;
   status: ApplicationStatus;
   submissionDate?: Date;
+  receivedDate?: Date;
   reviewedBy?: number;
   reviewedAt?: Date;
   comments?: string;
@@ -568,10 +569,11 @@ export interface Scholar {
   studentEmail?: string;
   studentBarangay?: string;
   studentAddress?: string;
-  // The originating (approved) application's submissionDate — lets the
-  // Scholar Management page order scholars within a program by who
-  // submitted first.
+  // The originating (approved) application's submissionDate/receivedDate —
+  // lets the Scholar Management page order scholars within a program by
+  // who submitted first, and display both dates.
   submissionDate?: Date;
+  receivedDate?: Date;
 }
 
 // GRADE

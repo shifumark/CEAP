@@ -284,7 +284,8 @@ const ApplicationReviewPage = () => {
                   <th>Applicant</th>
                   <th>Scholarship</th>
                   <th>Status</th>
-                  <th>Submitted</th>
+                  <th>Date Submitted</th>
+                  <th>Date Received</th>
                   <th></th>
                 </tr>
               </thead>
@@ -303,6 +304,7 @@ const ApplicationReviewPage = () => {
                       </span>
                     </td>
                     <td>{formatDate(application.submissionDate)}</td>
+                    <td>{formatDate(application.receivedDate)}</td>
                     <td>
                       <button className="btn btn-outline btn-sm" onClick={() => openReview(application)}>
                         Review
@@ -319,6 +321,8 @@ const ApplicationReviewPage = () => {
           <Modal title={`Review: ${selected.applicantName} — ${selected.scholarshipName}`} onClose={() => setSelectedId(null)}>
             <p style={{ fontSize: '0.85rem', color: '#6B7280', marginTop: 0 }}>
               <strong>Date Submitted:</strong> {formatDate(selected.submissionDate)}
+              {' · '}
+              <strong>Date Received:</strong> {formatDate(selected.receivedDate)}
             </p>
 
             <div style={{ marginBottom: '1.25rem' }}>

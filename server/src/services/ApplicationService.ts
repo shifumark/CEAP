@@ -42,6 +42,7 @@ function toApplication(record: ApplicationWithRelations): Application {
     scholarshipId: record.scholarshipId,
     status: record.status as unknown as ApplicationStatus,
     submissionDate: record.submissionDate ?? undefined,
+    receivedDate: record.receivedDate ?? undefined,
     reviewedBy: record.reviewedBy ?? undefined,
     reviewedAt: record.reviewedAt ?? undefined,
     comments: record.comments ?? undefined,
@@ -348,7 +349,11 @@ export class ApplicationService {
           status: (request.status as any) ?? application.status,
           comments: request.comments ?? application.comments,
           reviewedBy: user.sub,
-          reviewedAt: new Date()
+          reviewedAt: new Date(),
+          // Refreshed every time an admin moves the application into
+          // "under_review" — including after a needs_revision resubmit
+          // loop — so it always reflects the most recent pickup.
+          ...(request.status === 'under_review' ? { receivedDate: new Date() } : {})
         },
         include: applicationInclude
       });

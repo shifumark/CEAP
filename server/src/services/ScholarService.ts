@@ -34,7 +34,7 @@ function isPrivileged(user: JWTPayload): boolean {
   return user.role === UserRole.ADMIN || user.role === UserRole.SUPER_ADMIN;
 }
 
-function toScholar(record: ScholarWithRelations, submissionDate?: Date): Scholar {
+function toScholar(record: ScholarWithRelations, submissionDate?: Date, receivedDate?: Date): Scholar {
   return {
     id: record.id,
     userId: record.userId,
@@ -54,7 +54,8 @@ function toScholar(record: ScholarWithRelations, submissionDate?: Date): Scholar
     // the Barangay search matches against this too, so those records are
     // still findable.
     studentAddress: record.user?.applicant?.address ?? undefined,
-    submissionDate
+    submissionDate,
+    receivedDate
   };
 }
 
@@ -174,9 +175,10 @@ export class ScholarService {
     ]);
 
     // Scholar has no direct applicationId FK, so the originating
-    // application's submissionDate (used to order scholars within a
-    // program by who submitted first) is looked up separately, keyed by
-    // (applicantId, scholarshipId) — a single bulk query rather than N+1.
+    // application's submissionDate/receivedDate (used to order scholars
+    // within a program by who submitted first, and to display both dates)
+    // is looked up separately, keyed by (applicantId, scholarshipId) — a
+    // single bulk query rather than N+1.
     const applicantIds = items
       .map((item) => item.user?.applicant?.id)
       .filter((id): id is number => id !== undefined);
@@ -184,25 +186,28 @@ export class ScholarService {
     const applications = applicantIds.length
       ? await prisma.application.findMany({
           where: { applicantId: { in: applicantIds }, status: 'approved' },
-          select: { applicantId: true, scholarshipId: true, submissionDate: true }
+          select: { applicantId: true, scholarshipId: true, submissionDate: true, receivedDate: true }
         })
       : [];
 
     const submissionDateByKey = new Map<string, Date | null>();
+    const receivedDateByKey = new Map<string, Date | null>();
     for (const app of applications) {
       const key = `${app.applicantId}:${app.scholarshipId}`;
       const existing = submissionDateByKey.get(key);
       if (existing === undefined || (app.submissionDate && (!existing || app.submissionDate < existing))) {
         submissionDateByKey.set(key, app.submissionDate);
+        receivedDateByKey.set(key, app.receivedDate);
       }
     }
 
     return {
       data: items.map((item) => {
         const applicantId = item.user?.applicant?.id;
-        const submissionDate =
-          applicantId !== undefined ? submissionDateByKey.get(`${applicantId}:${item.scholarshipId}`) ?? undefined : undefined;
-        return toScholar(item, submissionDate);
+        const key = applicantId !== undefined ? `${applicantId}:${item.scholarshipId}` : undefined;
+        const submissionDate = key ? submissionDateByKey.get(key) ?? undefined : undefined;
+        const receivedDate = key ? receivedDateByKey.get(key) ?? undefined : undefined;
+        return toScholar(item, submissionDate, receivedDate);
       }),
       total,
       page,

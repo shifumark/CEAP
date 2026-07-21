@@ -340,6 +340,11 @@ model Application {
   scholarshipId  Int               @map("scholarship_id")
   status         ApplicationStatus @default(draft)
   submissionDate DateTime?         @map("submission_date")
+  // Set whenever an admin/super admin moves the application into
+  // "under_review" — refreshed on every such transition (e.g. after a
+  // needs_revision -> resubmit -> under_review loop), reflecting the most
+  // recent time it was picked up for review.
+  receivedDate   DateTime?         @map("received_date")
   reviewedBy     Int?              @map("reviewed_by")
   reviewedAt     DateTime?         @map("reviewed_at")
   comments       String?

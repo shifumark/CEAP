@@ -1,0 +1,307 @@
+import { useEffect, useState } from 'react';
+import { apiService } from '../services/api';
+import { useAuth } from '../context/AuthContext';
+import { User, UserRole, UserStatus } from '../types';
+import Modal from '../components/Modal';
+
+// A Super Admin can promote/demote between these two roles only — Super
+// Admin itself is deliberately excluded to prevent uncontrolled
+// self-service escalation to the highest privilege level.
+const ASSIGNABLE_ROLES = [UserRole.APPLICANT, UserRole.ADMIN];
+
+const ROLE_LABEL: Record<UserRole, string> = {
+  [UserRole.SUPER_ADMIN]: 'Super Admin',
+  [UserRole.ADMIN]: 'Admin',
+  [UserRole.APPLICANT]: 'Student',
+  [UserRole.GUEST]: 'Guest'
+};
+
+const STATUS_BADGE: Record<string, string> = {
+  active: 'badge-success',
+  inactive: 'badge-secondary',
+  suspended: 'badge-warning',
+  deactivated: 'badge-error'
+};
+
+function formatDate(value?: string | Date) {
+  if (!value) return '—';
+  return new Date(value).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+const UserManagementPage = () => {
+  const { user: currentUser } = useAuth();
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [busyUserId, setBusyUserId] = useState<number | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [roleFilter, setRoleFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [resettingUser, setResettingUser] = useState<User | null>(null);
+  const [resetting, setResetting] = useState(false);
+  const [temporaryPassword, setTemporaryPassword] = useState('');
+
+  const load = () => {
+    setLoading(true);
+    setError('');
+    apiService
+      .getUsers()
+      .then(setUsers)
+      .catch((err) => setError(err.message || 'Failed to load users'))
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  const handleRoleChange = async (targetUser: User, role: UserRole) => {
+    setBusyUserId(targetUser.id);
+    setError('');
+    try {
+      const updated = await apiService.updateUserAccount(targetUser.id, { role });
+      setUsers((prev) => prev.map((u) => (u.id === updated.id ? updated : u)));
+    } catch (err: any) {
+      setError(err.message || 'Failed to update role');
+    } finally {
+      setBusyUserId(null);
+    }
+  };
+
+  const handleToggleStatus = async (targetUser: User) => {
+    setBusyUserId(targetUser.id);
+    setError('');
+    try {
+      const nextStatus = targetUser.status === UserStatus.ACTIVE ? UserStatus.DEACTIVATED : UserStatus.ACTIVE;
+      const updated = await apiService.updateUserAccount(targetUser.id, { status: nextStatus });
+      setUsers((prev) => prev.map((u) => (u.id === updated.id ? updated : u)));
+    } catch (err: any) {
+      setError(err.message || 'Failed to update account status');
+    } finally {
+      setBusyUserId(null);
+    }
+  };
+
+  const handleConfirmReset = async () => {
+    if (!resettingUser) return;
+    setResetting(true);
+    setError('');
+    try {
+      const result = await apiService.resetUserPassword(resettingUser.id);
+      setTemporaryPassword(result.temporaryPassword);
+    } catch (err: any) {
+      setError(err.message || 'Failed to reset password');
+    } finally {
+      setResetting(false);
+    }
+  };
+
+  const closeResetModal = () => {
+    setResettingUser(null);
+    setTemporaryPassword('');
+  };
+
+  const filtered = users.filter((u) => {
+    if (roleFilter && u.role !== roleFilter) return false;
+    if (statusFilter && u.status !== statusFilter) return false;
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      const matchesName = `${u.firstName} ${u.lastName}`.toLowerCase().includes(q);
+      const matchesEmail = u.email.toLowerCase().includes(q);
+      if (!matchesName && !matchesEmail) return false;
+    }
+    return true;
+  });
+
+  return (
+    <div>
+      <nav className="navbar">
+        <div className="navbar-brand">Users</div>
+      </nav>
+
+      <div className="container">
+        <div className="page-header">
+          <h1>User Management</h1>
+          <p>Assign roles, enable/disable accounts, and reset passwords for any user.</p>
+        </div>
+
+        {error && (
+          <div
+            style={{
+              padding: '1rem',
+              background: 'rgba(239, 68, 68, 0.1)',
+              border: '1px solid rgba(239, 68, 68, 0.3)',
+              borderRadius: 'var(--radius-md)',
+              marginBottom: '1.5rem',
+              color: '#DC2626'
+            }}
+          >
+            {error}
+          </div>
+        )}
+
+        <div className="card" style={{ marginBottom: '1.5rem' }}>
+          <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'flex-end' }}>
+            <div className="form-group" style={{ margin: 0, minWidth: '220px' }}>
+              <label htmlFor="userSearch">Search</label>
+              <input id="userSearch" placeholder="Name or email" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+            </div>
+            <div className="form-group" style={{ margin: 0, minWidth: '160px' }}>
+              <label htmlFor="userRoleFilter">Role</label>
+              <select id="userRoleFilter" value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)}>
+                <option value="">All roles</option>
+                {Object.values(UserRole)
+                  .filter((r) => r !== UserRole.GUEST)
+                  .map((role) => (
+                    <option key={role} value={role}>
+                      {ROLE_LABEL[role]}
+                    </option>
+                  ))}
+              </select>
+            </div>
+            <div className="form-group" style={{ margin: 0, minWidth: '160px' }}>
+              <label htmlFor="userStatusFilter">Status</label>
+              <select id="userStatusFilter" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+                <option value="">All statuses</option>
+                {Object.values(UserStatus).map((status) => (
+                  <option key={status} value={status}>
+                    {status}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {loading ? (
+          <p>Loading...</p>
+        ) : filtered.length === 0 ? (
+          <div className="card">
+            <p style={{ color: '#6B7280' }}>No users match this filter.</p>
+          </div>
+        ) : (
+          <div className="card" style={{ overflowX: 'auto' }}>
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Role</th>
+                  <th>Status</th>
+                  <th>Joined</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((u) => {
+                  const isSelf = currentUser?.id === u.id;
+                  const isSuperAdminRow = u.role === UserRole.SUPER_ADMIN;
+                  const busy = busyUserId === u.id;
+                  return (
+                    <tr key={u.id}>
+                      <td>
+                        {u.firstName} {u.lastName}
+                        {isSelf && <span style={{ fontSize: '0.75rem', color: '#6B7280' }}> (you)</span>}
+                      </td>
+                      <td>{u.email}</td>
+                      <td>
+                        {isSelf || isSuperAdminRow ? (
+                          <span className="badge badge-secondary">{ROLE_LABEL[u.role]}</span>
+                        ) : (
+                          <select
+                            value={u.role}
+                            disabled={busy}
+                            onChange={(e) => handleRoleChange(u, e.target.value as UserRole)}
+                            style={{ minWidth: '120px' }}
+                          >
+                            {ASSIGNABLE_ROLES.map((role) => (
+                              <option key={role} value={role}>
+                                {ROLE_LABEL[role]}
+                              </option>
+                            ))}
+                          </select>
+                        )}
+                      </td>
+                      <td>
+                        <span className={`badge ${STATUS_BADGE[u.status] ?? 'badge-secondary'}`}>{u.status}</span>
+                      </td>
+                      <td>{formatDate(u.createdAt)}</td>
+                      <td>
+                        {!isSelf && !isSuperAdminRow && (
+                          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                            <button className="btn btn-outline btn-sm" disabled={busy} onClick={() => handleToggleStatus(u)}>
+                              {u.status === UserStatus.ACTIVE ? 'Disable' : 'Enable'}
+                            </button>
+                            <button className="btn btn-outline btn-sm" disabled={busy} onClick={() => setResettingUser(u)}>
+                              Reset Password
+                            </button>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {resettingUser && (
+        <Modal title="Reset Password" onClose={closeResetModal}>
+          {temporaryPassword ? (
+            <>
+              <p style={{ color: '#065F46' }}>
+                Password reset for <strong>{resettingUser.email}</strong>. Share this temporary password with them now —
+                it will not be shown again.
+              </p>
+              <div
+                style={{
+                  padding: '0.85rem',
+                  background: 'rgba(16, 185, 129, 0.1)',
+                  border: '1px solid rgba(16, 185, 129, 0.3)',
+                  borderRadius: 'var(--radius-md)',
+                  fontFamily: 'monospace',
+                  fontSize: '1.1rem',
+                  textAlign: 'center'
+                }}
+              >
+                {temporaryPassword}
+              </div>
+              <div style={{ marginTop: '1rem' }}>
+                <button className="btn btn-primary" type="button" onClick={closeResetModal}>
+                  Done
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <p
+                style={{
+                  padding: '0.85rem',
+                  background: 'rgba(239, 68, 68, 0.1)',
+                  border: '1px solid rgba(239, 68, 68, 0.3)',
+                  borderRadius: 'var(--radius-md)',
+                  color: '#DC2626'
+                }}
+              >
+                Reset <strong>{resettingUser.email}</strong>'s password? Their current password will stop working
+                immediately.
+              </p>
+              <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem' }}>
+                <button className="btn btn-primary" type="button" disabled={resetting} onClick={handleConfirmReset}>
+                  {resetting ? 'Resetting...' : 'Reset Password'}
+                </button>
+                <button className="btn btn-outline" type="button" onClick={closeResetModal} disabled={resetting}>
+                  Cancel
+                </button>
+              </div>
+            </>
+          )}
+        </Modal>
+      )}
+    </div>
+  );
+};
+
+export default UserManagementPage;

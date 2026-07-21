@@ -45,6 +45,18 @@ const STATUS_BADGE: Record<ApplicationStatus, string> = {
 // the decision dropdown.
 const REVIEWABLE_STATUSES = Object.values(ApplicationStatus).filter((status) => status !== ApplicationStatus.DRAFT);
 
+// Once a decision is finalized, the server rejects deletion — approved
+// applications have already become a Scholar record (delete that from
+// Scholar Management instead), and rejected ones are kept as an audit
+// trail. The Delete button is hidden for these rather than left to fail.
+const DELETABLE_STATUSES = new Set([
+  ApplicationStatus.SUBMITTED,
+  ApplicationStatus.UNDER_REVIEW,
+  ApplicationStatus.DOCUMENT_VERIFICATION,
+  ApplicationStatus.INTERVIEW,
+  ApplicationStatus.NEEDS_REVISION
+]);
+
 function formatDate(value?: string | Date) {
   if (!value) return '—';
   return new Date(value).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
@@ -69,6 +81,8 @@ const ApplicationReviewPage = () => {
   const [barangaySearch, setBarangaySearch] = useState('');
   const [programs, setPrograms] = useState<ScholarshipProgram[]>([]);
   const [programFilter, setProgramFilter] = useState<string>('');
+  const [deletingApplication, setDeletingApplication] = useState<Application | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const loadApplications = async () => {
     setError('');
@@ -204,6 +218,21 @@ const ApplicationReviewPage = () => {
     }
   };
 
+  const handleConfirmDelete = async () => {
+    if (!deletingApplication) return;
+    setDeleting(true);
+    setError('');
+    try {
+      await apiService.deleteApplication(deletingApplication.id);
+      setDeletingApplication(null);
+      await loadApplications();
+    } catch (err: any) {
+      setError(err.message || 'Failed to delete application');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return (
     <div>
       <nav className="navbar">
@@ -306,9 +335,20 @@ const ApplicationReviewPage = () => {
                     <td>{formatDate(application.submissionDate)}</td>
                     <td>{formatDate(application.receivedDate)}</td>
                     <td>
-                      <button className="btn btn-outline btn-sm" onClick={() => openReview(application)}>
-                        Review
-                      </button>
+                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <button className="btn btn-outline btn-sm" onClick={() => openReview(application)}>
+                          Review
+                        </button>
+                        {DELETABLE_STATUSES.has(application.status) && (
+                          <button
+                            className="btn btn-outline btn-sm"
+                            style={{ color: '#DC2626', borderColor: '#DC2626' }}
+                            onClick={() => setDeletingApplication(application)}
+                          >
+                            Delete
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -416,6 +456,38 @@ const ApplicationReviewPage = () => {
                 {saving ? 'Saving...' : 'Save Decision'}
               </button>
               <button className="btn btn-outline" onClick={() => setSelectedId(null)}>
+                Cancel
+              </button>
+            </div>
+          </Modal>
+        )}
+
+        {deletingApplication && (
+          <Modal title="Delete Application" onClose={() => setDeletingApplication(null)}>
+            <p
+              style={{
+                padding: '0.85rem',
+                background: 'rgba(239, 68, 68, 0.1)',
+                border: '1px solid rgba(239, 68, 68, 0.3)',
+                borderRadius: 'var(--radius-md)',
+                color: '#DC2626'
+              }}
+            >
+              Delete <strong>{deletingApplication.applicantName}</strong>'s application for{' '}
+              <strong>{deletingApplication.scholarshipName}</strong>? This permanently removes the application, its
+              uploaded documents, and its review history. This cannot be undone.
+            </p>
+            <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem' }}>
+              <button
+                className="btn btn-primary"
+                type="button"
+                style={{ background: '#DC2626' }}
+                disabled={deleting}
+                onClick={handleConfirmDelete}
+              >
+                {deleting ? 'Deleting...' : 'Delete Application'}
+              </button>
+              <button className="btn btn-outline" type="button" onClick={() => setDeletingApplication(null)} disabled={deleting}>
                 Cancel
               </button>
             </div>

@@ -75,7 +75,7 @@ export class AuthService {
   }
 
   async verifyToken(token: string): Promise<any> {
-    return jwt.verify(token, JWT_SECRET);
+    return jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] });
   }
 
   async resetPassword(email: string, newPassword: string): Promise<void> {
@@ -117,7 +117,7 @@ export class AuthService {
         role: user.role
       },
       JWT_SECRET,
-      { expiresIn: '8h' }
+      { expiresIn: '8h', algorithm: 'HS256' }
     );
   }
 

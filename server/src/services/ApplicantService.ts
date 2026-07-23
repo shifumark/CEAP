@@ -126,20 +126,62 @@ export class ApplicantService {
   async updateProfile(userId: number, request: UpdateApplicantProfileRequest): Promise<Applicant> {
     // Ensure a row exists first (applicant profiles are created lazily).
     const applicant = await this.getOrCreateForUser(userId);
-    const { father, mother, guardian, firstName, lastName, ...flatFields } = request;
+    const { father, mother, guardian, firstName, lastName } = request;
+
+    // Built field-by-field from an explicit whitelist rather than
+    // spreading `request` — req.body is untyped at runtime, so a raw
+    // request could otherwise smuggle in columns like `userId` or `id`
+    // (Applicant.userId is unique, so setting it to another user's id
+    // would silently reassign this profile to their account).
+    const data: Prisma.ApplicantUpdateInput = {
+      middleName: request.middleName,
+      suffix: request.suffix,
+      dateOfBirth: request.dateOfBirth ? new Date(request.dateOfBirth) : undefined,
+      age: request.age,
+      sex: request.sex,
+      civilStatus: request.civilStatus,
+      contactNumber: request.contactNumber,
+      address: request.address,
+      schoolName: request.schoolName,
+      courseName: request.courseName,
+      yearLevel: request.yearLevel,
+      municipality: request.municipality,
+      barangay: request.barangay,
+      zipCode: request.zipCode,
+      householdMonthlyIncome: request.householdMonthlyIncome,
+      placeOfBirth: request.placeOfBirth,
+      nationality: request.nationality,
+      idType: request.idType,
+      idNumber: request.idNumber,
+      isIndigenousPeople: request.isIndigenousPeople,
+      ipGroupTribe: request.ipGroupTribe,
+      province: request.province,
+      sectoralClassifications: request.sectoralClassifications,
+      sectoralClassificationOther: request.sectoralClassificationOther,
+      numberOfHouseholdMembers: request.numberOfHouseholdMembers,
+      numberOfDependentsStudying: request.numberOfDependentsStudying,
+      parentalStatus: request.parentalStatus,
+      schoolAddress: request.schoolAddress,
+      schoolType: request.schoolType,
+      gwa: request.gwa,
+      previousSchool: request.previousSchool,
+      honorsAwards: request.honorsAwards,
+      academicStatus: request.academicStatus,
+      currentlyReceivingAssistance: request.currentlyReceivingAssistance,
+      currentAssistanceProgram: request.currentAssistanceProgram,
+      currentAssistanceAmount: request.currentAssistanceAmount,
+      appliedOtherScholarship: request.appliedOtherScholarship,
+      otherScholarshipProgram: request.otherScholarshipProgram,
+      academicDistinctionExtracurricular: request.academicDistinctionExtracurricular,
+      lbpAtmAccountNumber: request.lbpAtmAccountNumber
+    };
 
     const updated = await prisma.$transaction(async (tx) => {
       if (firstName !== undefined || lastName !== undefined) {
         await tx.user.update({ where: { id: userId }, data: { firstName, lastName } });
       }
 
-      await tx.applicant.update({
-        where: { userId },
-        data: {
-          ...flatFields,
-          dateOfBirth: flatFields.dateOfBirth ? new Date(flatFields.dateOfBirth) : undefined
-        }
-      });
+      await tx.applicant.update({ where: { userId }, data });
 
       const upsertMember = (memberType: 'father' | 'mother' | 'guardian', detail?: FamilyMemberDetail) => {
         if (!detail) return Promise.resolve();

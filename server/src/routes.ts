@@ -1,5 +1,5 @@
 import express from 'express';
-import { AuthenticatedRequest, verifyToken, requireRole, requireAdmin, requireSuperAdmin } from './middleware/auth.js';
+import { AuthenticatedRequest, verifyToken, requireRole, requireAdmin, requireSuperAdmin, loginRateLimit } from './middleware/auth.js';
 import { upload } from './middleware/upload.js';
 import { AuthService } from './services/AuthService.js';
 import { ScholarshipService } from './services/ScholarshipService.js';
@@ -50,17 +50,38 @@ const documentRequirementService = new DocumentRequirementService();
  * Login endpoint
  * Public - no authentication required
  */
-router.post('/auth/login', async (req, res) => {
-  try {
-    const { email, password } = req.body as LoginRequest;
+router.post('/auth/login', loginRateLimit(), async (req, res) => {
+  const { email, password } = req.body as LoginRequest;
 
+  // Login/registration run before verifyToken, so req.user is never set
+  // here — the generic auditLog middleware (which only fires when
+  // req.user is present) never sees these, so success/failure is logged
+  // explicitly instead. userId is null for a failed attempt; the
+  // attempted email is kept in newValues for investigation.
+  const logAttempt = (userId: number | null, success: boolean) =>
+    prisma.auditLog
+      .create({
+        data: {
+          userId,
+          action: success ? 'POST /auth/login (success)' : 'POST /auth/login (failed)',
+          entityType: 'auth',
+          newValues: { email },
+          ipAddress: req.ip,
+          userAgent: req.headers['user-agent']
+        }
+      })
+      .catch((error) => console.error('[AuditLog] Failed to persist login attempt', error));
+
+  try {
     if (!email || !password) {
       return res.status(400).json({ error: 'Email and password are required' });
     }
 
     const response = await authService.login({ email, password });
+    await logAttempt(response.user.id, true);
     res.json(response);
   } catch (error: any) {
+    await logAttempt(null, false);
     res.status(401).json({ error: error.message || 'Login failed' });
   }
 });
@@ -105,7 +126,7 @@ router.get('/auth/me', verifyToken, async (req: AuthenticatedRequest, res) => {
 
     res.json(user);
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    console.error(error); res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -163,7 +184,7 @@ router.get('/scholarships', async (req, res) => {
     const result = await scholarshipService.getPrograms({ page, pageSize });
     res.json(result);
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    console.error(error); res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -181,7 +202,7 @@ router.get('/scholarships/:id', async (req, res) => {
 
     res.json(program);
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    console.error(error); res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -194,7 +215,7 @@ router.get('/scholarships/:id/required-documents', async (req, res) => {
     const documents = await scholarshipService.getRequiredDocuments(parseInt(req.params.id));
     res.json(documents);
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    console.error(error); res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -231,7 +252,7 @@ router.put('/scholarships/:id', verifyToken, requireAdmin, async (req: Authentic
 
     res.json(program);
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    console.error(error); res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -249,7 +270,7 @@ router.delete('/scholarships/:id', verifyToken, requireAdmin, async (req: Authen
 
     res.json({ message: 'Scholarship deleted successfully' });
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    console.error(error); res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -266,7 +287,7 @@ router.get('/document-requirements', verifyToken, async (_req: AuthenticatedRequ
     const requirements = await documentRequirementService.list();
     res.json(requirements);
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    console.error(error); res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -297,7 +318,7 @@ router.delete('/document-requirements/:id', verifyToken, requireAdmin, async (re
 
     res.json({ message: 'Document requirement deleted successfully' });
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    console.error(error); res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -313,7 +334,7 @@ router.get('/applicants/me', verifyToken, async (req: AuthenticatedRequest, res)
     const profile = await applicantService.getOrCreateForUser(req.user!.sub);
     res.json(profile);
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    console.error(error); res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -341,7 +362,7 @@ router.get('/applicants/me/completeness', verifyToken, async (req: Authenticated
     const completeness = await applicantService.getProfileCompleteness(req.user!);
     res.json(completeness);
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    console.error(error); res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -362,7 +383,7 @@ router.get('/applicants/me/application-form.pdf', verifyToken, async (req: Authe
     res.send(buffer);
   } catch (error: any) {
     console.error('[application-form.pdf] failed:', error);
-    res.status(500).json({ error: error.message });
+    console.error(error); res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -380,7 +401,7 @@ router.get('/applicants/:id', verifyToken, requireAdmin, async (req: Authenticat
     }
     res.json(profile);
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    console.error(error); res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -397,7 +418,7 @@ router.get('/applicants/by-user/:userId', verifyToken, requireAdmin, async (req:
     }
     res.json(profile);
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    console.error(error); res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -421,7 +442,7 @@ router.get('/applications', verifyToken, async (req: AuthenticatedRequest, res) 
     const result = await applicationService.listApplications(req.user!, filters);
     res.json(result);
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    console.error(error); res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -441,7 +462,7 @@ router.get('/applications/report', verifyToken, requireAdmin, async (req: Authen
     });
     res.json(result);
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    console.error(error); res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -460,7 +481,7 @@ router.get('/applications/:id', verifyToken, async (req: AuthenticatedRequest, r
 
     res.json(application);
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    console.error(error); res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -473,7 +494,7 @@ router.get('/applications/:id/history', verifyToken, async (req: AuthenticatedRe
     const history = await applicationService.getHistory(req.user!, parseInt(req.params.id));
     res.json(history);
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    console.error(error); res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -567,7 +588,7 @@ router.get('/applications/:id/documents', verifyToken, async (req: Authenticated
     const documents = await documentService.listByApplication(req.user!, parseInt(req.params.id));
     res.json(documents);
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    console.error(error); res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -617,7 +638,7 @@ router.get('/documents/me', verifyToken, requireRole([UserRole.APPLICANT]), asyn
     const documents = await documentService.listMyProfileDocuments(req.user!);
     res.json(documents);
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    console.error(error); res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -703,7 +724,7 @@ router.get('/scholars/me', verifyToken, async (req: AuthenticatedRequest, res) =
 
     res.json(scholar);
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    console.error(error); res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -723,7 +744,7 @@ router.get('/scholars', verifyToken, requireAdmin, async (req: AuthenticatedRequ
     const result = await scholarService.listScholars(req.user!, filters);
     res.json(result);
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    console.error(error); res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -741,7 +762,7 @@ router.get('/scholars/:id', verifyToken, async (req: AuthenticatedRequest, res) 
 
     res.json(scholar);
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    console.error(error); res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -759,7 +780,7 @@ router.delete('/scholars/:id', verifyToken, requireAdmin, async (req: Authentica
 
     res.json({ message: 'Scholar deleted successfully' });
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    console.error(error); res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -771,7 +792,7 @@ router.get('/scholars/:id/grades', verifyToken, async (req: AuthenticatedRequest
     const grades = await scholarService.listGrades(req.user!, parseInt(req.params.id));
     res.json(grades);
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    console.error(error); res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -793,7 +814,7 @@ router.get('/scholars/:id/renewals', verifyToken, async (req: AuthenticatedReque
     const renewals = await scholarService.listRenewals(req.user!, parseInt(req.params.id));
     res.json(renewals);
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    console.error(error); res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -830,7 +851,7 @@ router.get('/scholars/:id/allowances', verifyToken, async (req: AuthenticatedReq
     const allowances = await scholarService.listAllowances(req.user!, parseInt(req.params.id));
     res.json(allowances);
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    console.error(error); res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -866,7 +887,7 @@ router.get('/scholars/:id/violations', verifyToken, async (req: AuthenticatedReq
     const violations = await scholarService.listViolations(req.user!, parseInt(req.params.id));
     res.json(violations);
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    console.error(error); res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -898,7 +919,7 @@ router.get('/announcements', verifyToken, async (req: AuthenticatedRequest, res)
     const result = await announcementService.list(filters);
     res.json(result);
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    console.error(error); res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -912,7 +933,7 @@ router.get('/announcements/:id', verifyToken, async (req: AuthenticatedRequest, 
 
     res.json(announcement);
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    console.error(error); res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -959,7 +980,7 @@ router.delete('/announcements/:id', verifyToken, requireAdmin, async (req: Authe
 
     res.json({ message: 'Announcement deleted successfully' });
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    console.error(error); res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -974,7 +995,7 @@ router.get('/notifications', verifyToken, async (req: AuthenticatedRequest, res)
     const notifications = await notificationService.listForUser(req.user!);
     res.json(notifications);
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    console.error(error); res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -983,7 +1004,7 @@ router.post('/notifications/read-all', verifyToken, async (req: AuthenticatedReq
     const count = await notificationService.markAllAsRead(req.user!);
     res.json({ updated: count });
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    console.error(error); res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -997,7 +1018,7 @@ router.post('/notifications/:id/read', verifyToken, async (req: AuthenticatedReq
 
     res.json(notification);
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    console.error(error); res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -1010,7 +1031,7 @@ router.delete('/notifications', verifyToken, async (req: AuthenticatedRequest, r
     const count = await notificationService.deleteAll(req.user!);
     res.json({ deleted: count });
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    console.error(error); res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -1024,7 +1045,7 @@ router.delete('/notifications/:id', verifyToken, async (req: AuthenticatedReques
 
     res.json({ message: 'Notification deleted successfully' });
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    console.error(error); res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -1106,7 +1127,7 @@ router.get('/dashboard/stats', verifyToken, async (req: AuthenticatedRequest, re
 
     res.json(stats);
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    console.error(error); res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -1138,7 +1159,7 @@ router.get('/users', verifyToken, requireAdmin, async (req: AuthenticatedRequest
 
     res.json(users);
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    console.error(error); res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -1155,7 +1176,7 @@ router.get('/users/:id', verifyToken, requireSuperAdmin, async (req: Authenticat
 
     res.json(user);
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    console.error(error); res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -1275,7 +1296,7 @@ router.get('/audit-logs', verifyToken, requireSuperAdmin, async (req: Authentica
 
     res.json({ data: items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) });
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    console.error(error); res.status(500).json({ error: 'Internal server error' });
   }
 });
 

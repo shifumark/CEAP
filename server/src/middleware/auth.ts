@@ -21,7 +21,7 @@ export const verifyToken = (req: AuthenticatedRequest, res: Response, next: Next
   const token = authHeader.split(' ')[1];
 
   try {
-    const payload = jwt.verify(token, JWT_SECRET) as unknown as JWTPayload;
+    const payload = jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] }) as unknown as JWTPayload;
     req.user = payload;
     next();
   } catch (error) {
@@ -96,6 +96,36 @@ export const rateLimit = (maxRequests = 100, windowMs = 15 * 60 * 1000) => {
       record.count++;
     } else {
       requestCounts.set(identifier, { count: 1, resetTime: now + windowMs });
+    }
+
+    next();
+  };
+};
+
+/**
+ * Tighter rate limit specifically for login, on top of the generic
+ * global one — keyed by IP+email so it throttles repeated guesses
+ * against one account without also punishing everyone else sharing an
+ * IP (e.g. a school/office network). Doesn't stop an attacker who
+ * rotates both IP and target email, but closes the much more likely
+ * single-account brute-force case the generic 100/15min limit allows.
+ */
+const loginAttempts = new Map<string, { count: number; resetTime: number }>();
+
+export const loginRateLimit = (maxAttempts = 8, windowMs = 15 * 60 * 1000) => {
+  return (req: Request, res: Response, next: NextFunction) => {
+    const email = typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : '';
+    const identifier = `${req.ip || 'unknown'}:${email}`;
+    const now = Date.now();
+
+    const record = loginAttempts.get(identifier);
+    if (record && now < record.resetTime) {
+      if (record.count >= maxAttempts) {
+        return res.status(429).json({ error: 'Too many login attempts. Please try again later.' });
+      }
+      record.count++;
+    } else {
+      loginAttempts.set(identifier, { count: 1, resetTime: now + windowMs });
     }
 
     next();

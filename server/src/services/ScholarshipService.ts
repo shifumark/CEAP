@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import type { ScholarshipProgram as PrismaScholarshipProgram } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import {
@@ -119,24 +120,37 @@ export class ScholarshipService {
     request: UpdateScholarshipProgramRequest
   ): Promise<ScholarshipProgram | undefined> {
     try {
-      // openingDate/closingDate arrive as plain date strings (matching
-      // createProgram's request shape) — Prisma needs real Date objects,
-      // and this previously passed the raw string straight through
-      // whenever a caller updated a date (a latent bug — no existing
-      // caller touched dates via this path until the +/- extension
-      // feature and the edit form started sending them).
-      const { openingDate, closingDate, requiredDocuments, ...rest } = request;
-      const data: Record<string, unknown> = { ...rest };
-      if (openingDate !== undefined) data.openingDate = new Date(openingDate);
-      if (closingDate !== undefined) data.closingDate = new Date(closingDate);
-      // Comma-separated field in the edit form — a full replace rather
-      // than an incremental add/delete, matching how it works at creation.
-      if (requiredDocuments !== undefined) {
-        data.requiredDocuments = {
-          deleteMany: {},
-          create: requiredDocuments.map((documentType) => ({ documentType }))
-        };
-      }
+      // Built field-by-field from an explicit whitelist rather than
+      // spreading `request` — req.body is untyped at runtime, so a raw
+      // request could otherwise smuggle in columns like `createdBy`.
+      const data: Prisma.ScholarshipProgramUpdateInput = {
+        name: request.name,
+        description: request.description,
+        sponsor: request.sponsor,
+        benefits: request.benefits,
+        eligibilityRequirements: request.eligibilityRequirements,
+        academicYear: request.academicYear,
+        status: request.status,
+        numberOfSlots: request.numberOfSlots,
+        maxApplicants: request.maxApplicants,
+        // Date fields arrive as plain strings (matching createProgram's
+        // request shape) — Prisma needs real Date objects, and this
+        // previously passed the raw string straight through whenever a
+        // caller updated a date (a latent bug — no existing caller
+        // touched dates via this path until the +/- extension feature
+        // and the edit form started sending them).
+        openingDate: request.openingDate !== undefined ? new Date(request.openingDate) : undefined,
+        closingDate: request.closingDate !== undefined ? new Date(request.closingDate) : undefined,
+        // Comma-separated field in the edit form — a full replace rather
+        // than an incremental add/delete, matching how it works at creation.
+        requiredDocuments:
+          request.requiredDocuments !== undefined
+            ? {
+                deleteMany: {},
+                create: request.requiredDocuments.map((documentType) => ({ documentType }))
+              }
+            : undefined
+      };
 
       const updated = await prisma.scholarshipProgram.update({
         where: { id },

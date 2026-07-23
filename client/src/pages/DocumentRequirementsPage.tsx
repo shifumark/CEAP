@@ -1,11 +1,22 @@
 import { useEffect, useState } from 'react';
 import { apiService } from '../services/api';
-import { DocumentRequirement } from '../types';
+import { DocumentRequirement, User, UserRole, UploadedDocument } from '../types';
 import Modal from '../components/Modal';
 
 function formatDate(value?: string | Date) {
   if (!value) return '—';
   return new Date(value).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+function triggerDownload(blob: Blob, fileName: string) {
+  const objectUrl = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = objectUrl;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
 }
 
 const DocumentRequirementsPage = () => {
@@ -16,6 +27,15 @@ const DocumentRequirementsPage = () => {
   const [adding, setAdding] = useState(false);
   const [deletingRequirement, setDeletingRequirement] = useState<DocumentRequirement | null>(null);
   const [deleting, setDeleting] = useState(false);
+
+  const [applicants, setApplicants] = useState<User[]>([]);
+  const [userSearch, setUserSearch] = useState('');
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [userDocuments, setUserDocuments] = useState<UploadedDocument[]>([]);
+  const [documentsLoading, setDocumentsLoading] = useState(false);
+  const [documentsError, setDocumentsError] = useState('');
+  const [downloadingAll, setDownloadingAll] = useState(false);
+  const [viewingId, setViewingId] = useState<number | null>(null);
 
   const load = () => {
     setLoading(true);
@@ -29,7 +49,63 @@ const DocumentRequirementsPage = () => {
 
   useEffect(() => {
     load();
+    apiService
+      .getUsers()
+      .then((users) => setApplicants(users.filter((u) => u.role === UserRole.APPLICANT)))
+      .catch(() => {
+        // Non-fatal — the applicant search just won't have anyone to find.
+      });
   }, []);
+
+  const openUser = async (user: User) => {
+    setSelectedUser(user);
+    setUserDocuments([]);
+    setDocumentsError('');
+    setDocumentsLoading(true);
+    try {
+      const docs = await apiService.getUserProfileDocuments(user.id);
+      setUserDocuments(docs);
+    } catch (err: any) {
+      setDocumentsError(err.message || 'Failed to load documents');
+    } finally {
+      setDocumentsLoading(false);
+    }
+  };
+
+  const handleViewDocument = async (documentId: number) => {
+    setViewingId(documentId);
+    setDocumentsError('');
+    try {
+      const { blob } = await apiService.downloadDocument(documentId);
+      const objectUrl = URL.createObjectURL(blob);
+      window.open(objectUrl, '_blank', 'noopener');
+      setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
+    } catch (err: any) {
+      setDocumentsError(err.message || 'Failed to open document');
+    } finally {
+      setViewingId(null);
+    }
+  };
+
+  const handleDownloadAll = async () => {
+    if (!selectedUser) return;
+    setDownloadingAll(true);
+    setDocumentsError('');
+    try {
+      const blob = await apiService.downloadMergedProfileDocumentsPdf(selectedUser.id);
+      triggerDownload(blob, `${selectedUser.firstName}-${selectedUser.lastName}-Documentary-Requirements.pdf`);
+    } catch (err: any) {
+      setDocumentsError(err.message || 'Failed to download documents');
+    } finally {
+      setDownloadingAll(false);
+    }
+  };
+
+  const filteredApplicants = applicants.filter((u) => {
+    if (!userSearch) return false;
+    const q = userSearch.toLowerCase();
+    return `${u.firstName} ${u.lastName}`.toLowerCase().includes(q) || u.email.toLowerCase().includes(q);
+  });
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -146,6 +222,109 @@ const DocumentRequirementsPage = () => {
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+
+        <div className="page-header" style={{ marginTop: '2.5rem' }}>
+          <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <span aria-hidden="true">📁</span> Documentary Requirements
+          </h2>
+          <p>Search a student to view and download everything they've uploaded to their profile.</p>
+        </div>
+
+        <div className="card" style={{ marginBottom: '1.5rem' }}>
+          <div className="form-group" style={{ margin: 0, maxWidth: '360px' }}>
+            <label htmlFor="applicantSearch">Search Users</label>
+            <input
+              id="applicantSearch"
+              placeholder="Student name or email"
+              value={userSearch}
+              onChange={(e) => setUserSearch(e.target.value)}
+            />
+          </div>
+
+          {userSearch && (
+            <div style={{ marginTop: '0.75rem' }}>
+              {filteredApplicants.length === 0 ? (
+                <p style={{ color: '#6B7280', fontSize: '0.85rem' }}>No matching students.</p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                  {filteredApplicants.map((u) => (
+                    <button
+                      key={u.id}
+                      type="button"
+                      className="btn btn-outline btn-sm"
+                      style={{
+                        justifyContent: 'flex-start',
+                        textAlign: 'left',
+                        background: selectedUser?.id === u.id ? 'rgba(139, 92, 246, 0.1)' : undefined
+                      }}
+                      onClick={() => openUser(u)}
+                    >
+                      {u.firstName} {u.lastName} <span style={{ color: '#6B7280', marginLeft: '0.5rem' }}>{u.email}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {selectedUser && (
+          <div className="card">
+            <div
+              className="card-header"
+              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}
+            >
+              <h3>
+                {selectedUser.firstName} {selectedUser.lastName}'s Documents
+              </h3>
+              <button
+                className="btn btn-primary btn-sm"
+                disabled={downloadingAll || userDocuments.length === 0}
+                onClick={handleDownloadAll}
+              >
+                {downloadingAll ? 'Preparing PDF...' : 'Download All as One PDF'}
+              </button>
+            </div>
+
+            {documentsError && (
+              <p style={{ color: '#DC2626', fontSize: '0.85rem', marginBottom: '0.75rem' }}>{documentsError}</p>
+            )}
+
+            {documentsLoading ? (
+              <p style={{ color: '#6B7280' }}>Loading...</p>
+            ) : userDocuments.length === 0 ? (
+              <p style={{ color: '#6B7280' }}>This student hasn't uploaded any documents yet.</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                {userDocuments.map((doc) => (
+                  <div
+                    key={doc.id}
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      fontSize: '0.85rem',
+                      flexWrap: 'wrap',
+                      gap: '0.5rem'
+                    }}
+                  >
+                    <div>
+                      <div>{doc.documentType}</div>
+                      <div style={{ fontSize: '0.75rem', color: '#6B7280' }}>{doc.fileName}</div>
+                    </div>
+                    <button
+                      className="btn btn-outline btn-sm"
+                      disabled={viewingId === doc.id}
+                      onClick={() => handleViewDocument(doc.id)}
+                    >
+                      {viewingId === doc.id ? 'Opening...' : 'View'}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>

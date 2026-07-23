@@ -435,6 +435,26 @@ class ApiService {
     return this.request('POST', `/users/${id}/reset-password`);
   }
 
+  async getUserProfileDocuments(userId: number): Promise<UploadedDocument[]> {
+    return this.request('GET', `/users/${userId}/profile-documents`);
+  }
+
+  async downloadMergedProfileDocumentsPdf(userId: number): Promise<Blob> {
+    const headers: HeadersInit = {};
+    if (this.token) {
+      headers.Authorization = `Bearer ${this.token}`;
+    }
+
+    const response = await fetch(`${API_BASE_URL}/users/${userId}/profile-documents/merged-pdf`, { headers });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.error || error.message || 'Failed to generate merged PDF');
+    }
+
+    return response.blob();
+  }
+
   // ============== ANNOUNCEMENTS ==============
 
   async getAnnouncements(filters?: Partial<AnnouncementFilters>): Promise<PaginatedResponse<Announcement>> {

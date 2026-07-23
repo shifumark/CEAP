@@ -1,4 +1,5 @@
 import { Readable } from 'stream';
+import { PDFDocument as PDFLibDocument, StandardFonts, type PDFImage } from 'pdf-lib';
 import type { UploadedDocument as PrismaUploadedDocument } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { supabaseAdmin, DOCUMENTS_BUCKET } from '../lib/supabase.js';
@@ -6,6 +7,12 @@ import { drive, DRIVE_FOLDER_ID } from '../lib/googleDrive.js';
 import { ApplicationService } from './ApplicationService.js';
 import { NotificationService } from './NotificationService.js';
 import { UploadedDocument, DocumentVerificationStatus, JWTPayload, UserRole, NotificationType } from '../types.js';
+
+// A4 in points (1/72in) — used as the standard page size for both the
+// section-divider pages and any image pages in the merged documents PDF.
+const PAGE_WIDTH = 595.28;
+const PAGE_HEIGHT = 841.89;
+const PAGE_MARGIN = 40;
 
 const applicationService = new ApplicationService();
 const notificationService = new NotificationService();
@@ -259,5 +266,119 @@ export class DocumentService {
       return prisma.uploadedDocument.findUnique({ where: { id: documentId } });
     }
     return prisma.uploadedDocument.findFirst({ where: { id: documentId, userId: user.sub } });
+  }
+
+  /**
+   * Admin/Super Admin only — lists a specific applicant's profile-level
+   * documentary requirement uploads, for the "browse by applicant" admin view.
+   */
+  async listProfileDocumentsForUser(user: JWTPayload, targetUserId: number): Promise<UploadedDocument[]> {
+    if (!isPrivileged(user)) {
+      throw new Error('Not authorized to view this user\'s documents');
+    }
+
+    const docs = await prisma.uploadedDocument.findMany({
+      where: { userId: targetUserId, applicationId: null },
+      orderBy: { documentType: 'asc' }
+    });
+    return docs.map(toDocument);
+  }
+
+  /**
+   * Raw file bytes regardless of storage backend — unlike getDownload
+   * (which streams/redirects for HTTP serving), this is for local
+   * in-memory processing (merging into one PDF below).
+   */
+  private async fetchFileBytes(doc: PrismaUploadedDocument): Promise<Buffer> {
+    if (doc.googleDriveId) {
+      const response = await drive.files.get(
+        { fileId: doc.googleDriveId, alt: 'media' },
+        { responseType: 'arraybuffer' }
+      );
+      return Buffer.from(response.data as ArrayBuffer);
+    }
+
+    const { data, error } = await supabaseAdmin.storage.from(DOCUMENTS_BUCKET).download(doc.filePath);
+    if (error || !data) {
+      throw new Error(`Failed to download file: ${doc.fileName}`);
+    }
+    return Buffer.from(await data.arrayBuffer());
+  }
+
+  private addImagePage(pdf: PDFLibDocument, image: PDFImage): void {
+    const maxWidth = PAGE_WIDTH - PAGE_MARGIN * 2;
+    const maxHeight = PAGE_HEIGHT - PAGE_MARGIN * 2;
+    const scale = Math.min(maxWidth / image.width, maxHeight / image.height);
+    const width = image.width * scale;
+    const height = image.height * scale;
+
+    const page = pdf.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+    page.drawImage(image, { x: (PAGE_WIDTH - width) / 2, y: (PAGE_HEIGHT - height) / 2, width, height });
+  }
+
+  /**
+   * Admin/Super Admin only — merges every one of an applicant's
+   * profile-level documentary requirement uploads into a single
+   * downloadable PDF, preceded by a section-divider page per document so
+   * the packet stays navigable. PDFs are merged page-for-page; images
+   * become their own page, scaled to fit. A file that fails to fetch or
+   * embed (e.g. corrupted upload, or its declared mimetype doesn't match
+   * its actual bytes) is skipped rather than failing the whole bundle.
+   */
+  async getMergedProfileDocumentsPdf(user: JWTPayload, targetUserId: number): Promise<{ buffer: Buffer; fileName: string }> {
+    if (!isPrivileged(user)) {
+      throw new Error('Not authorized to bundle this user\'s documents');
+    }
+
+    const target = await prisma.user.findUnique({ where: { id: targetUserId } });
+    if (!target) {
+      throw new Error('User not found');
+    }
+
+    const docs = await prisma.uploadedDocument.findMany({
+      where: { userId: targetUserId, applicationId: null },
+      orderBy: { documentType: 'asc' }
+    });
+    if (docs.length === 0) {
+      throw new Error('This user has not uploaded any documents yet');
+    }
+
+    const merged = await PDFLibDocument.create();
+    const font = await merged.embedFont(StandardFonts.HelveticaBold);
+
+    for (const doc of docs) {
+      let bytes: Buffer;
+      try {
+        bytes = await this.fetchFileBytes(doc);
+      } catch (error) {
+        console.error(`[DocumentService] Failed to fetch bytes for document ${doc.id} while merging`, error);
+        continue;
+      }
+
+      const divider = merged.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+      divider.drawText(doc.documentType ?? 'Document', { x: PAGE_MARGIN, y: PAGE_HEIGHT - 100, size: 20, font });
+      divider.drawText(doc.fileName, { x: PAGE_MARGIN, y: PAGE_HEIGHT - 130, size: 10, font });
+
+      try {
+        const mimeType = (doc.fileType || '').toLowerCase();
+        if (mimeType === 'application/pdf') {
+          const src = await PDFLibDocument.load(bytes, { ignoreEncryption: true });
+          const pages = await merged.copyPages(src, src.getPageIndices());
+          pages.forEach((page) => merged.addPage(page));
+        } else if (mimeType === 'image/png') {
+          this.addImagePage(merged, await merged.embedPng(bytes));
+        } else {
+          // Covers image/jpeg and image/jpg — the only other types
+          // upload.ts's fileFilter allows through.
+          this.addImagePage(merged, await merged.embedJpg(bytes));
+        }
+      } catch (error) {
+        console.error(`[DocumentService] Failed to embed document ${doc.id} while merging`, error);
+      }
+    }
+
+    const bytes = await merged.save();
+    const fileName = `${target.firstName}-${target.lastName}-Documentary-Requirements.pdf`.replace(/[^a-zA-Z0-9._-]/g, '_');
+    return { buffer: Buffer.from(bytes), fileName };
   }
 }

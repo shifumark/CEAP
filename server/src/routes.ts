@@ -1268,6 +1268,45 @@ router.post('/users', verifyToken, requireAdmin, async (req: AuthenticatedReques
   }
 });
 
+/**
+ * List a specific applicant's profile-level documentary requirement
+ * uploads (Admin or Super Admin). An Admin caller can never target a
+ * Super Admin account.
+ */
+router.get('/users/:id/profile-documents', verifyToken, requireAdmin, async (req: AuthenticatedRequest, res) => {
+  try {
+    const userId = parseInt(req.params.id);
+    if (!(await targetVisibleToCaller(req, userId))) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const docs = await documentService.listProfileDocumentsForUser(req.user!, userId);
+    res.json(docs);
+  } catch (error: any) {
+    res.status(403).json({ error: error.message });
+  }
+});
+
+/**
+ * Download every one of a specific applicant's profile-level documentary
+ * requirement uploads merged into a single PDF (Admin or Super Admin).
+ */
+router.get('/users/:id/profile-documents/merged-pdf', verifyToken, requireAdmin, async (req: AuthenticatedRequest, res) => {
+  try {
+    const userId = parseInt(req.params.id);
+    if (!(await targetVisibleToCaller(req, userId))) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const { buffer, fileName } = await documentService.getMergedProfileDocumentsPdf(req.user!, userId);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(fileName)}"`);
+    res.send(buffer);
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
 // ============== AUDIT LOG ROUTES ==============
 
 /**

@@ -380,6 +380,11 @@ router.get('/applicants/me/application-form.pdf', verifyToken, async (req: Authe
     console.log('[application-form.pdf] generated,', buffer.length, 'bytes');
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', 'inline; filename="CEAP-Application-Form.pdf"');
+    // This is regenerated fresh from the applicant's current profile on
+    // every request — without this, a browser could serve a stale cached
+    // copy after a profile edit (e.g. changing Year Level) since neither
+    // the URL nor the request otherwise varies between downloads.
+    res.setHeader('Cache-Control', 'no-store');
     res.send(buffer);
   } catch (error: any) {
     console.error('[application-form.pdf] failed:', error);

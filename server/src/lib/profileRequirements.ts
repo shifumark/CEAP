@@ -1,5 +1,9 @@
 import { Applicant } from '../types.js';
 
+// "Senior High / ALS" group in the Year Level dropdown — mirrored in
+// client/src/constants/profileOptions.ts.
+export const SENIOR_HIGH_ALS_YEAR_LEVELS = ['Grade 11', 'Grade 12', 'Alternative Learning System'];
+
 // Year levels considered "college" for the conditional courseName
 // requirement — mirrored in client/src/constants/profileOptions.ts.
 export const COLLEGE_YEAR_LEVELS = [

@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import PDFDocument from 'pdfkit';
 import { Applicant } from '../types.js';
+import { SENIOR_HIGH_ALS_YEAR_LEVELS, COLLEGE_YEAR_LEVELS, PROFESSIONAL_YEAR_LEVELS } from '../lib/profileRequirements.js';
 
 // Resolved relative to the process's working directory, which is the
 // server/ root both locally (npm run dev/start) and on Render (rootDir:
@@ -28,6 +29,18 @@ function joinNonEmpty(parts: (string | undefined)[], sep = ', '): string {
 function capitalize(text: string): string {
   if (!text) return text;
   return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+// The form's "YEAR" field shows which school level the specific year
+// level belongs to, not the year level itself (e.g. "1st Year College"
+// -> "COLLEGE") — capitalize() only touches the first character, so
+// these all-caps labels pass through it unchanged.
+function yearLevelCategory(yearLevel: string | undefined): string {
+  if (!yearLevel) return '';
+  if (SENIOR_HIGH_ALS_YEAR_LEVELS.includes(yearLevel)) return 'SENIOR HIGH SCHOOL';
+  if (COLLEGE_YEAR_LEVELS.includes(yearLevel)) return 'COLLEGE';
+  if (PROFESSIONAL_YEAR_LEVELS.includes(yearLevel)) return 'SPECIAL COURSE';
+  return yearLevel;
 }
 
 // Single-line value text that truncates with an ellipsis instead of
@@ -173,7 +186,7 @@ function draw(doc: PDFKit.PDFDocument, applicant: Applicant): void {
     doc.font('Helvetica-Bold').fontSize(10).text('COURSE:', contentLeft + 8, y + 11);
     value(doc, applicant.courseName ?? '', contentLeft + 8 + 55, y + 11, courseBoxWidth * 0.55 - 55);
     doc.font('Helvetica-Bold').text('YEAR:', contentLeft + courseBoxWidth * 0.6, y + 11);
-    value(doc, applicant.yearLevel ?? '', contentLeft + courseBoxWidth * 0.6 + 38, y + 11, courseBoxWidth * 0.4 - 38);
+    value(doc, yearLevelCategory(applicant.yearLevel), contentLeft + courseBoxWidth * 0.6 + 38, y + 11, courseBoxWidth * 0.4 - 38);
 
     doc.roundedRect(mobileBoxX, y, mobileBoxWidth, rowHeight, 4).stroke();
     doc.font('Helvetica-Bold').fontSize(10).text('MOBILE NO.:', mobileBoxX + 8, y + 11);

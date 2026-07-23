@@ -208,15 +208,29 @@ export class ApplicationService {
     const page = filters.page && filters.page > 0 ? filters.page : 1;
     const pageSize = filters.pageSize && filters.pageSize > 0 ? Math.min(filters.pageSize, 1000) : 200;
 
-    const where: Prisma.ApplicationWhereInput = {};
+    // Application is the base table here, so a deleted Application is
+    // already excluded by construction, and deleting an Applicant
+    // cascades to delete its Applications too (schema.prisma) — neither
+    // can produce a ghost row. A soft-deleted User (deletedAt set) is the
+    // one case that wouldn't be caught by either of those: the
+    // Application and Applicant rows survive untouched, so without this
+    // filter their stale name/email would still show up in the report.
+    const where: Prisma.ApplicationWhereInput = {
+      applicant: { user: { deletedAt: null } }
+    };
     if (filters.status) where.status = filters.status as any;
     if (filters.barangay) {
-      where.applicant = { barangay: { contains: filters.barangay, mode: 'insensitive' } };
+      where.applicant = {
+        ...(where.applicant as Prisma.ApplicantWhereInput),
+        barangay: { contains: filters.barangay, mode: 'insensitive' }
+      };
     }
     if (filters.name) {
+      const existingApplicant = where.applicant as Prisma.ApplicantWhereInput;
       where.applicant = {
-        ...(where.applicant as Prisma.ApplicantWhereInput | undefined),
+        ...existingApplicant,
         user: {
+          ...(existingApplicant.user as Prisma.UserWhereInput),
           OR: [
             { firstName: { contains: filters.name, mode: 'insensitive' } },
             { lastName: { contains: filters.name, mode: 'insensitive' } }

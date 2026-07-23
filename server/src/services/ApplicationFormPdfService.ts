@@ -88,7 +88,7 @@ function draw(doc: PDFKit.PDFDocument, applicant: Applicant): void {
   doc.text('PROVINCE OF APAYAO', 0, 35, { align: 'center', width: pageWidth });
   doc.text('MUNICIPALITY OF CONNER', 0, 48, { align: 'center', width: pageWidth });
   doc.fontSize(16).text('CONNER EDUCATIONAL ASSISTANCE PROGRAM (CEAP)', 0, 65, { align: 'center', width: pageWidth });
-  doc.fontSize(13).text('SPECIAL COURSE', 0, 85, { align: 'center', width: pageWidth });
+  doc.fontSize(13).text(yearLevelCategory(applicant.yearLevel), 0, 85, { align: 'center', width: pageWidth });
 
   doc.moveTo(contentLeft, 110).lineTo(pageWidth - 30, 110).lineWidth(1).stroke();
 

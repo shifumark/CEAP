@@ -78,6 +78,7 @@ const COLUMNS: { key: keyof ApplicationReportRow; label: string }[] = [
   // Application
   { key: 'scholarshipName', label: 'Scholarship Program' },
   { key: 'status', label: 'Application Status' },
+  { key: 'scholarIdNumber', label: 'Scholar ID' },
   { key: 'submissionDate', label: 'Date Submitted' }
 ];
 

@@ -643,6 +643,7 @@ const ProfilePage = () => {
                     <label htmlFor="sectoralOther">Other (please specify)</label>
                     <input
                       id="sectoralOther"
+                      placeholder="Type input"
                       value={form.sectoralClassificationOther}
                       onChange={(e) => set('sectoralClassificationOther', e.target.value)}
                     />
@@ -843,7 +844,7 @@ const ProfilePage = () => {
                       setSpecialCourseOtherSelected(false);
                     }}
                   >
-                    <option value="">Select...</option>
+                    <option value="" disabled hidden>Select...</option>
                     <optgroup label="Senior High School / ALS">
                       {SENIOR_HIGH_ALS_YEAR_LEVELS.map((o) => (
                         <option key={o} value={o}>

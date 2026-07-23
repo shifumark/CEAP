@@ -512,6 +512,7 @@ export interface ApplicationReportRow {
   lbpAtmAccountNumber?: string;
   scholarshipName?: string;
   status: ApplicationStatus;
+  scholarIdNumber?: string;
   submissionDate?: Date;
   createdAt: Date;
 }

@@ -253,6 +253,20 @@ export class ApplicationService {
       prisma.application.count({ where })
     ]);
 
+    // Scholar has no direct applicationId FK (and is keyed uniquely per
+    // userId, not per program — see ScholarService), so the Scholar ID
+    // for each report row is looked up separately, in one bulk query
+    // rather than N+1. Only applications whose applicant has actually
+    // become a Scholar (i.e. was approved at some point) will have one.
+    const userIds = rows.map((r) => r.applicant.user.id);
+    const scholars = userIds.length
+      ? await prisma.scholar.findMany({
+          where: { userId: { in: userIds } },
+          select: { userId: true, scholarIdNumber: true }
+        })
+      : [];
+    const scholarIdByUserId = new Map(scholars.map((s) => [s.userId, s.scholarIdNumber ?? undefined]));
+
     const data = rows.map((r) => {
       const father = r.applicant.familyMembers.find((m) => m.memberType === 'father');
       const mother = r.applicant.familyMembers.find((m) => m.memberType === 'mother');
@@ -316,6 +330,7 @@ export class ApplicationService {
         lbpAtmAccountNumber: r.applicant.lbpAtmAccountNumber ?? undefined,
         scholarshipName: r.scholarship?.name,
         status: r.status as unknown as ApplicationStatus,
+        scholarIdNumber: scholarIdByUserId.get(r.applicant.user.id),
         submissionDate: r.submissionDate ?? undefined,
         createdAt: r.createdAt
       };

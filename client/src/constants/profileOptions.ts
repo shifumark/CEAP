@@ -8,12 +8,12 @@ export const ID_TYPE_OPTIONS = ["Driver's License", 'PhilID/National ID', "Voter
 
 export const SECTORAL_CLASSIFICATIONS = [
   '4Ps Beneficiary (Pantawid Pamilyang Pilipino Program)',
-  'Indigenous Peoples (IP)',
   'Person with Disability (PWD)',
   'Solo Parent',
   'Child of Overseas Filipino Worker (OFW)',
   'Child of Farmer/Fisherfolk',
-  'Informal Settler',
+  'Self-Supporting Student',
+  'Other',
   'None of the above'
 ];
 

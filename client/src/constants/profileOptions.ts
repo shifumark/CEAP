@@ -13,8 +13,7 @@ export const SECTORAL_CLASSIFICATIONS = [
   'Child of Overseas Filipino Worker (OFW)',
   'Child of Farmer/Fisherfolk',
   'Self-Supporting Student',
-  'Other',
-  'None of the above'
+  'Others'
 ];
 
 export const PARENTAL_STATUS_OPTIONS = [

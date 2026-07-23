@@ -638,9 +638,9 @@ const ProfilePage = () => {
                     </label>
                   ))}
                 </div>
-                {form.sectoralClassifications.includes('Other') && (
+                {form.sectoralClassifications.includes('Others') && (
                   <div className="form-group" style={{ marginTop: '0.75rem' }}>
-                    <label htmlFor="sectoralOther">Other (please specify)</label>
+                    <label htmlFor="sectoralOther">Others (please specify)</label>
                     <input
                       id="sectoralOther"
                       placeholder="Type input"

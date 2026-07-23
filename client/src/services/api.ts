@@ -317,7 +317,14 @@ class ApiService {
       headers.Authorization = `Bearer ${this.token}`;
     }
 
-    const response = await fetch(`${API_BASE_URL}/applicants/me/application-form.pdf`, { headers });
+    // cache: 'no-store' plus a cache-busting query param, on top of the
+    // server's own Cache-Control: no-store — belt-and-suspenders against
+    // any browser, proxy, or CDN layer that might otherwise serve a
+    // stale copy from before the applicant's most recent profile edit.
+    const response = await fetch(`${API_BASE_URL}/applicants/me/application-form.pdf?t=${Date.now()}`, {
+      headers,
+      cache: 'no-store'
+    });
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));

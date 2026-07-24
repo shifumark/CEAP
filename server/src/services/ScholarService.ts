@@ -34,6 +34,14 @@ function isPrivileged(user: JWTPayload): boolean {
   return user.role === UserRole.ADMIN || user.role === UserRole.SUPER_ADMIN;
 }
 
+// Broader visibility check used ONLY for read paths — see the matching
+// comment in ApplicationService.ts. getById's bypass below is shared
+// with requestRenewal (a write), which adds its own explicit Viewer
+// denial rather than relying on this staying narrow.
+function canView(user: JWTPayload): boolean {
+  return isPrivileged(user) || user.role === UserRole.VIEWER;
+}
+
 function toScholar(record: ScholarWithRelations, submissionDate?: Date, receivedDate?: Date): Scholar {
   return {
     id: record.id,
@@ -153,7 +161,7 @@ export class ScholarService {
   }
 
   async listScholars(user: JWTPayload, filters?: ScholarFilters): Promise<PaginatedResponse<Scholar>> {
-    if (!isPrivileged(user)) {
+    if (!canView(user)) {
       throw new Error('Not authorized to list scholars');
     }
 
@@ -225,7 +233,7 @@ export class ScholarService {
    * record back; a mismatched id resolves to undefined (404), not a leak.
    */
   async getById(user: JWTPayload, id: number): Promise<Scholar | undefined> {
-    const record = isPrivileged(user)
+    const record = canView(user)
       ? await prisma.scholar.findUnique({ where: { id }, include: scholarInclude })
       : await prisma.scholar.findFirst({ where: { id, userId: user.sub }, include: scholarInclude });
     return record ? toScholar(record) : undefined;
@@ -328,6 +336,9 @@ export class ScholarService {
   // ---------------- Renewals ----------------
 
   async requestRenewal(user: JWTPayload, request: CreateRenewalRequest): Promise<Renewal> {
+    if (user.role === UserRole.VIEWER) {
+      throw new Error('Viewers do not have permission to request renewals');
+    }
     const scholar = await this.getById(user, request.scholarId);
     if (!scholar) {
       throw new Error('Scholar record not found');

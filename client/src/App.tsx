@@ -54,7 +54,7 @@ function AppLayout() {
           <Route
             path="/dashboard"
             element={
-              <ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.SUPER_ADMIN]}>
+              <ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.VIEWER]}>
                 <DashboardPage />
               </ProtectedRoute>
             }
@@ -62,7 +62,7 @@ function AppLayout() {
           <Route
             path="/applications"
             element={
-              <ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.SUPER_ADMIN]}>
+              <ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.VIEWER]}>
                 <ApplicationReviewPage />
               </ProtectedRoute>
             }
@@ -94,7 +94,7 @@ function AppLayout() {
           <Route
             path="/scholars"
             element={
-              <ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.SUPER_ADMIN]}>
+              <ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.VIEWER]}>
                 <ScholarManagementPage />
               </ProtectedRoute>
             }
@@ -102,7 +102,7 @@ function AppLayout() {
           <Route
             path="/scholars/:id"
             element={
-              <ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.SUPER_ADMIN]}>
+              <ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.VIEWER]}>
                 <ScholarDetailPage />
               </ProtectedRoute>
             }
@@ -110,7 +110,7 @@ function AppLayout() {
           <Route
             path="/document-requirements"
             element={
-              <ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.SUPER_ADMIN]}>
+              <ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.VIEWER]}>
                 <DocumentRequirementsPage />
               </ProtectedRoute>
             }
@@ -118,7 +118,7 @@ function AppLayout() {
           <Route
             path="/reports"
             element={
-              <ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.SUPER_ADMIN]}>
+              <ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.VIEWER]}>
                 <ReportsPage />
               </ProtectedRoute>
             }
@@ -126,7 +126,7 @@ function AppLayout() {
           <Route
             path="/users"
             element={
-              <ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.SUPER_ADMIN]}>
+              <ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.VIEWER]}>
                 <UserManagementPage />
               </ProtectedRoute>
             }

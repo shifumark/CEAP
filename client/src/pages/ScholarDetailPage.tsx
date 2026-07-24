@@ -9,6 +9,7 @@ const ASSIGNABLE_ROLES = [UserRole.APPLICANT, UserRole.ADMIN];
 const ROLE_LABEL: Record<UserRole, string> = {
   [UserRole.SUPER_ADMIN]: 'Super Admin',
   [UserRole.ADMIN]: 'Admin',
+  [UserRole.VIEWER]: 'Viewer',
   [UserRole.APPLICANT]: 'Student',
   [UserRole.GUEST]: 'Guest'
 };
@@ -36,6 +37,7 @@ const ScholarDetailPage = () => {
   const scholarId = Number(id);
   const { user: currentUser } = useAuth();
   const isSuperAdmin = currentUser?.role === UserRole.SUPER_ADMIN;
+  const isViewer = currentUser?.role === UserRole.VIEWER;
 
   const [scholar, setScholar] = useState<Scholar | null>(null);
   const [grades, setGrades] = useState<Grade[]>([]);
@@ -255,34 +257,36 @@ const ScholarDetailPage = () => {
                 {grade.academicYear} {grade.semester}: GPA {grade.gpa}
               </p>
             ))}
-            <form onSubmit={handleAddGrade} style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-              <input
-                placeholder="2025-2026"
-                value={gradeForm.academicYear}
-                onChange={(e) => setGradeForm({ ...gradeForm, academicYear: e.target.value })}
-                required
-                style={{ flex: 1, minWidth: '100px' }}
-              />
-              <input
-                placeholder="1st Semester"
-                value={gradeForm.semester}
-                onChange={(e) => setGradeForm({ ...gradeForm, semester: e.target.value })}
-                required
-                style={{ flex: 1, minWidth: '100px' }}
-              />
-              <input
-                placeholder="GPA"
-                type="number"
-                step="0.01"
-                value={gradeForm.gpa}
-                onChange={(e) => setGradeForm({ ...gradeForm, gpa: e.target.value })}
-                required
-                style={{ width: '80px' }}
-              />
-              <button className="btn btn-primary btn-sm" type="submit" disabled={busy}>
-                Add
-              </button>
-            </form>
+            {!isViewer && (
+              <form onSubmit={handleAddGrade} style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                <input
+                  placeholder="2025-2026"
+                  value={gradeForm.academicYear}
+                  onChange={(e) => setGradeForm({ ...gradeForm, academicYear: e.target.value })}
+                  required
+                  style={{ flex: 1, minWidth: '100px' }}
+                />
+                <input
+                  placeholder="1st Semester"
+                  value={gradeForm.semester}
+                  onChange={(e) => setGradeForm({ ...gradeForm, semester: e.target.value })}
+                  required
+                  style={{ flex: 1, minWidth: '100px' }}
+                />
+                <input
+                  placeholder="GPA"
+                  type="number"
+                  step="0.01"
+                  value={gradeForm.gpa}
+                  onChange={(e) => setGradeForm({ ...gradeForm, gpa: e.target.value })}
+                  required
+                  style={{ width: '80px' }}
+                />
+                <button className="btn btn-primary btn-sm" type="submit" disabled={busy}>
+                  Add
+                </button>
+              </form>
+            )}
           </div>
 
           <div className="card">
@@ -295,7 +299,7 @@ const ScholarDetailPage = () => {
                   {allowance.academicYear} {allowance.semester}: ₱{allowance.amount.toLocaleString()}{' '}
                   <span className={`badge ${STATUS_BADGE[allowance.status] ?? 'badge-secondary'}`}>{allowance.status}</span>
                 </span>
-                {allowance.status === 'pending' && (
+                {!isViewer && allowance.status === 'pending' && (
                   <button
                     className="btn btn-outline btn-sm"
                     disabled={busy}
@@ -306,34 +310,36 @@ const ScholarDetailPage = () => {
                 )}
               </div>
             ))}
-            <form onSubmit={handleAddAllowance} style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-              <input
-                placeholder="2025-2026"
-                value={allowanceForm.academicYear}
-                onChange={(e) => setAllowanceForm({ ...allowanceForm, academicYear: e.target.value })}
-                required
-                style={{ flex: 1, minWidth: '100px' }}
-              />
-              <input
-                placeholder="1st Semester"
-                value={allowanceForm.semester}
-                onChange={(e) => setAllowanceForm({ ...allowanceForm, semester: e.target.value })}
-                required
-                style={{ flex: 1, minWidth: '100px' }}
-              />
-              <input
-                placeholder="Amount"
-                type="number"
-                step="0.01"
-                value={allowanceForm.amount}
-                onChange={(e) => setAllowanceForm({ ...allowanceForm, amount: e.target.value })}
-                required
-                style={{ width: '100px' }}
-              />
-              <button className="btn btn-primary btn-sm" type="submit" disabled={busy}>
-                Add
-              </button>
-            </form>
+            {!isViewer && (
+              <form onSubmit={handleAddAllowance} style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                <input
+                  placeholder="2025-2026"
+                  value={allowanceForm.academicYear}
+                  onChange={(e) => setAllowanceForm({ ...allowanceForm, academicYear: e.target.value })}
+                  required
+                  style={{ flex: 1, minWidth: '100px' }}
+                />
+                <input
+                  placeholder="1st Semester"
+                  value={allowanceForm.semester}
+                  onChange={(e) => setAllowanceForm({ ...allowanceForm, semester: e.target.value })}
+                  required
+                  style={{ flex: 1, minWidth: '100px' }}
+                />
+                <input
+                  placeholder="Amount"
+                  type="number"
+                  step="0.01"
+                  value={allowanceForm.amount}
+                  onChange={(e) => setAllowanceForm({ ...allowanceForm, amount: e.target.value })}
+                  required
+                  style={{ width: '100px' }}
+                />
+                <button className="btn btn-primary btn-sm" type="submit" disabled={busy}>
+                  Add
+                </button>
+              </form>
+            )}
           </div>
 
           <div className="card">
@@ -351,7 +357,7 @@ const ScholarDetailPage = () => {
                     </span>
                     <span className={`badge ${STATUS_BADGE[renewal.status] ?? 'badge-secondary'}`}>{renewal.status}</span>
                   </div>
-                  {renewal.status === 'pending' && (
+                  {!isViewer && renewal.status === 'pending' && (
                     <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.4rem' }}>
                       <button
                         className="btn btn-primary btn-sm"
@@ -383,38 +389,40 @@ const ScholarDetailPage = () => {
                 <strong>{violation.violationType}</strong> ({violation.severity}): {violation.description}
               </p>
             ))}
-            <form onSubmit={handleAddViolation} style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <input
-                placeholder="Violation type"
-                value={violationForm.violationType}
-                onChange={(e) => setViolationForm({ ...violationForm, violationType: e.target.value })}
-                required
-              />
-              <input
-                placeholder="Description"
-                value={violationForm.description}
-                onChange={(e) => setViolationForm({ ...violationForm, description: e.target.value })}
-                required
-              />
-              <select
-                value={violationForm.severity}
-                onChange={(e) => setViolationForm({ ...violationForm, severity: e.target.value })}
-              >
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-                <option value="critical">Critical</option>
-              </select>
-              <input
-                placeholder="Action taken"
-                value={violationForm.actionTaken}
-                onChange={(e) => setViolationForm({ ...violationForm, actionTaken: e.target.value })}
-                required
-              />
-              <button className="btn btn-primary btn-sm" type="submit" disabled={busy}>
-                Record Violation
-              </button>
-            </form>
+            {!isViewer && (
+              <form onSubmit={handleAddViolation} style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <input
+                  placeholder="Violation type"
+                  value={violationForm.violationType}
+                  onChange={(e) => setViolationForm({ ...violationForm, violationType: e.target.value })}
+                  required
+                />
+                <input
+                  placeholder="Description"
+                  value={violationForm.description}
+                  onChange={(e) => setViolationForm({ ...violationForm, description: e.target.value })}
+                  required
+                />
+                <select
+                  value={violationForm.severity}
+                  onChange={(e) => setViolationForm({ ...violationForm, severity: e.target.value })}
+                >
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                  <option value="critical">Critical</option>
+                </select>
+                <input
+                  placeholder="Action taken"
+                  value={violationForm.actionTaken}
+                  onChange={(e) => setViolationForm({ ...violationForm, actionTaken: e.target.value })}
+                  required
+                />
+                <button className="btn btn-primary btn-sm" type="submit" disabled={busy}>
+                  Record Violation
+                </button>
+              </form>
+            )}
           </div>
 
           {isSuperAdmin && account && (

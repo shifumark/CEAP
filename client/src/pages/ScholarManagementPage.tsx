@@ -58,6 +58,7 @@ function groupByProgram(scholars: Scholar[]): ProgramGroup[] {
 const ScholarManagementPage = () => {
   const { user } = useAuth();
   const isSuperAdmin = user?.role === UserRole.SUPER_ADMIN;
+  const isViewer = user?.role === UserRole.VIEWER;
   const [scholars, setScholars] = useState<Scholar[]>([]);
   const [programs, setPrograms] = useState<ScholarshipProgram[]>([]);
   const [loading, setLoading] = useState(true);
@@ -291,13 +292,15 @@ const ScholarManagementPage = () => {
                                 <Link className="btn btn-outline btn-sm" to={`/scholars/${scholar.id}`}>
                                   Manage
                                 </Link>
-                                <button
-                                  className="btn btn-outline btn-sm"
-                                  style={{ color: '#DC2626', borderColor: '#DC2626' }}
-                                  onClick={() => setDeletingScholar(scholar)}
-                                >
-                                  Delete
-                                </button>
+                                {!isViewer && (
+                                  <button
+                                    className="btn btn-outline btn-sm"
+                                    style={{ color: '#DC2626', borderColor: '#DC2626' }}
+                                    onClick={() => setDeletingScholar(scholar)}
+                                  >
+                                    Delete
+                                  </button>
+                                )}
                               </div>
                             </td>
                           </tr>

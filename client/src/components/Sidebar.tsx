@@ -28,6 +28,17 @@ const NAV_ITEMS_BY_ROLE: Record<UserRole, Array<{ path: string; label: string; i
     { path: '/announcements', label: 'Announcements', icon: '📢' },
     { path: '/notifications', label: 'Notifications', icon: '🔔' }
   ],
+  [UserRole.VIEWER]: [
+    { path: '/dashboard', label: 'Dashboard', icon: '📊' },
+    { path: '/programs', label: 'Programs', icon: '🎓' },
+    { path: '/applications', label: 'Applications', icon: '📝' },
+    { path: '/scholars', label: 'Scholars', icon: '👥' },
+    { path: '/document-requirements', label: 'Documents', icon: '📄' },
+    { path: '/reports', label: 'Reports', icon: '📋' },
+    { path: '/users', label: 'Users', icon: '🔐' },
+    { path: '/announcements', label: 'Announcements', icon: '📢' },
+    { path: '/notifications', label: 'Notifications', icon: '🔔' }
+  ],
   [UserRole.APPLICANT]: [
     { path: '/profile', label: 'My Profile', icon: '🧾' },
     { path: '/my-application', label: 'My Application', icon: '📝' },
@@ -100,7 +111,13 @@ function Sidebar() {
             </strong>
           </div>
           <div style={{ opacity: 0.8, fontSize: '0.8rem', marginBottom: '0.75rem' }}>
-            {user?.role === UserRole.APPLICANT ? 'Student' : user?.role === UserRole.ADMIN ? 'Administrator' : user?.role}
+            {user?.role === UserRole.APPLICANT
+              ? 'Student'
+              : user?.role === UserRole.ADMIN
+                ? 'Administrator'
+                : user?.role === UserRole.VIEWER
+                  ? 'Viewer (Read Only)'
+                  : user?.role}
           </div>
           <button className="btn btn-outline btn-sm" style={{ width: '100%' }} onClick={handleLogout}>
             Log out

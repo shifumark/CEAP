@@ -4,6 +4,7 @@ import {
   verifyToken,
   requireRole,
   requireAdmin,
+  requireAdminOrViewer,
   requireSuperAdmin,
   requireDeletionReviewer,
   loginRateLimit
@@ -406,7 +407,7 @@ router.get('/applicants/me/application-form.pdf', verifyToken, async (req: Authe
  * doesn't correspond to the requesting user.
  * Protected - admin/super admin only
  */
-router.get('/applicants/:id', verifyToken, requireAdmin, async (req: AuthenticatedRequest, res) => {
+router.get('/applicants/:id', verifyToken, requireAdminOrViewer, async (req: AuthenticatedRequest, res) => {
   try {
     const profile = await applicantService.getProfileByApplicantId(parseInt(req.params.id));
     if (!profile) {
@@ -423,7 +424,7 @@ router.get('/applicants/:id', verifyToken, requireAdmin, async (req: Authenticat
  * Detail page, which only knows scholar.userId (not applicantId).
  * Protected - admin/super admin only
  */
-router.get('/applicants/by-user/:userId', verifyToken, requireAdmin, async (req: AuthenticatedRequest, res) => {
+router.get('/applicants/by-user/:userId', verifyToken, requireAdminOrViewer, async (req: AuthenticatedRequest, res) => {
   try {
     const profile = await applicantService.getProfile(parseInt(req.params.userId));
     if (!profile) {
@@ -464,7 +465,7 @@ router.get('/applications', verifyToken, async (req: AuthenticatedRequest, res) 
  * filterable by name/barangay/status. Registered before /applications/:id
  * so "report" is never swallowed as an :id param.
  */
-router.get('/applications/report', verifyToken, requireAdmin, async (req: AuthenticatedRequest, res) => {
+router.get('/applications/report', verifyToken, requireAdminOrViewer, async (req: AuthenticatedRequest, res) => {
   try {
     const result = await applicationService.getReport({
       name: typeof req.query.name === 'string' && req.query.name ? req.query.name : undefined,
@@ -763,7 +764,7 @@ router.get('/scholars/me', verifyToken, async (req: AuthenticatedRequest, res) =
  * List all scholars
  * Protected - Admin/Super Admin only
  */
-router.get('/scholars', verifyToken, requireAdmin, async (req: AuthenticatedRequest, res) => {
+router.get('/scholars', verifyToken, requireAdminOrViewer, async (req: AuthenticatedRequest, res) => {
   try {
     const filters: ScholarFilters = {
       page: parseInt(req.query.page as string) || 1,
@@ -1107,7 +1108,7 @@ router.get('/dashboard/stats', verifyToken, async (req: AuthenticatedRequest, re
     // Super Admin and Admin would see system-wide stats
     // Applicants would see only their stats
     const isSuperAdmin = req.user!.role === UserRole.SUPER_ADMIN;
-    const isAdmin = req.user!.role === UserRole.ADMIN || isSuperAdmin;
+    const isAdmin = req.user!.role === UserRole.ADMIN || req.user!.role === UserRole.VIEWER || isSuperAdmin;
 
     let stats: any;
 
@@ -1197,7 +1198,7 @@ async function targetVisibleToCaller(req: AuthenticatedRequest, userId: number):
 /**
  * List all users (Admin/Super Admin only; excludes Super Admin accounts from Admin view)
  */
-router.get('/users', verifyToken, requireAdmin, async (req: AuthenticatedRequest, res) => {
+router.get('/users', verifyToken, requireAdminOrViewer, async (req: AuthenticatedRequest, res) => {
   try {
     const includeHidden = req.user!.role === UserRole.SUPER_ADMIN;
     const users = await authService.getAllUsers(includeHidden);
@@ -1347,7 +1348,7 @@ router.delete('/users', verifyToken, requireSuperAdmin, async (req: Authenticate
  * uploads (Admin or Super Admin). An Admin caller can never target a
  * Super Admin account.
  */
-router.get('/users/:id/profile-documents', verifyToken, requireAdmin, async (req: AuthenticatedRequest, res) => {
+router.get('/users/:id/profile-documents', verifyToken, requireAdminOrViewer, async (req: AuthenticatedRequest, res) => {
   try {
     const userId = parseInt(req.params.id);
     if (!(await targetVisibleToCaller(req, userId))) {
@@ -1365,7 +1366,7 @@ router.get('/users/:id/profile-documents', verifyToken, requireAdmin, async (req
  * Download every one of a specific applicant's profile-level documentary
  * requirement uploads merged into a single PDF (Admin or Super Admin).
  */
-router.get('/users/:id/profile-documents/merged-pdf', verifyToken, requireAdmin, async (req: AuthenticatedRequest, res) => {
+router.get('/users/:id/profile-documents/merged-pdf', verifyToken, requireAdminOrViewer, async (req: AuthenticatedRequest, res) => {
   try {
     const userId = parseInt(req.params.id);
     if (!(await targetVisibleToCaller(req, userId))) {

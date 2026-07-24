@@ -32,6 +32,14 @@ function isPrivileged(user: JWTPayload): boolean {
   return user.role === UserRole.ADMIN || user.role === UserRole.SUPER_ADMIN;
 }
 
+// Broader visibility check used ONLY for read paths — see the matching
+// comment in ApplicationService.ts. getOwnedDocument's bypass below is
+// shared with delete() (a write), which adds its own explicit Viewer
+// denial rather than relying on this staying narrow.
+function canView(user: JWTPayload): boolean {
+  return isPrivileged(user) || user.role === UserRole.VIEWER;
+}
+
 function toDocument(record: PrismaUploadedDocument): UploadedDocument {
   return {
     id: record.id,
@@ -233,6 +241,9 @@ export class DocumentService {
    * two stay consistent.
    */
   async delete(user: JWTPayload, documentId: number): Promise<boolean> {
+    if (user.role === UserRole.VIEWER) {
+      throw new Error('Viewers do not have permission to delete documents');
+    }
     const doc = await this.getOwnedDocument(user, documentId);
     if (!doc) return false;
 
@@ -262,7 +273,7 @@ export class DocumentService {
    * gets a document back if they're the one who uploaded it.
    */
   private async getOwnedDocument(user: JWTPayload, documentId: number): Promise<PrismaUploadedDocument | null> {
-    if (isPrivileged(user)) {
+    if (canView(user)) {
       return prisma.uploadedDocument.findUnique({ where: { id: documentId } });
     }
     return prisma.uploadedDocument.findFirst({ where: { id: documentId, userId: user.sub } });
@@ -273,7 +284,7 @@ export class DocumentService {
    * documentary requirement uploads, for the "browse by applicant" admin view.
    */
   async listProfileDocumentsForUser(user: JWTPayload, targetUserId: number): Promise<UploadedDocument[]> {
-    if (!isPrivileged(user)) {
+    if (!canView(user)) {
       throw new Error('Not authorized to view this user\'s documents');
     }
 
@@ -326,7 +337,7 @@ export class DocumentService {
    * its actual bytes) is skipped rather than failing the whole bundle.
    */
   async getMergedProfileDocumentsPdf(user: JWTPayload, targetUserId: number): Promise<{ buffer: Buffer; fileName: string }> {
-    if (!isPrivileged(user)) {
+    if (!canView(user)) {
       throw new Error('Not authorized to bundle this user\'s documents');
     }
 

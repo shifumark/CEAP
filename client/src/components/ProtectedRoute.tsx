@@ -12,6 +12,7 @@ interface ProtectedRouteProps {
 export const roleHome: Record<UserRole, string> = {
   [UserRole.SUPER_ADMIN]: '/dashboard',
   [UserRole.ADMIN]: '/dashboard',
+  [UserRole.VIEWER]: '/dashboard',
   [UserRole.APPLICANT]: '/my-application',
   [UserRole.GUEST]: '/'
 };

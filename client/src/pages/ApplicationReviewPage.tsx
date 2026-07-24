@@ -66,6 +66,7 @@ function formatDate(value?: string | Date) {
 const ApplicationReviewPage = () => {
   const { user } = useAuth();
   const isSuperAdmin = user?.role === UserRole.SUPER_ADMIN;
+  const isViewer = user?.role === UserRole.VIEWER;
 
   const [applications, setApplications] = useState<Application[]>([]);
   const [statusFilter, setStatusFilter] = useState<string>('');
@@ -376,7 +377,7 @@ const ApplicationReviewPage = () => {
                         <button className="btn btn-outline btn-sm" onClick={() => openReview(application)}>
                           Review
                         </button>
-                        {DELETABLE_STATUSES.has(application.status) && (
+                        {!isViewer && DELETABLE_STATUSES.has(application.status) && (
                           <button
                             className="btn btn-outline btn-sm"
                             style={{ color: '#DC2626', borderColor: '#DC2626' }}
@@ -441,20 +442,24 @@ const ApplicationReviewPage = () => {
                         <span className={`badge ${DOC_STATUS_BADGE[doc.verificationStatus]}`}>
                           {DOC_STATUS_LABEL[doc.verificationStatus]}
                         </span>
-                        <button
-                          className="btn btn-primary btn-sm"
-                          disabled={documentActionId === doc.id}
-                          onClick={() => handleVerifyDocument(doc.id, DocumentVerificationStatus.VERIFIED)}
-                        >
-                          Verify
-                        </button>
-                        <button
-                          className="btn btn-outline btn-sm"
-                          disabled={documentActionId === doc.id}
-                          onClick={() => handleVerifyDocument(doc.id, DocumentVerificationStatus.REJECTED)}
-                        >
-                          Reject
-                        </button>
+                        {!isViewer && (
+                          <>
+                            <button
+                              className="btn btn-primary btn-sm"
+                              disabled={documentActionId === doc.id}
+                              onClick={() => handleVerifyDocument(doc.id, DocumentVerificationStatus.VERIFIED)}
+                            >
+                              Verify
+                            </button>
+                            <button
+                              className="btn btn-outline btn-sm"
+                              disabled={documentActionId === doc.id}
+                              onClick={() => handleVerifyDocument(doc.id, DocumentVerificationStatus.REJECTED)}
+                            >
+                              Reject
+                            </button>
+                          </>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -462,40 +467,58 @@ const ApplicationReviewPage = () => {
               )}
             </div>
 
-            <div className="form-group">
-              <label htmlFor="decisionStatus">Decision</label>
-              <select
-                id="decisionStatus"
-                value={draftStatus}
-                onChange={(e) => setDraftStatus(e.target.value as ApplicationStatus)}
-                autoFocus
-              >
-                {REVIEWABLE_STATUSES.map((status) => (
-                  <option key={status} value={status}>
-                    {STATUS_LABEL[status]}
-                  </option>
-                ))}
-              </select>
-            </div>
+            {isViewer ? (
+              <>
+                <p style={{ fontSize: '0.85rem' }}>
+                  <strong>Status:</strong> {STATUS_LABEL[selected.status]}
+                </p>
+                {selected.comments && (
+                  <p style={{ fontSize: '0.85rem' }}>
+                    <strong>Comments:</strong> {selected.comments}
+                  </p>
+                )}
+                <button className="btn btn-outline" onClick={() => setSelectedId(null)}>
+                  Close
+                </button>
+              </>
+            ) : (
+              <>
+                <div className="form-group">
+                  <label htmlFor="decisionStatus">Decision</label>
+                  <select
+                    id="decisionStatus"
+                    value={draftStatus}
+                    onChange={(e) => setDraftStatus(e.target.value as ApplicationStatus)}
+                    autoFocus
+                  >
+                    {REVIEWABLE_STATUSES.map((status) => (
+                      <option key={status} value={status}>
+                        {STATUS_LABEL[status]}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-            <div className="form-group">
-              <label htmlFor="decisionComments">Comments (visible to the student)</label>
-              <textarea
-                id="decisionComments"
-                rows={3}
-                value={draftComments}
-                onChange={(e) => setDraftComments(e.target.value)}
-              />
-            </div>
+                <div className="form-group">
+                  <label htmlFor="decisionComments">Comments (visible to the student)</label>
+                  <textarea
+                    id="decisionComments"
+                    rows={3}
+                    value={draftComments}
+                    onChange={(e) => setDraftComments(e.target.value)}
+                  />
+                </div>
 
-            <div style={{ display: 'flex', gap: '0.75rem' }}>
-              <button className="btn btn-primary" disabled={saving} onClick={handleSave}>
-                {saving ? 'Saving...' : 'Save Decision'}
-              </button>
-              <button className="btn btn-outline" onClick={() => setSelectedId(null)}>
-                Cancel
-              </button>
-            </div>
+                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                  <button className="btn btn-primary" disabled={saving} onClick={handleSave}>
+                    {saving ? 'Saving...' : 'Save Decision'}
+                  </button>
+                  <button className="btn btn-outline" onClick={() => setSelectedId(null)}>
+                    Cancel
+                  </button>
+                </div>
+              </>
+            )}
           </Modal>
         )}
 

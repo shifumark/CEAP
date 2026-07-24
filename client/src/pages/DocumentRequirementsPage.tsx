@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { apiService } from '../services/api';
 import { DocumentRequirement, User, UserRole, UploadedDocument } from '../types';
 import Modal from '../components/Modal';
+import { useAuth } from '../context/AuthContext';
 
 function formatDate(value?: string | Date) {
   if (!value) return '—';
@@ -20,6 +21,8 @@ function triggerDownload(blob: Blob, fileName: string) {
 }
 
 const DocumentRequirementsPage = () => {
+  const { user } = useAuth();
+  const isViewer = user?.role === UserRole.VIEWER;
   const [requirements, setRequirements] = useState<DocumentRequirement[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -169,22 +172,24 @@ const DocumentRequirementsPage = () => {
           </div>
         )}
 
-        <div className="card" style={{ marginBottom: '1.5rem' }}>
-          <form onSubmit={handleAdd} style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
-            <div className="form-group" style={{ margin: 0, minWidth: '280px', flex: 1 }}>
-              <label htmlFor="newDocType">New document requirement</label>
-              <input
-                id="newDocType"
-                placeholder="e.g. Barangay Clearance"
-                value={newType}
-                onChange={(e) => setNewType(e.target.value)}
-              />
-            </div>
-            <button className="btn btn-primary" type="submit" disabled={adding || !newType.trim()}>
-              {adding ? 'Adding...' : 'Add Requirement'}
-            </button>
-          </form>
-        </div>
+        {!isViewer && (
+          <div className="card" style={{ marginBottom: '1.5rem' }}>
+            <form onSubmit={handleAdd} style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+              <div className="form-group" style={{ margin: 0, minWidth: '280px', flex: 1 }}>
+                <label htmlFor="newDocType">New document requirement</label>
+                <input
+                  id="newDocType"
+                  placeholder="e.g. Barangay Clearance"
+                  value={newType}
+                  onChange={(e) => setNewType(e.target.value)}
+                />
+              </div>
+              <button className="btn btn-primary" type="submit" disabled={adding || !newType.trim()}>
+                {adding ? 'Adding...' : 'Add Requirement'}
+              </button>
+            </form>
+          </div>
+        )}
 
         {loading ? (
           <p>Loading...</p>
@@ -210,13 +215,15 @@ const DocumentRequirementsPage = () => {
                     <td>{requirement.documentType}</td>
                     <td>{formatDate(requirement.createdAt)}</td>
                     <td>
-                      <button
-                        className="btn btn-outline btn-sm"
-                        style={{ color: '#DC2626', borderColor: '#DC2626' }}
-                        onClick={() => setDeletingRequirement(requirement)}
-                      >
-                        Delete
-                      </button>
+                      {!isViewer && (
+                        <button
+                          className="btn btn-outline btn-sm"
+                          style={{ color: '#DC2626', borderColor: '#DC2626' }}
+                          onClick={() => setDeletingRequirement(requirement)}
+                        >
+                          Delete
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}

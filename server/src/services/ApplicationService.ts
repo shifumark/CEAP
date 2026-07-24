@@ -78,6 +78,15 @@ function isPrivileged(user: JWTPayload): boolean {
   return user.role === UserRole.ADMIN || user.role === UserRole.SUPER_ADMIN;
 }
 
+// Broader visibility check used ONLY for read paths — the read-only
+// Viewer role sees everything Admin sees. Never use this for a write
+// decision; isPrivileged() above stays the authority there, and every
+// write method that shares a helper gated by canView() (getOwnedRecord,
+// below) adds its own explicit Viewer-denial check.
+function canView(user: JWTPayload): boolean {
+  return isPrivileged(user) || user.role === UserRole.VIEWER;
+}
+
 export class ApplicationService {
   async createApplication(user: JWTPayload, request: CreateApplicationRequest): Promise<Application> {
     const applicant = await applicantService.getOrCreateForUser(user.sub);
@@ -110,6 +119,9 @@ export class ApplicationService {
   }
 
   async submitApplication(user: JWTPayload, applicationId: number): Promise<Application> {
+    if (user.role === UserRole.VIEWER) {
+      throw new Error('Viewers do not have permission to submit applications');
+    }
     const application = await this.getOwnedRecord(user, applicationId);
     if (!application) {
       throw new Error('Application not found');
@@ -160,7 +172,7 @@ export class ApplicationService {
     if (filters?.status) where.status = filters.status as any;
     if (filters?.scholarshipId) where.scholarshipId = filters.scholarshipId;
 
-    if (!isPrivileged(user)) {
+    if (!canView(user)) {
       // Ownership predicate baked directly into the query — a Student can
       // never receive rows belonging to another applicant, regardless of
       // what filters were requested.
@@ -461,6 +473,9 @@ export class ApplicationService {
    * the Application delete itself.
    */
   async deleteApplication(user: JWTPayload, id: number): Promise<boolean> {
+    if (user.role === UserRole.VIEWER) {
+      throw new Error('Viewers do not have permission to delete applications');
+    }
     const application = await this.getOwnedRecord(user, id);
     if (!application) return false;
 
@@ -526,7 +541,7 @@ export class ApplicationService {
    * leaky 403. Admin/Super Admin bypass the predicate entirely.
    */
   private async getOwnedRecord(user: JWTPayload, id: number): Promise<ApplicationWithRelations | null> {
-    if (isPrivileged(user)) {
+    if (canView(user)) {
       return prisma.application.findUnique({ where: { id }, include: applicationInclude });
     }
 

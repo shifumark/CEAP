@@ -78,6 +78,24 @@ export const requireAdmin = (req: AuthenticatedRequest, res: Response, next: Nex
 };
 
 /**
+ * Middleware for read-only routes an Admin, Super Admin, or the
+ * read-only Viewer role may all access. Never use this on a route that
+ * mutates anything — Viewer must stay strictly read-only; use
+ * requireAdmin for every write route instead.
+ */
+export const requireAdminOrViewer = (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  if (!req.user) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  if (req.user.role !== UserRole.ADMIN && req.user.role !== UserRole.SUPER_ADMIN && req.user.role !== UserRole.VIEWER) {
+    return res.status(403).json({ error: 'Administrator access required' });
+  }
+
+  next();
+};
+
+/**
  * Middleware to check if user is Super Admin, or an Admin the Super
  * Admin has flagged isDeletionReviewer — gates the Deletion Report.
  */

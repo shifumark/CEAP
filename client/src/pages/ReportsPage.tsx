@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { apiService } from '../services/api';
-import { ApplicationReportRow, ApplicationStatus } from '../types';
+import { useAuth } from '../context/AuthContext';
+import { ApplicationReportRow, ApplicationStatus, UserRole } from '../types';
 
 const STATUS_LABEL: Record<ApplicationStatus, string> = {
   [ApplicationStatus.DRAFT]: 'Draft',
@@ -112,6 +113,8 @@ function toCsvValue(value: string): string {
 }
 
 const ReportsPage = () => {
+  const { user } = useAuth();
+  const isViewer = user?.role === UserRole.VIEWER;
   const [rows, setRows] = useState<ApplicationReportRow[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
@@ -241,9 +244,11 @@ const ReportsPage = () => {
             <button className="btn btn-primary btn-sm" type="submit" disabled={loading}>
               {loading ? 'Loading...' : 'Apply Filters'}
             </button>
-            <button className="btn btn-outline btn-sm" type="button" onClick={handleDownloadCsv} disabled={loading || exporting || totalCount === 0}>
-              {exporting ? 'Preparing export...' : 'Download as Excel/CSV'}
-            </button>
+            {!isViewer && (
+              <button className="btn btn-outline btn-sm" type="button" onClick={handleDownloadCsv} disabled={loading || exporting || totalCount === 0}>
+                {exporting ? 'Preparing export...' : 'Download as Excel/CSV'}
+              </button>
+            )}
           </form>
         </div>
 

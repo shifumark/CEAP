@@ -7,6 +7,9 @@
 export enum UserRole {
   SUPER_ADMIN = 'super_admin',
   ADMIN = 'admin',
+  // Read-only staff role — sees everything an Admin sees, can perform no
+  // mutating action. See canView() helpers in the service layer.
+  VIEWER = 'viewer',
   APPLICANT = 'applicant',
   GUEST = 'guest'
 }

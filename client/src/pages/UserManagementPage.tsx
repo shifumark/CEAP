@@ -9,11 +9,12 @@ import Modal from '../components/Modal';
 // entirely (for every viewer, including a genuine Super Admin) so there
 // is no self-service path to the highest privilege level. The server
 // enforces this independently — see targetVisibleToCaller in routes.ts.
-const ASSIGNABLE_ROLES = [UserRole.APPLICANT, UserRole.ADMIN];
+const ASSIGNABLE_ROLES = [UserRole.APPLICANT, UserRole.ADMIN, UserRole.VIEWER];
 
 const ROLE_LABEL: Record<UserRole, string> = {
   [UserRole.SUPER_ADMIN]: 'Super Admin',
   [UserRole.ADMIN]: 'Admin',
+  [UserRole.VIEWER]: 'Viewer',
   [UserRole.APPLICANT]: 'Student',
   [UserRole.GUEST]: 'Guest'
 };
@@ -33,6 +34,7 @@ function formatDate(value?: string | Date) {
 const UserManagementPage = () => {
   const { user: currentUser } = useAuth();
   const isSuperAdmin = currentUser?.role === UserRole.SUPER_ADMIN;
+  const isViewer = currentUser?.role === UserRole.VIEWER;
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -213,9 +215,11 @@ const UserManagementPage = () => {
               Delete All
             </button>
           )}
-          <button className="btn btn-primary btn-sm" onClick={() => setShowCreateForm(true)}>
-            Register New User
-          </button>
+          {!isViewer && (
+            <button className="btn btn-primary btn-sm" onClick={() => setShowCreateForm(true)}>
+              Register New User
+            </button>
+          )}
         </div>
       </nav>
 
@@ -307,7 +311,7 @@ const UserManagementPage = () => {
                       </td>
                       <td>{u.email}</td>
                       <td>
-                        {isSelf || isSuperAdminRow ? (
+                        {isViewer || isSelf || isSuperAdminRow ? (
                           <span className="badge badge-secondary">{ROLE_LABEL[u.role]}</span>
                         ) : (
                           <select
@@ -346,7 +350,7 @@ const UserManagementPage = () => {
                         </td>
                       )}
                       <td>
-                        {!isSelf && !isSuperAdminRow && (
+                        {!isViewer && !isSelf && !isSuperAdminRow && (
                           <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                             <button className="btn btn-outline btn-sm" disabled={busy} onClick={() => handleToggleStatus(u)}>
                               {u.status === UserStatus.ACTIVE ? 'Disable' : 'Enable'}

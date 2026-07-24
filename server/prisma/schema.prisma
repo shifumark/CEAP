@@ -22,6 +22,11 @@ datasource db {
 enum UserRole {
   super_admin
   admin
+  // Read-only staff role: sees everything an Admin sees, but every
+  // mutating action (create/edit/delete, status decisions, document
+  // verification, report export, etc.) is blocked both client- and
+  // server-side.
+  viewer
   applicant
   guest
 }

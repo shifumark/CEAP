@@ -140,7 +140,10 @@ export class NotificationService {
    * scholarship program is created. Callers wrap this in a catch.
    */
   async broadcastNewProgram(programName: string): Promise<void> {
-    const students = await prisma.user.findMany({ where: { role: 'applicant' }, select: { id: true, email: true } });
+    const students = await prisma.user.findMany({
+      where: { role: 'applicant' },
+      select: { id: true, email: true, applicant: { select: { contactEmail: true } } }
+    });
     if (students.length === 0) return;
 
     await prisma.notification.createMany({
@@ -153,8 +156,10 @@ export class NotificationService {
       }))
     });
 
+    // Each student's chosen notification address takes priority, falling
+    // back to their account login email.
     await emailService.sendNewProgramAnnouncement(
-      students.map((s) => s.email),
+      students.map((s) => s.applicant?.contactEmail || s.email),
       programName
     );
   }

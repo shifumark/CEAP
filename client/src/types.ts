@@ -161,6 +161,9 @@ export interface Applicant {
   sex?: string;
   civilStatus?: string;
   contactNumber?: string;
+  // Where application status updates and new-program announcements are
+  // sent — falls back to the account login email when not set.
+  contactEmail?: string;
   address?: string;
   schoolName?: string;
   courseName?: string;
@@ -245,6 +248,9 @@ export interface UpdateApplicantProfileRequest {
   sex?: string;
   civilStatus?: string;
   contactNumber?: string;
+  // Where application status updates and new-program announcements are
+  // sent — falls back to the account login email when not set.
+  contactEmail?: string;
   address?: string;
   schoolName?: string;
   courseName?: string;

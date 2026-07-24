@@ -294,7 +294,9 @@ export class ApplicationService {
         municipality: r.applicant.municipality ?? undefined,
         province: r.applicant.province ?? undefined,
         contactNumber: r.applicant.contactNumber ?? undefined,
-        email: r.applicant.user.email,
+        // The applicant's chosen notification address takes priority in
+        // reports too, falling back to their account login email.
+        email: r.applicant.contactEmail || r.applicant.user.email,
         sectoralClassifications: r.applicant.sectoralClassifications,
         sectoralClassificationOther: r.applicant.sectoralClassificationOther ?? undefined,
         numberOfHouseholdMembers: r.applicant.numberOfHouseholdMembers ?? undefined,
@@ -440,7 +442,7 @@ export class ApplicationService {
 
       emailService
         .sendApplicationStatusUpdate(
-          updated.applicant.user.email,
+          updated.applicant.contactEmail || updated.applicant.user.email,
           updated.scholarship?.name ?? 'a scholarship',
           request.status
         )

@@ -38,6 +38,7 @@ interface FormState {
   sex: string;
   civilStatus: string;
   contactNumber: string;
+  contactEmail: string;
   address: string;
   schoolName: string;
   courseName: string;
@@ -86,6 +87,7 @@ const emptyForm: FormState = {
   sex: '',
   civilStatus: '',
   contactNumber: '',
+  contactEmail: '',
   address: '',
   schoolName: '',
   courseName: '',
@@ -175,6 +177,7 @@ function applicantToForm(applicant: Applicant): FormState {
     sex: applicant.sex ?? '',
     civilStatus: applicant.civilStatus ?? '',
     contactNumber: applicant.contactNumber ?? '',
+    contactEmail: applicant.contactEmail ?? '',
     address: applicant.address ?? '',
     schoolName: applicant.schoolName ?? '',
     courseName: applicant.courseName ?? '',
@@ -235,6 +238,7 @@ function formToRequest(form: FormState): UpdateApplicantProfileRequest {
     sex: form.sex || undefined,
     civilStatus: form.civilStatus || undefined,
     contactNumber: form.contactNumber || undefined,
+    contactEmail: form.contactEmail || undefined,
     address: form.address || undefined,
     schoolName: form.schoolName || undefined,
     courseName: form.courseName || undefined,
@@ -618,6 +622,19 @@ const ProfilePage = () => {
                 <div className="form-group">
                   <label htmlFor="contactNumber">Phone No.</label>
                   <input id="contactNumber" value={form.contactNumber} onChange={(e) => set('contactNumber', e.target.value)} />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="contactEmail">Email Address</label>
+                  <input
+                    id="contactEmail"
+                    type="email"
+                    value={form.contactEmail}
+                    onChange={(e) => set('contactEmail', e.target.value)}
+                  />
+                  <small style={{ color: '#6B7280' }}>
+                    Where we'll send application status updates and new program announcements. Leave blank to use
+                    your account email instead.
+                  </small>
                 </div>
               </div>
 

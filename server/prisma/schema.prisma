@@ -145,6 +145,11 @@ model Applicant {
   sex                     String?
   civilStatus             String?   @map("civil_status")
   contactNumber           String?   @map("contact_number")
+  // Where application status updates and new-program announcements are
+  // sent — separate from the account login email (User.email), since an
+  // applicant may want notifications going to an address they check more
+  // often. Falls back to the account email when not set.
+  contactEmail            String?   @map("contact_email")
   address                 String?
   schoolName              String?   @map("school_name")
   courseName              String?   @map("course_name")

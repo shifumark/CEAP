@@ -52,12 +52,16 @@ const DocumentRequirementsPage = () => {
 
   useEffect(() => {
     load();
+    // Viewer has no access to the user directory at all (not even to search
+    // students here), so skip the fetch entirely rather than let it 403.
+    if (isViewer) return;
     apiService
       .getUsers()
       .then((users) => setApplicants(users.filter((u) => u.role === UserRole.APPLICANT)))
       .catch(() => {
         // Non-fatal — the applicant search just won't have anyone to find.
       });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const openUser = async (user: User) => {
@@ -232,50 +236,54 @@ const DocumentRequirementsPage = () => {
           </div>
         )}
 
-        <div className="page-header" style={{ marginTop: '2.5rem' }}>
-          <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <span aria-hidden="true">📁</span> Documentary Requirements
-          </h2>
-          <p>Search a student to view and download everything they've uploaded to their profile.</p>
-        </div>
+        {!isViewer && (
+          <>
+            <div className="page-header" style={{ marginTop: '2.5rem' }}>
+              <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span aria-hidden="true">📁</span> Documentary Requirements
+              </h2>
+              <p>Search a student to view and download everything they've uploaded to their profile.</p>
+            </div>
 
-        <div className="card" style={{ marginBottom: '1.5rem' }}>
-          <div className="form-group" style={{ margin: 0, maxWidth: '360px' }}>
-            <label htmlFor="applicantSearch">Search Users</label>
-            <input
-              id="applicantSearch"
-              placeholder="Student name or email"
-              value={userSearch}
-              onChange={(e) => setUserSearch(e.target.value)}
-            />
-          </div>
+            <div className="card" style={{ marginBottom: '1.5rem' }}>
+              <div className="form-group" style={{ margin: 0, maxWidth: '360px' }}>
+                <label htmlFor="applicantSearch">Search Users</label>
+                <input
+                  id="applicantSearch"
+                  placeholder="Student name or email"
+                  value={userSearch}
+                  onChange={(e) => setUserSearch(e.target.value)}
+                />
+              </div>
 
-          {userSearch && (
-            <div style={{ marginTop: '0.75rem' }}>
-              {filteredApplicants.length === 0 ? (
-                <p style={{ color: '#6B7280', fontSize: '0.85rem' }}>No matching students.</p>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                  {filteredApplicants.map((u) => (
-                    <button
-                      key={u.id}
-                      type="button"
-                      className="btn btn-outline btn-sm"
-                      style={{
-                        justifyContent: 'flex-start',
-                        textAlign: 'left',
-                        background: selectedUser?.id === u.id ? 'rgba(139, 92, 246, 0.1)' : undefined
-                      }}
-                      onClick={() => openUser(u)}
-                    >
-                      {u.firstName} {u.lastName} <span style={{ color: '#6B7280', marginLeft: '0.5rem' }}>{u.email}</span>
-                    </button>
-                  ))}
+              {userSearch && (
+                <div style={{ marginTop: '0.75rem' }}>
+                  {filteredApplicants.length === 0 ? (
+                    <p style={{ color: '#6B7280', fontSize: '0.85rem' }}>No matching students.</p>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                      {filteredApplicants.map((u) => (
+                        <button
+                          key={u.id}
+                          type="button"
+                          className="btn btn-outline btn-sm"
+                          style={{
+                            justifyContent: 'flex-start',
+                            textAlign: 'left',
+                            background: selectedUser?.id === u.id ? 'rgba(139, 92, 246, 0.1)' : undefined
+                          }}
+                          onClick={() => openUser(u)}
+                        >
+                          {u.firstName} {u.lastName} <span style={{ color: '#6B7280', marginLeft: '0.5rem' }}>{u.email}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
-          )}
-        </div>
+          </>
+        )}
 
         {selectedUser && (
           <div className="card">

@@ -1198,7 +1198,7 @@ async function targetVisibleToCaller(req: AuthenticatedRequest, userId: number):
 /**
  * List all users (Admin/Super Admin only; excludes Super Admin accounts from Admin view)
  */
-router.get('/users', verifyToken, requireAdminOrViewer, async (req: AuthenticatedRequest, res) => {
+router.get('/users', verifyToken, requireAdmin, async (req: AuthenticatedRequest, res) => {
   try {
     const includeHidden = req.user!.role === UserRole.SUPER_ADMIN;
     const users = await authService.getAllUsers(includeHidden);

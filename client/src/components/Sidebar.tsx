@@ -35,7 +35,6 @@ const NAV_ITEMS_BY_ROLE: Record<UserRole, Array<{ path: string; label: string; i
     { path: '/scholars', label: 'Scholars', icon: '👥' },
     { path: '/document-requirements', label: 'Documents', icon: '📄' },
     { path: '/reports', label: 'Reports', icon: '📋' },
-    { path: '/users', label: 'Users', icon: '🔐' },
     { path: '/announcements', label: 'Announcements', icon: '📢' },
     { path: '/notifications', label: 'Notifications', icon: '🔔' }
   ],

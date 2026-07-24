@@ -4,6 +4,8 @@ import crypto from 'crypto';
 import type { User as PrismaUser } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { JWT_SECRET } from '../lib/env.js';
+import { supabaseAdmin, DOCUMENTS_BUCKET } from '../lib/supabase.js';
+import { drive } from '../lib/googleDrive.js';
 import { User, LoginRequest, LoginResponse, UserRole, UserStatus, CreateUserRequest } from '../types.js';
 
 /**
@@ -24,7 +26,8 @@ function toUser(record: PrismaUser): User {
     profilePictureUrl: record.profilePictureUrl ?? undefined,
     lastLogin: record.lastLogin ?? undefined,
     createdAt: record.createdAt,
-    updatedAt: record.updatedAt
+    updatedAt: record.updatedAt,
+    isDeletionReviewer: record.isDeletionReviewer
   };
 }
 
@@ -114,7 +117,8 @@ export class AuthService {
       {
         sub: user.id,
         email: user.email,
-        role: user.role
+        role: user.role,
+        isDeletionReviewer: user.isDeletionReviewer
       },
       JWT_SECRET,
       { expiresIn: '8h', algorithm: 'HS256' }
@@ -135,10 +139,14 @@ export class AuthService {
    * verifyToken deliberately stays a pure signature check with no
    * per-request DB lookup.
    */
-  async updateUserAccount(userId: number, updates: { role?: UserRole; status?: UserStatus }): Promise<User> {
-    const data: { role?: PrismaUser['role']; status?: PrismaUser['status'] } = {};
+  async updateUserAccount(
+    userId: number,
+    updates: { role?: UserRole; status?: UserStatus; isDeletionReviewer?: boolean }
+  ): Promise<User> {
+    const data: { role?: PrismaUser['role']; status?: PrismaUser['status']; isDeletionReviewer?: boolean } = {};
     if (updates.role !== undefined) data.role = updates.role as unknown as PrismaUser['role'];
     if (updates.status !== undefined) data.status = updates.status as unknown as PrismaUser['status'];
+    if (updates.isDeletionReviewer !== undefined) data.isDeletionReviewer = updates.isDeletionReviewer;
 
     const updated = await prisma.user.update({ where: { id: userId }, data });
     return toUser(updated);
@@ -169,5 +177,74 @@ export class AuthService {
       orderBy: { id: 'asc' }
     });
     return users.map(toUser);
+  }
+
+  /**
+   * Deletes a Student (Applicant-role) account — never an Admin or Super
+   * Admin, and never the caller's own account, regardless of who's
+   * calling. An applicant who has already become a Scholar must be
+   * removed via Scholar Management instead, so that flow's own
+   * protections aren't bypassed by a blunt account delete here.
+   *
+   * UploadedDocument.userId's uploader relation has no onDelete cascade
+   * (deliberately, so an accidental delete fails loudly) — cleaned up
+   * explicitly first, remote files included. AuditLog.userId is nullable
+   * with no cascade either; detached (not deleted) so the historical
+   * action record survives the account's removal.
+   */
+  async deleteUser(callerId: number, targetId: number): Promise<void> {
+    if (targetId === callerId) {
+      throw new Error('You cannot delete your own account');
+    }
+
+    const target = await prisma.user.findUnique({ where: { id: targetId } });
+    if (!target) {
+      throw new Error('User not found');
+    }
+    if (target.role !== 'applicant') {
+      throw new Error('Only Student accounts can be deleted this way');
+    }
+
+    const scholar = await prisma.scholar.findUnique({ where: { userId: targetId } });
+    if (scholar) {
+      throw new Error('This user is an active Scholar — remove them from Scholar Management instead');
+    }
+
+    const documents = await prisma.uploadedDocument.findMany({
+      where: { userId: targetId },
+      select: { filePath: true, googleDriveId: true }
+    });
+    const driveIds = documents.filter((d) => d.googleDriveId).map((d) => d.googleDriveId as string);
+    const legacyPaths = documents.filter((d) => !d.googleDriveId).map((d) => d.filePath);
+
+    await Promise.all(driveIds.map((fileId) => drive.files.delete({ fileId }).catch(() => undefined)));
+    if (legacyPaths.length > 0) {
+      await supabaseAdmin.storage.from(DOCUMENTS_BUCKET).remove(legacyPaths).catch(() => undefined);
+    }
+
+    await prisma.uploadedDocument.deleteMany({ where: { userId: targetId } });
+    await prisma.auditLog.updateMany({ where: { userId: targetId }, data: { userId: null } });
+
+    // Cascades: User -> Applicant -> Application -> (status history, docs).
+    await prisma.user.delete({ where: { id: targetId } });
+  }
+
+  /**
+   * Bulk version of deleteUser — deletes exactly the given ids, skipping
+   * (not aborting on) any that fail their own individual checks, so one
+   * ineligible id doesn't block the rest of the batch.
+   */
+  async deleteManyUsers(callerId: number, targetIds: number[]): Promise<{ deleted: number; skipped: number }> {
+    let deleted = 0;
+    let skipped = 0;
+    for (const targetId of targetIds) {
+      try {
+        await this.deleteUser(callerId, targetId);
+        deleted++;
+      } catch {
+        skipped++;
+      }
+    }
+    return { deleted, skipped };
   }
 }

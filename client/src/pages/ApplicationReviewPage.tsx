@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { apiService } from '../services/api';
-import { Application, ApplicationStatus, UploadedDocument, DocumentVerificationStatus, Applicant, ScholarshipProgram } from '../types';
+import { useAuth } from '../context/AuthContext';
+import { Application, ApplicationStatus, UploadedDocument, DocumentVerificationStatus, Applicant, ScholarshipProgram, UserRole } from '../types';
 import Modal from '../components/Modal';
 import ApplicantProfileView from '../components/ApplicantProfileView';
 
@@ -63,6 +64,9 @@ function formatDate(value?: string | Date) {
 }
 
 const ApplicationReviewPage = () => {
+  const { user } = useAuth();
+  const isSuperAdmin = user?.role === UserRole.SUPER_ADMIN;
+
   const [applications, setApplications] = useState<Application[]>([]);
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [loading, setLoading] = useState(true);
@@ -83,6 +87,8 @@ const ApplicationReviewPage = () => {
   const [programFilter, setProgramFilter] = useState<string>('');
   const [deletingApplication, setDeletingApplication] = useState<Application | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [showDeleteAll, setShowDeleteAll] = useState(false);
+  const [deletingAll, setDeletingAll] = useState(false);
 
   const loadApplications = async () => {
     setError('');
@@ -233,10 +239,41 @@ const ApplicationReviewPage = () => {
     }
   };
 
+  // Only the currently filtered/deletable rows — never approved/rejected
+  // ones, matching the same protection as the individual Delete button.
+  const deletableFilteredIds = filteredApplications.filter((a) => DELETABLE_STATUSES.has(a.status)).map((a) => a.id);
+
+  const handleConfirmDeleteAll = async () => {
+    setDeletingAll(true);
+    setError('');
+    try {
+      await apiService.deleteAllApplications(deletableFilteredIds);
+      setShowDeleteAll(false);
+      await loadApplications();
+    } catch (err: any) {
+      setError(err.message || 'Failed to delete applications');
+    } finally {
+      setDeletingAll(false);
+    }
+  };
+
   return (
     <div>
       <nav className="navbar">
         <div className="navbar-brand">Applications</div>
+        {isSuperAdmin && (
+          <div className="navbar-actions">
+            <button
+              className="btn btn-outline btn-sm"
+              type="button"
+              style={{ color: '#DC2626', borderColor: '#DC2626' }}
+              disabled={deletableFilteredIds.length === 0}
+              onClick={() => setShowDeleteAll(true)}
+            >
+              Delete All
+            </button>
+          </div>
+        )}
       </nav>
 
       <div className="container">
@@ -488,6 +525,38 @@ const ApplicationReviewPage = () => {
                 {deleting ? 'Deleting...' : 'Delete Application'}
               </button>
               <button className="btn btn-outline" type="button" onClick={() => setDeletingApplication(null)} disabled={deleting}>
+                Cancel
+              </button>
+            </div>
+          </Modal>
+        )}
+
+        {showDeleteAll && (
+          <Modal title="Delete All Applications" onClose={() => setShowDeleteAll(false)}>
+            <p
+              style={{
+                padding: '0.85rem',
+                background: 'rgba(239, 68, 68, 0.1)',
+                border: '1px solid rgba(239, 68, 68, 0.3)',
+                borderRadius: 'var(--radius-md)',
+                color: '#DC2626'
+              }}
+            >
+              Delete <strong>{deletableFilteredIds.length}</strong> application{deletableFilteredIds.length === 1 ? '' : 's'} matching
+              the current filters/search? Approved and rejected applications are never included. This permanently removes each
+              application, its uploaded documents, and its review history. This cannot be undone.
+            </p>
+            <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem' }}>
+              <button
+                className="btn btn-primary"
+                type="button"
+                style={{ background: '#DC2626' }}
+                disabled={deletingAll}
+                onClick={handleConfirmDeleteAll}
+              >
+                {deletingAll ? 'Deleting...' : `Delete ${deletableFilteredIds.length} Application${deletableFilteredIds.length === 1 ? '' : 's'}`}
+              </button>
+              <button className="btn btn-outline" type="button" onClick={() => setShowDeleteAll(false)} disabled={deletingAll}>
                 Cancel
               </button>
             </div>

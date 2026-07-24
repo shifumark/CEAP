@@ -92,6 +92,34 @@ export class NotificationService {
   }
 
   /**
+   * Oversight notification: fires only when an Admin (never a Super
+   * Admin — they don't need to be told about their own actions) deletes
+   * an Application or a Scholar. Notifies every Super Admin plus every
+   * Admin currently flagged isDeletionReviewer, so someone with a wider
+   * view can decide whether the removal was appropriate. Best-effort —
+   * callers wrap this in a catch.
+   */
+  async notifyReviewersOfDeletion(actor: JWTPayload, entityLabel: string, description: string): Promise<void> {
+    if (actor.role !== UserRole.ADMIN) return;
+
+    const reviewers = await prisma.user.findMany({
+      where: { OR: [{ role: 'super_admin' }, { role: 'admin', isDeletionReviewer: true }] },
+      select: { id: true }
+    });
+    if (reviewers.length === 0) return;
+
+    await prisma.notification.createMany({
+      data: reviewers.map((r) => ({
+        userId: r.id,
+        notificationType: 'system_notification' as const,
+        title: `${entityLabel} Deleted by an Admin`,
+        message: description,
+        actionUrl: '/deletion-report'
+      }))
+    });
+  }
+
+  /**
    * Best-effort broadcast to every Student when an announcement is
    * published. Failures here shouldn't fail the announcement creation
    * itself — callers wrap this in a catch.

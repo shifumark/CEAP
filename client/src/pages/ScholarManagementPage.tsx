@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { apiService } from '../services/api';
-import { Scholar, ScholarshipProgram } from '../types';
+import { Scholar, ScholarshipProgram, UserRole } from '../types';
 import Modal from '../components/Modal';
+import { useAuth } from '../context/AuthContext';
 
 const STATUS_BADGE: Record<string, string> = {
   active: 'badge-success',
@@ -55,6 +56,8 @@ function groupByProgram(scholars: Scholar[]): ProgramGroup[] {
 }
 
 const ScholarManagementPage = () => {
+  const { user } = useAuth();
+  const isSuperAdmin = user?.role === UserRole.SUPER_ADMIN;
   const [scholars, setScholars] = useState<Scholar[]>([]);
   const [programs, setPrograms] = useState<ScholarshipProgram[]>([]);
   const [loading, setLoading] = useState(true);
@@ -69,6 +72,8 @@ const ScholarManagementPage = () => {
   const [statusFilter, setStatusFilter] = useState('');
   const [deletingScholar, setDeletingScholar] = useState<Scholar | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [showDeleteAll, setShowDeleteAll] = useState(false);
+  const [deletingAll, setDeletingAll] = useState(false);
 
   const load = () => {
     setLoading(true);
@@ -105,6 +110,20 @@ const ScholarManagementPage = () => {
     }
   };
 
+  const handleConfirmDeleteAll = async () => {
+    setDeletingAll(true);
+    setError('');
+    try {
+      await apiService.deleteAllScholars(filtered.map((s) => s.id));
+      setShowDeleteAll(false);
+      load();
+    } catch (err: any) {
+      setError(err.message || 'Failed to delete scholars');
+    } finally {
+      setDeletingAll(false);
+    }
+  };
+
   const filtered = scholars.filter((scholar) => {
     if (programFilter && scholar.scholarshipId !== Number(programFilter)) return false;
     if (statusFilter && scholar.status !== statusFilter) return false;
@@ -132,6 +151,19 @@ const ScholarManagementPage = () => {
     <div>
       <nav className="navbar">
         <div className="navbar-brand">Scholars</div>
+        {isSuperAdmin && (
+          <div className="navbar-actions">
+            <button
+              className="btn btn-outline btn-sm"
+              type="button"
+              style={{ color: '#DC2626', borderColor: '#DC2626' }}
+              disabled={filtered.length === 0}
+              onClick={() => setShowDeleteAll(true)}
+            >
+              Delete All
+            </button>
+          </div>
+        )}
       </nav>
 
       <div className="container">
@@ -306,6 +338,38 @@ const ScholarManagementPage = () => {
               {deleting ? 'Deleting...' : 'Delete Scholar'}
             </button>
             <button className="btn btn-outline" type="button" onClick={() => setDeletingScholar(null)} disabled={deleting}>
+              Cancel
+            </button>
+          </div>
+        </Modal>
+      )}
+
+      {showDeleteAll && (
+        <Modal title="Delete All Scholars" onClose={() => setShowDeleteAll(false)}>
+          <p
+            style={{
+              padding: '0.85rem',
+              background: 'rgba(239, 68, 68, 0.1)',
+              border: '1px solid rgba(239, 68, 68, 0.3)',
+              borderRadius: 'var(--radius-md)',
+              color: '#DC2626'
+            }}
+          >
+            Delete <strong>{filtered.length}</strong> scholar{filtered.length === 1 ? '' : 's'} matching the current filters/search?
+            This permanently removes each scholar record, their approved application, and all associated grades, renewals,
+            allowances, and violations. This cannot be undone.
+          </p>
+          <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem' }}>
+            <button
+              className="btn btn-primary"
+              type="button"
+              style={{ background: '#DC2626' }}
+              disabled={deletingAll}
+              onClick={handleConfirmDeleteAll}
+            >
+              {deletingAll ? 'Deleting...' : `Delete ${filtered.length} Scholar${filtered.length === 1 ? '' : 's'}`}
+            </button>
+            <button className="btn btn-outline" type="button" onClick={() => setShowDeleteAll(false)} disabled={deletingAll}>
               Cancel
             </button>
           </div>

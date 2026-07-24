@@ -248,7 +248,7 @@ export class ScholarService {
 
     const scholar = await prisma.scholar.findUnique({
       where: { id: scholarId },
-      include: { user: { include: { applicant: true } } }
+      include: { user: { include: { applicant: true } }, scholarship: true }
     });
     if (!scholar) return false;
 
@@ -263,7 +263,36 @@ export class ScholarService {
       await tx.scholar.delete({ where: { id: scholarId } });
     });
 
+    const scholarName = scholar.user ? `${scholar.user.firstName} ${scholar.user.lastName}` : `Scholar #${scholarId}`;
+    notificationService
+      .notifyReviewersOfDeletion(
+        user,
+        'Scholar',
+        `${user.email} deleted ${scholarName} (#${scholarId}) from ${scholar.scholarship?.name ?? 'a program'}.`
+      )
+      .catch((error) => console.error('[NotificationService] Failed to notify reviewers of scholar deletion', scholarId, error));
+
     return true;
+  }
+
+  /**
+   * Bulk version of deleteScholar — deletes exactly the given ids,
+   * skipping (not aborting on) any that fail their own individual checks,
+   * so one ineligible id doesn't block the rest of the batch.
+   */
+  async deleteManyScholars(user: JWTPayload, ids: number[]): Promise<{ deleted: number; skipped: number }> {
+    let deleted = 0;
+    let skipped = 0;
+    for (const id of ids) {
+      try {
+        const success = await this.deleteScholar(user, id);
+        if (success) deleted++;
+        else skipped++;
+      } catch {
+        skipped++;
+      }
+    }
+    return { deleted, skipped };
   }
 
   // ---------------- Grades ----------------

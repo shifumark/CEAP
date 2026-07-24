@@ -95,6 +95,7 @@ export interface User {
   lastLogin?: Date;
   createdAt: Date;
   updatedAt: Date;
+  isDeletionReviewer: boolean;
 }
 
 export interface CreateUserRequest {
@@ -742,13 +743,17 @@ export interface AuditLog {
   id: number;
   userId?: number;
   action: string;
-  entityType: string;
-  entityId: number;
+  entityType?: string;
+  entityId?: number;
   oldValues?: any;
   newValues?: any;
   ipAddress?: string;
   userAgent?: string;
   createdAt: Date;
+  // Present on GET /audit-logs and /audit-logs/deletions (both include
+  // the actor); absent nowhere currently, but kept optional to match the
+  // server's Prisma include shape defensively.
+  user?: { email: string; firstName: string; lastName: string; role?: UserRole };
 }
 
 // DASHBOARD STATS

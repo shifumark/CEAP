@@ -78,6 +78,22 @@ export const requireAdmin = (req: AuthenticatedRequest, res: Response, next: Nex
 };
 
 /**
+ * Middleware to check if user is Super Admin, or an Admin the Super
+ * Admin has flagged isDeletionReviewer — gates the Deletion Report.
+ */
+export const requireDeletionReviewer = (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  if (!req.user) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  if (req.user.role !== UserRole.SUPER_ADMIN && !(req.user.role === UserRole.ADMIN && req.user.isDeletionReviewer)) {
+    return res.status(403).json({ error: 'Deletion Report access required' });
+  }
+
+  next();
+};
+
+/**
  * Middleware for rate limiting to prevent abuse
  */
 const requestCounts = new Map<string, { count: number; resetTime: number }>();

@@ -113,6 +113,11 @@ model User {
   updatedAt          DateTime   @updatedAt @map("updated_at")
   deletedAt          DateTime?  @map("deleted_at")
   lastLogin          DateTime?  @map("last_login")
+  // Super-Admin-assignable flag on an Admin account — lets that Admin
+  // also see the Deletion Report and receive the "an Admin deleted an
+  // Application/Scholar" oversight notification. Meaningless on any
+  // other role.
+  isDeletionReviewer Boolean    @default(false) @map("is_deletion_reviewer")
 
   applicant             Applicant?
   scholar               Scholar?

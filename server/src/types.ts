@@ -95,6 +95,7 @@ export interface User {
   lastLogin?: Date;
   createdAt: Date;
   updatedAt: Date;
+  isDeletionReviewer: boolean;
 }
 
 export interface CreateUserRequest {
@@ -137,6 +138,9 @@ export interface JWTPayload {
   sub: number;
   email: string;
   role: UserRole;
+  // Set at login, same tradeoff as role: takes effect on the user's next
+  // login, not the instant a Super Admin toggles it.
+  isDeletionReviewer: boolean;
   iat: number;
   exp: number;
 }

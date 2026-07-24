@@ -486,7 +486,38 @@ export class ApplicationService {
     }
 
     await prisma.application.delete({ where: { id } });
+
+    const applicantName = `${application.applicant.user.firstName} ${application.applicant.user.lastName}`;
+    notificationService
+      .notifyReviewersOfDeletion(
+        user,
+        'Application',
+        `${user.email} deleted ${applicantName}'s application (#${id}) for ${application.scholarship?.name ?? 'a scholarship'}.`
+      )
+      .catch((error) => console.error('[NotificationService] Failed to notify reviewers of application deletion', id, error));
+
     return true;
+  }
+
+  /**
+   * Bulk version of deleteApplication — deletes exactly the given ids,
+   * skipping (not aborting on) any that fail their own individual checks
+   * (already decided, not found/not owned), so one ineligible id doesn't
+   * block the rest of the batch.
+   */
+  async deleteManyApplications(user: JWTPayload, ids: number[]): Promise<{ deleted: number; skipped: number }> {
+    let deleted = 0;
+    let skipped = 0;
+    for (const id of ids) {
+      try {
+        const success = await this.deleteApplication(user, id);
+        if (success) deleted++;
+        else skipped++;
+      } catch {
+        skipped++;
+      }
+    }
+    return { deleted, skipped };
   }
 
   /**

@@ -32,6 +32,7 @@ function formatDate(value?: string | Date) {
 
 const UserManagementPage = () => {
   const { user: currentUser } = useAuth();
+  const isSuperAdmin = currentUser?.role === UserRole.SUPER_ADMIN;
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -52,6 +53,10 @@ const UserManagementPage = () => {
   });
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState('');
+  const [deletingUser, setDeletingUser] = useState<User | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [showDeleteAll, setShowDeleteAll] = useState(false);
+  const [deletingAll, setDeletingAll] = useState(false);
 
   const load = () => {
     setLoading(true);
@@ -119,6 +124,48 @@ const UserManagementPage = () => {
     setCreateError('');
   };
 
+  const handleToggleReviewer = async (targetUser: User) => {
+    setBusyUserId(targetUser.id);
+    setError('');
+    try {
+      const updated = await apiService.updateUserAccount(targetUser.id, { isDeletionReviewer: !targetUser.isDeletionReviewer });
+      setUsers((prev) => prev.map((u) => (u.id === updated.id ? updated : u)));
+    } catch (err: any) {
+      setError(err.message || 'Failed to update deletion reviewer status');
+    } finally {
+      setBusyUserId(null);
+    }
+  };
+
+  const handleConfirmDeleteUser = async () => {
+    if (!deletingUser) return;
+    setDeleting(true);
+    setError('');
+    try {
+      await apiService.deleteUser(deletingUser.id);
+      setDeletingUser(null);
+      load();
+    } catch (err: any) {
+      setError(err.message || 'Failed to delete user');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleConfirmDeleteAll = async () => {
+    setDeletingAll(true);
+    setError('');
+    try {
+      await apiService.deleteAllUsers(deletableFilteredIds);
+      setShowDeleteAll(false);
+      load();
+    } catch (err: any) {
+      setError(err.message || 'Failed to delete users');
+    } finally {
+      setDeletingAll(false);
+    }
+  };
+
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
     setCreating(true);
@@ -146,11 +193,26 @@ const UserManagementPage = () => {
     return true;
   });
 
+  // Delete All is restricted to Student (Applicant) accounts only, and
+  // only ever affects the currently filtered/searched rows.
+  const deletableFilteredIds = filtered.filter((u) => u.role === UserRole.APPLICANT).map((u) => u.id);
+
   return (
     <div>
       <nav className="navbar">
         <div className="navbar-brand">Users</div>
         <div className="navbar-actions">
+          {isSuperAdmin && (
+            <button
+              className="btn btn-outline btn-sm"
+              type="button"
+              style={{ color: '#DC2626', borderColor: '#DC2626' }}
+              disabled={deletableFilteredIds.length === 0}
+              onClick={() => setShowDeleteAll(true)}
+            >
+              Delete All
+            </button>
+          )}
           <button className="btn btn-primary btn-sm" onClick={() => setShowCreateForm(true)}>
             Register New User
           </button>
@@ -228,6 +290,7 @@ const UserManagementPage = () => {
                   <th>Role</th>
                   <th>Status</th>
                   <th>Joined</th>
+                  {isSuperAdmin && <th>Deletion Reviewer</th>}
                   <th></th>
                 </tr>
               </thead>
@@ -265,6 +328,23 @@ const UserManagementPage = () => {
                         <span className={`badge ${STATUS_BADGE[u.status] ?? 'badge-secondary'}`}>{u.status}</span>
                       </td>
                       <td>{formatDate(u.createdAt)}</td>
+                      {isSuperAdmin && (
+                        <td>
+                          {u.role === UserRole.ADMIN ? (
+                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem' }}>
+                              <input
+                                type="checkbox"
+                                checked={u.isDeletionReviewer}
+                                disabled={busy}
+                                onChange={() => handleToggleReviewer(u)}
+                              />
+                              Reviewer
+                            </label>
+                          ) : (
+                            '—'
+                          )}
+                        </td>
+                      )}
                       <td>
                         {!isSelf && !isSuperAdminRow && (
                           <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
@@ -274,6 +354,16 @@ const UserManagementPage = () => {
                             <button className="btn btn-outline btn-sm" disabled={busy} onClick={() => setResettingUser(u)}>
                               Reset Password
                             </button>
+                            {u.role === UserRole.APPLICANT && (
+                              <button
+                                className="btn btn-outline btn-sm"
+                                style={{ color: '#DC2626', borderColor: '#DC2626' }}
+                                disabled={busy}
+                                onClick={() => setDeletingUser(u)}
+                              >
+                                Delete
+                              </button>
+                            )}
                           </div>
                         )}
                       </td>
@@ -421,6 +511,69 @@ const UserManagementPage = () => {
               </button>
             </div>
           </form>
+        </Modal>
+      )}
+
+      {deletingUser && (
+        <Modal title="Delete User" onClose={() => setDeletingUser(null)}>
+          <p
+            style={{
+              padding: '0.85rem',
+              background: 'rgba(239, 68, 68, 0.1)',
+              border: '1px solid rgba(239, 68, 68, 0.3)',
+              borderRadius: 'var(--radius-md)',
+              color: '#DC2626'
+            }}
+          >
+            Delete <strong>{deletingUser.firstName} {deletingUser.lastName}</strong> ({deletingUser.email})? This permanently
+            removes their account, applicant profile, applications, and uploaded documents. This cannot be undone.
+          </p>
+          <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem' }}>
+            <button
+              className="btn btn-primary"
+              type="button"
+              style={{ background: '#DC2626' }}
+              disabled={deleting}
+              onClick={handleConfirmDeleteUser}
+            >
+              {deleting ? 'Deleting...' : 'Delete User'}
+            </button>
+            <button className="btn btn-outline" type="button" onClick={() => setDeletingUser(null)} disabled={deleting}>
+              Cancel
+            </button>
+          </div>
+        </Modal>
+      )}
+
+      {showDeleteAll && (
+        <Modal title="Delete All Students" onClose={() => setShowDeleteAll(false)}>
+          <p
+            style={{
+              padding: '0.85rem',
+              background: 'rgba(239, 68, 68, 0.1)',
+              border: '1px solid rgba(239, 68, 68, 0.3)',
+              borderRadius: 'var(--radius-md)',
+              color: '#DC2626'
+            }}
+          >
+            Delete <strong>{deletableFilteredIds.length}</strong> student account{deletableFilteredIds.length === 1 ? '' : 's'}{' '}
+            matching the current filters/search? Admin and Super Admin accounts are never included. This permanently removes
+            each account, applicant profile, applications, and uploaded documents. This cannot be undone.
+          </p>
+          <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem' }}>
+            <button
+              className="btn btn-primary"
+              type="button"
+              style={{ background: '#DC2626' }}
+              disabled={deletingAll}
+              onClick={handleConfirmDeleteAll}
+            >
+              {deletingAll ? 'Deleting...' : `Delete ${deletableFilteredIds.length} Student${deletableFilteredIds.length === 1 ? '' : 's'}`}
+            </button>
+            <button className="btn btn-outline" type="button" onClick={() => setShowDeleteAll(false)} disabled={deletingAll}>
+              Cancel
+            </button>
+          </div>
         </Modal>
       )}
     </div>

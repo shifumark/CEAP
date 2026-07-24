@@ -32,7 +32,8 @@ import {
   ProfileCompleteness,
   CreateScholarshipProgramRequest,
   UpdateScholarshipProgramRequest,
-  DashboardStats
+  DashboardStats,
+  AuditLog
 } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
@@ -250,6 +251,10 @@ class ApiService {
     return this.request('DELETE', `/applications/${id}`);
   }
 
+  async deleteAllApplications(ids: number[]): Promise<{ deleted: number; skipped: number }> {
+    return this.request('DELETE', '/applications', { ids });
+  }
+
   // ============== DOCUMENTS ==============
 
   async getApplicationDocuments(applicationId: number): Promise<UploadedDocument[]> {
@@ -365,6 +370,10 @@ class ApiService {
     return this.request('DELETE', `/scholars/${id}`);
   }
 
+  async deleteAllScholars(ids: number[]): Promise<{ deleted: number; skipped: number }> {
+    return this.request('DELETE', '/scholars', { ids });
+  }
+
   async getGrades(scholarId: number): Promise<Grade[]> {
     return this.request('GET', `/scholars/${scholarId}/grades`);
   }
@@ -434,12 +443,27 @@ class ApiService {
     return this.request('POST', '/users', data);
   }
 
-  async updateUserAccount(id: number, updates: { role?: UserRole; status?: UserStatus }): Promise<User> {
+  async updateUserAccount(
+    id: number,
+    updates: { role?: UserRole; status?: UserStatus; isDeletionReviewer?: boolean }
+  ): Promise<User> {
     return this.request('PATCH', `/users/${id}`, updates);
   }
 
   async resetUserPassword(id: number): Promise<{ user: User; temporaryPassword: string }> {
     return this.request('POST', `/users/${id}/reset-password`);
+  }
+
+  async deleteUser(id: number): Promise<{ message: string }> {
+    return this.request('DELETE', `/users/${id}`);
+  }
+
+  async deleteAllUsers(ids: number[]): Promise<{ deleted: number; skipped: number }> {
+    return this.request('DELETE', '/users', { ids });
+  }
+
+  async getDeletionReport(page = 1, pageSize = 50): Promise<PaginatedResponse<AuditLog>> {
+    return this.request('GET', `/audit-logs/deletions?page=${page}&pageSize=${pageSize}`);
   }
 
   async getUserProfileDocuments(userId: number): Promise<UploadedDocument[]> {

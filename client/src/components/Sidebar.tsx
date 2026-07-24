@@ -12,6 +12,7 @@ const NAV_ITEMS_BY_ROLE: Record<UserRole, Array<{ path: string; label: string; i
     { path: '/document-requirements', label: 'Documents', icon: '📄' },
     { path: '/reports', label: 'Reports', icon: '📋' },
     { path: '/users', label: 'Users', icon: '🔐' },
+    { path: '/deletion-report', label: 'Deletion Report', icon: '🗑️' },
     { path: '/announcements', label: 'Announcements', icon: '📢' },
     { path: '/notifications', label: 'Notifications', icon: '🔔' }
   ],
@@ -23,6 +24,7 @@ const NAV_ITEMS_BY_ROLE: Record<UserRole, Array<{ path: string; label: string; i
     { path: '/document-requirements', label: 'Documents', icon: '📄' },
     { path: '/reports', label: 'Reports', icon: '📋' },
     { path: '/users', label: 'Users', icon: '🔐' },
+    { path: '/deletion-report', label: 'Deletion Report', icon: '🗑️' },
     { path: '/announcements', label: 'Announcements', icon: '📢' },
     { path: '/notifications', label: 'Notifications', icon: '🔔' }
   ],
@@ -42,7 +44,12 @@ function Sidebar() {
   const { user, logout } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
 
-  const navItems = user ? NAV_ITEMS_BY_ROLE[user.role] : [];
+  // Only a Super Admin or an Admin the Super Admin flagged isDeletionReviewer
+  // sees the Deletion Report link — everyone else would just hit a 403.
+  const canSeeDeletionReport = user?.role === UserRole.SUPER_ADMIN || (user?.role === UserRole.ADMIN && user.isDeletionReviewer);
+  const navItems = user
+    ? NAV_ITEMS_BY_ROLE[user.role].filter((item) => item.path !== '/deletion-report' || canSeeDeletionReport)
+    : [];
 
   const closeMenu = () => setIsOpen(false);
 

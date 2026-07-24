@@ -1,5 +1,13 @@
 import express from 'express';
-import { AuthenticatedRequest, verifyToken, requireRole, requireAdmin, requireSuperAdmin, loginRateLimit } from './middleware/auth.js';
+import {
+  AuthenticatedRequest,
+  verifyToken,
+  requireRole,
+  requireAdmin,
+  requireSuperAdmin,
+  requireDeletionReviewer,
+  loginRateLimit
+} from './middleware/auth.js';
 import { upload } from './middleware/upload.js';
 import { AuthService } from './services/AuthService.js';
 import { ScholarshipService } from './services/ScholarshipService.js';
@@ -504,11 +512,13 @@ router.get('/applications/:id/history', verifyToken, async (req: AuthenticatedRe
 });
 
 /**
- * Withdraw (delete) an application
- * Protected - Students only, ownership enforced server-side; blocked once
- * the application has a final decision (approved/rejected)
+ * Withdraw (delete) an application. A Student can only ever delete their
+ * own (getOwnedRecord's ownership scoping); Admin/Super Admin can delete
+ * any. Blocked once the application has a final decision
+ * (approved/rejected). When the caller is an Admin (not Super Admin),
+ * every Super Admin and every isDeletionReviewer Admin is notified.
  */
-router.delete('/applications/:id', verifyToken, requireRole([UserRole.APPLICANT]), async (req: AuthenticatedRequest, res) => {
+router.delete('/applications/:id', verifyToken, async (req: AuthenticatedRequest, res) => {
   try {
     const deleted = await applicationService.deleteApplication(req.user!, parseInt(req.params.id));
 
@@ -517,6 +527,22 @@ router.delete('/applications/:id', verifyToken, requireRole([UserRole.APPLICANT]
     }
 
     res.json({ message: 'Application deleted successfully' });
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+/**
+ * Bulk-delete applications by id (Super Admin only). Each id is checked
+ * individually (ownership n/a since caller is always privileged here;
+ * still respects the finalized-status guard) — ineligible ids are
+ * skipped rather than aborting the whole batch.
+ */
+router.delete('/applications', verifyToken, requireSuperAdmin, async (req: AuthenticatedRequest, res) => {
+  try {
+    const ids = Array.isArray(req.body?.ids) ? req.body.ids.map((id: unknown) => parseInt(String(id), 10)) : [];
+    const result = await applicationService.deleteManyApplications(req.user!, ids);
+    res.json(result);
   } catch (error: any) {
     res.status(400).json({ error: error.message });
   }
@@ -784,6 +810,20 @@ router.delete('/scholars/:id', verifyToken, requireAdmin, async (req: Authentica
     }
 
     res.json({ message: 'Scholar deleted successfully' });
+  } catch (error: any) {
+    console.error(error); res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * Bulk-delete scholars by id (Super Admin only). Ineligible ids are
+ * skipped rather than aborting the whole batch.
+ */
+router.delete('/scholars', verifyToken, requireSuperAdmin, async (req: AuthenticatedRequest, res) => {
+  try {
+    const ids = Array.isArray(req.body?.ids) ? req.body.ids.map((id: unknown) => parseInt(String(id), 10)) : [];
+    const result = await scholarService.deleteManyScholars(req.user!, ids);
+    res.json(result);
   } catch (error: any) {
     console.error(error); res.status(500).json({ error: 'Internal server error' });
   }
@@ -1274,6 +1314,35 @@ router.post('/users', verifyToken, requireAdmin, async (req: AuthenticatedReques
 });
 
 /**
+ * Delete a Student (Applicant-role) account (Admin or Super Admin).
+ * Never an Admin/Super Admin target, and never the caller's own account
+ * — enforced in AuthService.deleteUser regardless of caller role.
+ */
+router.delete('/users/:id', verifyToken, requireAdmin, async (req: AuthenticatedRequest, res) => {
+  try {
+    await authService.deleteUser(req.user!.sub, parseInt(req.params.id));
+    res.json({ message: 'User deleted successfully' });
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+/**
+ * Bulk-delete Student accounts by id (Super Admin only). Ineligible ids
+ * (not a Student, already a Scholar, self) are skipped rather than
+ * aborting the whole batch.
+ */
+router.delete('/users', verifyToken, requireSuperAdmin, async (req: AuthenticatedRequest, res) => {
+  try {
+    const ids = Array.isArray(req.body?.ids) ? req.body.ids.map((id: unknown) => parseInt(String(id), 10)) : [];
+    const result = await authService.deleteManyUsers(req.user!.sub, ids);
+    res.json(result);
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+/**
  * List a specific applicant's profile-level documentary requirement
  * uploads (Admin or Super Admin). An Admin caller can never target a
  * Super Admin account.
@@ -1313,6 +1382,40 @@ router.get('/users/:id/profile-documents/merged-pdf', verifyToken, requireAdmin,
 });
 
 // ============== AUDIT LOG ROUTES ==============
+
+/**
+ * Deletion Report — every DELETE action against Applications, Scholars,
+ * or Users, with who did it and when. Reuses the generic audit_logs
+ * table the global auditLog middleware already writes to for every
+ * authenticated non-GET request, filtered down to just these deletions.
+ * Protected - Super Admin, or an Admin flagged isDeletionReviewer.
+ */
+router.get('/audit-logs/deletions', verifyToken, requireDeletionReviewer, async (req: AuthenticatedRequest, res) => {
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const pageSize = parseInt(req.query.pageSize as string) || 50;
+
+    const where = {
+      action: { startsWith: 'DELETE' },
+      entityType: { in: ['applications', 'scholars', 'users'] }
+    };
+
+    const [items, total] = await Promise.all([
+      prisma.auditLog.findMany({
+        where,
+        include: { user: { select: { email: true, firstName: true, lastName: true, role: true } } },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+        orderBy: { createdAt: 'desc' }
+      }),
+      prisma.auditLog.count({ where })
+    ]);
+
+    res.json({ data: items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) });
+  } catch (error: any) {
+    console.error(error); res.status(500).json({ error: 'Internal server error' });
+  }
+});
 
 /**
  * List audit log entries (system-wide activity trail)

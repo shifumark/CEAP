@@ -16,6 +16,7 @@ import AnnouncementsPage from './pages/AnnouncementsPage';
 import NotificationsPage from './pages/NotificationsPage';
 import ReportsPage from './pages/ReportsPage';
 import UserManagementPage from './pages/UserManagementPage';
+import DeletionReportPage from './pages/DeletionReportPage';
 import Sidebar from './components/Sidebar';
 import { UserRole } from './types';
 import './styles.css';
@@ -31,7 +32,8 @@ const SIDEBAR_PATHS = [
   '/announcements',
   '/notifications',
   '/reports',
-  '/users'
+  '/users',
+  '/deletion-report'
 ];
 
 function AppLayout() {
@@ -126,6 +128,14 @@ function AppLayout() {
             element={
               <ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.SUPER_ADMIN]}>
                 <UserManagementPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/deletion-report"
+            element={
+              <ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.SUPER_ADMIN]}>
+                <DeletionReportPage />
               </ProtectedRoute>
             }
           />

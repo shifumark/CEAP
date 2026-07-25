@@ -491,18 +491,26 @@ export class ApplicationService {
       throw new Error('This application has already been decided and can no longer be deleted');
     }
 
+    const applicantName = `${application.applicant.user.firstName} ${application.applicant.user.lastName}`;
+    const label = `${applicantName}'s application (#${id}) for ${application.scholarship?.name ?? 'a scholarship'}`;
+
     if (user.role === UserRole.ADMIN) {
-      const applicantName = `${application.applicant.user.firstName} ${application.applicant.user.lastName}`;
-      await deletionRequestService.create(
-        user,
-        DeletionEntityType.APPLICATION,
-        id,
-        `${applicantName}'s application (#${id}) for ${application.scholarship?.name ?? 'a scholarship'}`
-      );
+      await deletionRequestService.create(user, DeletionEntityType.APPLICATION, id, label);
       return 'pending';
     }
 
     await this.performApplicationDeletion(id, application);
+
+    if (user.role === UserRole.SUPER_ADMIN) {
+      // Awaited, unlike the notification side effects elsewhere in this
+      // file — a silently-lost history row would reintroduce the exact
+      // Deletion Report inaccuracy this table exists to fix, so it's
+      // worth the small extra latency to know it actually landed.
+      await deletionRequestService
+        .recordImmediateDeletion(user, DeletionEntityType.APPLICATION, id, label)
+        .catch((error) => console.error('[DeletionRequestService] Failed to record immediate deletion', id, error));
+    }
+
     return 'deleted';
   }
 

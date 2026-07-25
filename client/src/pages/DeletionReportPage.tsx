@@ -1,15 +1,12 @@
 import { useEffect, useState } from 'react';
 import { apiService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import { AuditLog, DeletionRequest, UserRole } from '../types';
+import { DeletionRequest, UserRole } from '../types';
 import Modal from '../components/Modal';
 
 const PAGE_SIZE = 50;
 
 const ENTITY_LABEL: Record<string, string> = {
-  applications: 'Application',
-  scholars: 'Scholar',
-  users: 'User',
   application: 'Application',
   scholar: 'Scholar',
   user: 'User'
@@ -26,6 +23,10 @@ function formatDateTime(value?: string | Date) {
   });
 }
 
+function formatPerson(u?: { firstName: string; lastName: string; email: string }) {
+  return u ? `${u.firstName} ${u.lastName} (${u.email})` : 'Unknown';
+}
+
 const DeletionReportPage = () => {
   const { user } = useAuth();
   const canView = user?.role === UserRole.SUPER_ADMIN || (user?.role === UserRole.ADMIN && user.isDeletionReviewer);
@@ -38,7 +39,7 @@ const DeletionReportPage = () => {
   const [rejectNote, setRejectNote] = useState('');
   const [acting, setActing] = useState(false);
 
-  const [rows, setRows] = useState<AuditLog[]>([]);
+  const [rows, setRows] = useState<DeletionRequest[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [page, setPage] = useState(1);
@@ -62,13 +63,13 @@ const DeletionReportPage = () => {
     setLoading(true);
     setError('');
     try {
-      const result = await apiService.getDeletionReport(targetPage, PAGE_SIZE);
+      const result = await apiService.getDeletionHistory(targetPage, PAGE_SIZE);
       setRows(result.data);
       setTotalCount(result.total);
       setTotalPages(Math.max(1, result.totalPages));
       setPage(result.page);
     } catch (err: any) {
-      setError(err.message || 'Failed to load deletion report');
+      setError(err.message || 'Failed to load deletion history');
     } finally {
       setLoading(false);
     }
@@ -175,7 +176,7 @@ const DeletionReportPage = () => {
             <table style={{ borderCollapse: 'collapse', width: '100%' }}>
               <thead>
                 <tr>
-                  {['Requested', 'Type', 'Details', 'Requested By', ''].map((label) => (
+                  {['Requested', 'Type', 'Details', 'Requested By (Email)', ''].map((label) => (
                     <th
                       key={label}
                       style={{
@@ -204,7 +205,7 @@ const DeletionReportPage = () => {
                       {request.entityLabel}
                     </td>
                     <td style={{ whiteSpace: 'nowrap', padding: '0.5rem 0.75rem', border: '1px solid var(--border-light)', fontSize: '0.85rem' }}>
-                      {request.requester ? `${request.requester.firstName} ${request.requester.lastName}` : 'Unknown'}
+                      {formatPerson(request.requester)}
                     </td>
                     <td style={{ whiteSpace: 'nowrap', padding: '0.5rem 0.75rem', border: '1px solid var(--border-light)' }}>
                       <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -278,7 +279,7 @@ const DeletionReportPage = () => {
               <table style={{ borderCollapse: 'collapse', width: '100%' }}>
                 <thead>
                   <tr>
-                    {['Date', 'Deleted By', 'Type', 'Record ID'].map((label) => (
+                    {['Date & Time Deleted', 'Type', 'Details', 'Performed By (Email)', 'Originally Requested By'].map((label) => (
                       <th
                         key={label}
                         style={{
@@ -298,16 +299,19 @@ const DeletionReportPage = () => {
                   {rows.map((row) => (
                     <tr key={row.id}>
                       <td style={{ whiteSpace: 'nowrap', padding: '0.5rem 0.75rem', border: '1px solid var(--border-light)', fontSize: '0.85rem' }}>
-                        {formatDateTime(row.createdAt)}
+                        {formatDateTime(row.reviewedAt)}
                       </td>
                       <td style={{ whiteSpace: 'nowrap', padding: '0.5rem 0.75rem', border: '1px solid var(--border-light)', fontSize: '0.85rem' }}>
-                        {row.user ? `${row.user.firstName} ${row.user.lastName} (${row.user.email})` : 'Unknown'}
+                        {ENTITY_LABEL[row.entityType] ?? row.entityType}
+                      </td>
+                      <td style={{ padding: '0.5rem 0.75rem', border: '1px solid var(--border-light)', fontSize: '0.85rem' }}>
+                        {row.entityLabel}
                       </td>
                       <td style={{ whiteSpace: 'nowrap', padding: '0.5rem 0.75rem', border: '1px solid var(--border-light)', fontSize: '0.85rem' }}>
-                        {row.entityType ? ENTITY_LABEL[row.entityType] ?? row.entityType : '—'}
+                        {formatPerson(row.reviewerUser)}
                       </td>
                       <td style={{ whiteSpace: 'nowrap', padding: '0.5rem 0.75rem', border: '1px solid var(--border-light)', fontSize: '0.85rem' }}>
-                        {row.entityId ?? '—'}
+                        {row.requestedBy === row.reviewedBy ? '— (deleted directly)' : formatPerson(row.requester)}
                       </td>
                     </tr>
                   ))}

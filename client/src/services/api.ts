@@ -33,7 +33,6 @@ import {
   CreateScholarshipProgramRequest,
   UpdateScholarshipProgramRequest,
   DashboardStats,
-  AuditLog,
   DeletionRequest,
   DeleteResult
 } from '../types';
@@ -135,6 +134,10 @@ class ApiService {
       email,
       password
     });
+  }
+
+  async verifyEmail(token: string): Promise<{ message: string; user: User }> {
+    return this.request('POST', '/auth/verify-email', { token });
   }
 
   async getCurrentUser(): Promise<User> {
@@ -470,8 +473,8 @@ class ApiService {
     return this.request('DELETE', '/users', { ids });
   }
 
-  async getDeletionReport(page = 1, pageSize = 50): Promise<PaginatedResponse<AuditLog>> {
-    return this.request('GET', `/audit-logs/deletions?page=${page}&pageSize=${pageSize}`);
+  async getDeletionHistory(page = 1, pageSize = 50): Promise<PaginatedResponse<DeletionRequest>> {
+    return this.request('GET', `/deletion-requests/history?page=${page}&pageSize=${pageSize}`);
   }
 
   async getPendingDeletionRequests(page = 1, pageSize = 50): Promise<PaginatedResponse<DeletionRequest>> {

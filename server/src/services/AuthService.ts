@@ -8,8 +8,11 @@ import { supabaseAdmin, DOCUMENTS_BUCKET } from '../lib/supabase.js';
 import { drive } from '../lib/googleDrive.js';
 import { User, LoginRequest, LoginResponse, UserRole, UserStatus, CreateUserRequest, JWTPayload, DeletionEntityType } from '../types.js';
 import { DeletionRequestService } from './DeletionRequestService.js';
+import { EmailService } from './EmailService.js';
 
 const deletionRequestService = new DeletionRequestService();
+const emailService = new EmailService();
+const EMAIL_VERIFICATION_PURPOSE = 'email_verification';
 
 /**
  * Authentication service backed by Postgres via Prisma.
@@ -77,6 +80,13 @@ export class AuthService {
       }
     });
 
+    // Confirms the address is real and actually reachable by its owner —
+    // covers both self-registration and an Admin/Super Admin creating the
+    // account via POST /users, since both funnel through this method.
+    emailService
+      .sendEmailVerification(created.email, created.firstName, this.generateEmailVerificationToken(created.id))
+      .catch((error) => console.error('[EmailService] Failed to send verification email', created.id, error));
+
     return toUser(created);
   }
 
@@ -126,6 +136,46 @@ export class AuthService {
       JWT_SECRET,
       { expiresIn: '8h', algorithm: 'HS256' }
     );
+  }
+
+  /**
+   * Signed, stateless verification link — no DB column needed to track
+   * outstanding tokens, since the JWT signature and expiry are the only
+   * things confirmEmailVerification below trusts. The purpose claim keeps
+   * this from ever being confused with (or substituted for) a real login
+   * token even though both are signed with the same secret.
+   */
+  private generateEmailVerificationToken(userId: number): string {
+    return jwt.sign({ sub: userId, purpose: EMAIL_VERIFICATION_PURPOSE }, JWT_SECRET, {
+      expiresIn: '7d',
+      algorithm: 'HS256'
+    });
+  }
+
+  /**
+   * Confirms the address in the link was actually reachable by its
+   * owner. Invalid, expired, or already-used-for-a-different-purpose
+   * tokens all fail the same generic way — no need to distinguish them
+   * for the user beyond "this link doesn't work, ask for a new one."
+   */
+  async confirmEmailVerification(token: string): Promise<User> {
+    let payload: any;
+    try {
+      payload = jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] });
+    } catch {
+      throw new Error('This verification link is invalid or has expired.');
+    }
+    if (payload?.purpose !== EMAIL_VERIFICATION_PURPOSE || typeof payload.sub !== 'number') {
+      throw new Error('This verification link is invalid.');
+    }
+
+    const updated = await prisma.user
+      .update({ where: { id: payload.sub }, data: { emailVerified: true } })
+      .catch(() => null);
+    if (!updated) {
+      throw new Error('This verification link is invalid.');
+    }
+    return toUser(updated);
   }
 
   async getUser(userId: number): Promise<User | undefined> {
@@ -211,17 +261,22 @@ export class AuthService {
       throw new Error('This user is an active Scholar — remove them from Scholar Management instead');
     }
 
+    const label = `${target.firstName} ${target.lastName} (${target.email})`;
+
     if (actor.role === UserRole.ADMIN) {
-      await deletionRequestService.create(
-        actor,
-        DeletionEntityType.USER,
-        targetId,
-        `${target.firstName} ${target.lastName} (${target.email})`
-      );
+      await deletionRequestService.create(actor, DeletionEntityType.USER, targetId, label);
       return 'pending';
     }
 
     await this.performUserDeletion(targetId);
+
+    if (actor.role === UserRole.SUPER_ADMIN) {
+      // Awaited — see the matching comment on ApplicationService.deleteApplication.
+      await deletionRequestService
+        .recordImmediateDeletion(actor, DeletionEntityType.USER, targetId, label)
+        .catch((error) => console.error('[DeletionRequestService] Failed to record immediate deletion', targetId, error));
+    }
+
     return 'deleted';
   }
 

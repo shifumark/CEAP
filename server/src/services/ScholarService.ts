@@ -268,18 +268,23 @@ export class ScholarService {
     });
     if (!scholar) return 'not_found';
 
+    const scholarName = scholar.user ? `${scholar.user.firstName} ${scholar.user.lastName}` : `Scholar #${scholarId}`;
+    const label = `${scholarName} (#${scholarId}) from ${scholar.scholarship?.name ?? 'a program'}`;
+
     if (user.role === UserRole.ADMIN) {
-      const scholarName = scholar.user ? `${scholar.user.firstName} ${scholar.user.lastName}` : `Scholar #${scholarId}`;
-      await deletionRequestService.create(
-        user,
-        DeletionEntityType.SCHOLAR,
-        scholarId,
-        `${scholarName} (#${scholarId}) from ${scholar.scholarship?.name ?? 'a program'}`
-      );
+      await deletionRequestService.create(user, DeletionEntityType.SCHOLAR, scholarId, label);
       return 'pending';
     }
 
     await this.performScholarDeletion(scholarId, scholar);
+
+    if (user.role === UserRole.SUPER_ADMIN) {
+      // Awaited — see the matching comment on ApplicationService.deleteApplication.
+      await deletionRequestService
+        .recordImmediateDeletion(user, DeletionEntityType.SCHOLAR, scholarId, label)
+        .catch((error) => console.error('[DeletionRequestService] Failed to record immediate deletion', scholarId, error));
+    }
+
     return 'deleted';
   }
 

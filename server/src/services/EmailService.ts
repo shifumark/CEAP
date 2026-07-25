@@ -69,6 +69,20 @@ export class EmailService {
     }
   }
 
+  async sendEmailVerification(to: string, firstName: string, token: string): Promise<void> {
+    const verifyUrl = `${APP_URL}/verify-email?token=${encodeURIComponent(token)}`;
+    await this.send(
+      to,
+      'Confirm Your Email Address - CEAP',
+      `<p>Hi ${firstName},</p>
+       <p>Please confirm this is your email address by clicking the link below. This confirms your account can
+       actually be reached at this address — for example, so status updates and program announcements reach you.</p>
+       <p><a href="${verifyUrl}">Confirm my email address</a></p>
+       <p style="font-size: 0.85rem; color: #6B7280;">This link expires in 7 days. If you didn't create a CEAP
+       account, you can safely ignore this email.</p>`
+    );
+  }
+
   async sendApplicationStatusUpdate(to: string, scholarshipName: string, status: string): Promise<void> {
     const readableStatus = status.replace(/_/g, ' ');
     await this.send(

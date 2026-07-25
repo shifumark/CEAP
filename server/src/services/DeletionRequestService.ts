@@ -60,12 +60,34 @@ export class DeletionRequestService {
   }
 
   async listPending(page = 1, pageSize = 50): Promise<PaginatedResponse<DeletionRequest>> {
-    const where = { status: 'pending' as const };
+    return this.list('pending', page, pageSize);
+  }
+
+  /**
+   * Completed deletions — every Super Admin's direct delete (recorded via
+   * recordImmediateDeletion, requestedBy === reviewedBy, both timestamps
+   * equal) plus every Admin request a reviewer approved. This is the
+   * Deletion Report's data source; it deliberately does NOT reuse the
+   * generic audit-log middleware, since that only sees the HTTP call an
+   * Admin's request makes (which never actually deletes anything) and has
+   * no visibility into the separate moment a reviewer later approves it.
+   */
+  async listHistory(page = 1, pageSize = 50): Promise<PaginatedResponse<DeletionRequest>> {
+    return this.list('approved', page, pageSize, 'reviewedAt');
+  }
+
+  private async list(
+    status: 'pending' | 'approved' | 'rejected',
+    page: number,
+    pageSize: number,
+    orderByField: 'requestedAt' | 'reviewedAt' = 'requestedAt'
+  ): Promise<PaginatedResponse<DeletionRequest>> {
+    const where = { status };
     const [items, total] = await Promise.all([
       prisma.deletionRequest.findMany({
         where,
         include: withUsers,
-        orderBy: { requestedAt: 'asc' },
+        orderBy: { [orderByField]: status === 'pending' ? 'asc' : 'desc' },
         skip: (page - 1) * pageSize,
         take: pageSize
       }),
@@ -79,6 +101,33 @@ export class DeletionRequestService {
       pageSize,
       totalPages: Math.ceil(total / pageSize)
     };
+  }
+
+  /**
+   * Records a deletion a Super Admin performed directly (no approval
+   * needed) so it still shows up in the Deletion Report alongside
+   * reviewed Admin requests — requestedBy and reviewedBy are both the
+   * same Super Admin, both timestamps the same moment.
+   */
+  async recordImmediateDeletion(
+    actor: JWTPayload,
+    entityType: DeletionEntityType,
+    entityId: number,
+    entityLabel: string
+  ): Promise<void> {
+    const now = new Date();
+    await prisma.deletionRequest.create({
+      data: {
+        entityType: entityType as any,
+        entityId,
+        entityLabel,
+        requestedBy: actor.sub,
+        requestedAt: now,
+        status: 'approved',
+        reviewedBy: actor.sub,
+        reviewedAt: now
+      }
+    });
   }
 
   async getById(id: number): Promise<DeletionRequest | null> {

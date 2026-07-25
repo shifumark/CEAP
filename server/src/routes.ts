@@ -138,6 +138,24 @@ router.post('/auth/register', async (req, res) => {
 });
 
 /**
+ * Confirms the address a registration (self-service or Admin-created)
+ * used is real and reachable — the link sent by EmailService.sendEmailVerification.
+ * Public - the token itself is the credential.
+ */
+router.post('/auth/verify-email', async (req, res) => {
+  try {
+    const { token } = req.body as { token?: string };
+    if (!token) {
+      return res.status(400).json({ error: 'Token is required' });
+    }
+    const user = await authService.confirmEmailVerification(token);
+    res.json({ message: 'Email confirmed', user });
+  } catch (error: any) {
+    res.status(400).json({ error: error.message || 'Failed to confirm email' });
+  }
+});
+
+/**
  * Verify token and get current user
  * Protected - requires valid JWT
  */
@@ -1402,42 +1420,6 @@ router.get('/users/:id/profile-documents/merged-pdf', verifyToken, requireAdminO
   }
 });
 
-// ============== AUDIT LOG ROUTES ==============
-
-/**
- * Deletion Report — every DELETE action against Applications, Scholars,
- * or Users, with who did it and when. Reuses the generic audit_logs
- * table the global auditLog middleware already writes to for every
- * authenticated non-GET request, filtered down to just these deletions.
- * Protected - Super Admin, or an Admin flagged isDeletionReviewer.
- */
-router.get('/audit-logs/deletions', verifyToken, requireDeletionReviewer, async (req: AuthenticatedRequest, res) => {
-  try {
-    const page = parseInt(req.query.page as string) || 1;
-    const pageSize = parseInt(req.query.pageSize as string) || 50;
-
-    const where = {
-      action: { startsWith: 'DELETE' },
-      entityType: { in: ['applications', 'scholars', 'users'] }
-    };
-
-    const [items, total] = await Promise.all([
-      prisma.auditLog.findMany({
-        where,
-        include: { user: { select: { email: true, firstName: true, lastName: true, role: true } } },
-        skip: (page - 1) * pageSize,
-        take: pageSize,
-        orderBy: { createdAt: 'desc' }
-      }),
-      prisma.auditLog.count({ where })
-    ]);
-
-    res.json({ data: items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) });
-  } catch (error: any) {
-    console.error(error); res.status(500).json({ error: 'Internal server error' });
-  }
-});
-
 // ============== DELETION APPROVAL WORKFLOW ROUTES ==============
 
 /**
@@ -1519,6 +1501,28 @@ router.post('/deletion-requests/:id/reject', verifyToken, requireDeletionReviewe
     console.error(error); res.status(400).json({ error: error.message });
   }
 });
+
+/**
+ * Deletion history — every completed deletion, whether a Super Admin's
+ * direct delete or an Admin's request a reviewer approved. Backed by
+ * DeletionRequest itself (not the generic audit log), since that's the
+ * only place both halves of an Admin-requested-then-approved deletion
+ * — who asked, who actually authorized it, and when each happened — are
+ * recorded together.
+ * Protected - Super Admin, or an Admin flagged isDeletionReviewer.
+ */
+router.get('/deletion-requests/history', verifyToken, requireDeletionReviewer, async (req: AuthenticatedRequest, res) => {
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const pageSize = parseInt(req.query.pageSize as string) || 50;
+    const result = await deletionRequestService.listHistory(page, pageSize);
+    res.json(result);
+  } catch (error: any) {
+    console.error(error); res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ============== AUDIT LOG ROUTES ==============
 
 /**
  * List audit log entries (system-wide activity trail)

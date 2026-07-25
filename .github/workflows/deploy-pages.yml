@@ -1,7 +1,7 @@
 name: Deploy client to GitHub Pages
-# Retriggered manually — the previous run's deploy-pages step failed
-# after a 10-minute timeout (a GitHub Pages infrastructure blip; the
-# build job itself succeeded).
+# Retriggered again — GitHub's status page shows a Pages/Actions
+# incident today, the likely cause of the prior two deploy-pages
+# failures (the build job itself succeeded both times).
 
 on:
   push:

@@ -94,6 +94,9 @@ const ValidIdUpload = ({ onChange }: Props) => {
   return (
     <div className="form-group">
       {error && <p style={{ color: '#F87171', fontSize: '0.8rem', marginBottom: '0.5rem' }}>{error}</p>}
+      <p style={{ fontSize: '0.75rem', color: '#B9AFDA', marginTop: 0, marginBottom: '0.4rem' }}>
+        PDF, JPG, or PNG only, max 5MB per file.
+      </p>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
         <label style={{ margin: 0 }}>
           Upload Photo of ID ({uploaded.length}/{VALID_ID_MAX_FILES})

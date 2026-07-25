@@ -125,6 +125,9 @@ const ProfileDocuments = ({ onChange }: Props) => {
 
   return (
     <div>
+      <p style={{ fontSize: '0.75rem', color: '#B9AFDA', marginTop: 0, marginBottom: '0.6rem' }}>
+        PDF, JPG, or PNG only, max 5MB per file. Images are automatically resized and compressed.
+      </p>
       {error && <p style={{ color: '#F87171', fontSize: '0.8rem', marginBottom: '0.75rem' }}>{error}</p>}
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>

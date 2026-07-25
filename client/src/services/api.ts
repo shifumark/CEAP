@@ -38,6 +38,7 @@ import {
 } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
+const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
 
 /**
  * API Service
@@ -277,6 +278,12 @@ class ApiService {
   }
 
   async uploadDocument(documentType: string, file: File, applicationId?: number): Promise<UploadedDocument> {
+    // Fails fast client-side instead of waiting on a full upload round
+    // trip just to hit the same 5MB limit the server enforces (upload.ts).
+    if (file.size > MAX_UPLOAD_BYTES) {
+      throw new Error('File is too large — the maximum upload size is 5MB.');
+    }
+
     const formData = new FormData();
     if (applicationId !== undefined) {
       formData.append('applicationId', applicationId.toString());

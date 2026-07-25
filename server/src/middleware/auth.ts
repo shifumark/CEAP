@@ -221,7 +221,11 @@ export const errorHandler = (err: any, req: Request, res: Response, next: NextFu
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
-  if (err.name === 'MulterError' || err.message?.includes('Only PDF, JPG, and PNG')) {
+  if (err.name === 'MulterError') {
+    const message = err.code === 'LIMIT_FILE_SIZE' ? 'File is too large — the maximum upload size is 5MB.' : err.message;
+    return res.status(400).json({ error: message });
+  }
+  if (err.message?.includes('Only PDF, JPG, and PNG')) {
     return res.status(400).json({ error: err.message });
   }
 

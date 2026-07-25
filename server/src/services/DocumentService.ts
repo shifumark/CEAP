@@ -7,6 +7,7 @@ import { drive, DRIVE_FOLDER_ID } from '../lib/googleDrive.js';
 import { ApplicationService } from './ApplicationService.js';
 import { NotificationService } from './NotificationService.js';
 import { UploadedDocument, DocumentVerificationStatus, JWTPayload, UserRole, NotificationType } from '../types.js';
+import { processUploadedFile, type UploadFile } from '../lib/imageProcessing.js';
 
 // A4 in points (1/72in) — used as the standard page size for both the
 // section-divider pages and any image pages in the merged documents PDF.
@@ -16,13 +17,6 @@ const PAGE_MARGIN = 40;
 
 const applicationService = new ApplicationService();
 const notificationService = new NotificationService();
-
-interface UploadFile {
-  buffer: Buffer;
-  originalname: string;
-  mimetype: string;
-  size: number;
-}
 
 export type DownloadResult =
   | { kind: 'stream'; stream: NodeJS.ReadableStream; mimeType: string; fileName: string }
@@ -90,6 +84,11 @@ export class DocumentService {
         throw new Error('You can only upload up to 5 Valid ID files');
       }
     }
+
+    // Validates the bytes actually match the claimed type (catches a
+    // video renamed to look like an image) and, for images, resizes +
+    // recompresses before anything reaches Drive.
+    file = await processUploadedFile(file);
 
     const safeName = file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_');
     const driveFile = await drive.files.create({

@@ -379,7 +379,17 @@ const ProfilePage = () => {
     try {
       const blob = await apiService.downloadApplicationFormPdf();
       const objectUrl = URL.createObjectURL(blob);
-      window.open(objectUrl, '_blank', 'noopener');
+      // A direct <a download> click triggers the browser's native download,
+      // unlike window.open(blobUrl, '_blank') — mobile browsers (Android
+      // Chrome in particular) treat that as a popup once the surrounding
+      // await has broken the "same tick as the click" user-activation
+      // window, and silently block it or open a blank tab instead.
+      const link = document.createElement('a');
+      link.href = objectUrl;
+      link.download = `${form.firstName || 'Application'}-${form.lastName || 'Form'}-Application-Form.pdf`.replace(/\s+/g, '-');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
       setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
     } catch (err: any) {
       setError(err.message || 'Failed to generate application form');

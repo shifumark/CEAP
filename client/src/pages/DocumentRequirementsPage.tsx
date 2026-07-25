@@ -83,10 +83,12 @@ const DocumentRequirementsPage = () => {
     setViewingId(documentId);
     setDocumentsError('');
     try {
-      const { blob } = await apiService.downloadDocument(documentId);
-      const objectUrl = URL.createObjectURL(blob);
-      window.open(objectUrl, '_blank', 'noopener');
-      setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
+      const { blob, fileName } = await apiService.downloadDocument(documentId);
+      // Same forced-download approach as handleDownloadAll below, not
+      // window.open(blobUrl, '_blank') — mobile browsers (Android Chrome
+      // especially) block/ignore that popup once the surrounding await has
+      // broken the user-activation window.
+      triggerDownload(blob, fileName);
     } catch (err: any) {
       setDocumentsError(err.message || 'Failed to open document');
     } finally {

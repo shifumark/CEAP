@@ -54,9 +54,19 @@ const ValidIdUpload = ({ onChange }: Props) => {
   const handleView = async (documentId: number) => {
     setError('');
     try {
-      const { blob } = await apiService.downloadDocument(documentId);
+      const { blob, fileName } = await apiService.downloadDocument(documentId);
       const objectUrl = URL.createObjectURL(blob);
-      window.open(objectUrl, '_blank', 'noopener');
+      // A direct <a download> click, not window.open(blobUrl, '_blank') —
+      // mobile browsers (Android Chrome especially) block/ignore the popup
+      // once the surrounding await has broken the user-activation window,
+      // so nothing visibly happens. A forced download always works, and
+      // the device's own viewer opens it from there.
+      const link = document.createElement('a');
+      link.href = objectUrl;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
       setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
     } catch (err: any) {
       setError(err.message || 'Failed to open ID photo');

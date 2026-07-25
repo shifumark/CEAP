@@ -17,11 +17,14 @@ import {
   PaginatedResponse,
   JWTPayload,
   UserRole,
-  NotificationType
+  NotificationType,
+  DeletionEntityType
 } from '../types.js';
 import { NotificationService } from './NotificationService.js';
+import { DeletionRequestService } from './DeletionRequestService.js';
 
 const notificationService = new NotificationService();
+const deletionRequestService = new DeletionRequestService();
 
 const scholarInclude = {
   scholarship: true,
@@ -248,8 +251,13 @@ export class ScholarService {
    * DB level once the parent row is gone — grades/renewals/allowances/
    * violations for the Scholar, status history and application-scoped
    * documents for the Application.
+   *
+   * A plain Admin's delete is held as a pending DeletionRequest instead
+   * of happening immediately — only a Super Admin's own delete (or a
+   * Deletion Reviewer's approval of an Admin's request) actually removes
+   * the record. See the matching comment on ApplicationService.deleteApplication.
    */
-  async deleteScholar(user: JWTPayload, scholarId: number): Promise<boolean> {
+  async deleteScholar(user: JWTPayload, scholarId: number): Promise<'deleted' | 'pending' | 'not_found'> {
     if (!isPrivileged(user)) {
       throw new Error('Not authorized to delete scholars');
     }
@@ -258,7 +266,30 @@ export class ScholarService {
       where: { id: scholarId },
       include: { user: { include: { applicant: true } }, scholarship: true }
     });
-    if (!scholar) return false;
+    if (!scholar) return 'not_found';
+
+    if (user.role === UserRole.ADMIN) {
+      const scholarName = scholar.user ? `${scholar.user.firstName} ${scholar.user.lastName}` : `Scholar #${scholarId}`;
+      await deletionRequestService.create(
+        user,
+        DeletionEntityType.SCHOLAR,
+        scholarId,
+        `${scholarName} (#${scholarId}) from ${scholar.scholarship?.name ?? 'a program'}`
+      );
+      return 'pending';
+    }
+
+    await this.performScholarDeletion(scholarId, scholar);
+    return 'deleted';
+  }
+
+  /**
+   * The actual deletion primitive — see the matching comment on
+   * ApplicationService.performApplicationDeletion.
+   */
+  async performScholarDeletion(scholarId: number, preloaded?: ScholarWithRelations): Promise<void> {
+    const scholar = preloaded ?? (await prisma.scholar.findUnique({ where: { id: scholarId }, include: scholarInclude }));
+    if (!scholar) return;
 
     const applicantId = scholar.user?.applicant?.id;
 
@@ -270,17 +301,6 @@ export class ScholarService {
       }
       await tx.scholar.delete({ where: { id: scholarId } });
     });
-
-    const scholarName = scholar.user ? `${scholar.user.firstName} ${scholar.user.lastName}` : `Scholar #${scholarId}`;
-    notificationService
-      .notifyReviewersOfDeletion(
-        user,
-        'Scholar',
-        `${user.email} deleted ${scholarName} (#${scholarId}) from ${scholar.scholarship?.name ?? 'a program'}.`
-      )
-      .catch((error) => console.error('[NotificationService] Failed to notify reviewers of scholar deletion', scholarId, error));
-
-    return true;
   }
 
   /**
@@ -293,8 +313,8 @@ export class ScholarService {
     let skipped = 0;
     for (const id of ids) {
       try {
-        const success = await this.deleteScholar(user, id);
-        if (success) deleted++;
+        const result = await this.deleteScholar(user, id);
+        if (result === 'deleted') deleted++;
         else skipped++;
       } catch {
         skipped++;

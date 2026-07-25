@@ -765,6 +765,36 @@ export interface AuditLog {
   createdAt: Date;
 }
 
+// DELETION APPROVAL WORKFLOW
+export enum DeletionEntityType {
+  APPLICATION = 'application',
+  SCHOLAR = 'scholar',
+  USER = 'user'
+}
+
+export enum DeletionRequestStatus {
+  PENDING = 'pending',
+  APPROVED = 'approved',
+  REJECTED = 'rejected'
+}
+
+export interface DeletionRequest {
+  id: number;
+  entityType: DeletionEntityType;
+  entityId: number;
+  entityLabel: string;
+  requestedBy: number;
+  requestedAt: Date;
+  status: DeletionRequestStatus;
+  reviewedBy?: number;
+  reviewedAt?: Date;
+  reviewNote?: string;
+  // Present on GET /deletion-requests — the requester's (and, once
+  // reviewed, the reviewer's) display info for the approval queue.
+  requester?: { email: string; firstName: string; lastName: string };
+  reviewerUser?: { email: string; firstName: string; lastName: string };
+}
+
 // DASHBOARD STATS
 export interface DashboardStats {
   totalScholars: number;

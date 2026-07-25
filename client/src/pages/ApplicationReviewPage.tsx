@@ -72,6 +72,7 @@ const ApplicationReviewPage = () => {
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [draftStatus, setDraftStatus] = useState<ApplicationStatus | ''>('');
   const [draftComments, setDraftComments] = useState('');
@@ -239,9 +240,11 @@ const ApplicationReviewPage = () => {
     if (!deletingApplication) return;
     setDeleting(true);
     setError('');
+    setNotice('');
     try {
-      await apiService.deleteApplication(deletingApplication.id);
+      const result = await apiService.deleteApplication(deletingApplication.id);
       setDeletingApplication(null);
+      if (result.status === 'pending') setNotice(result.message);
       await loadApplications();
     } catch (err: any) {
       setError(err.message || 'Failed to delete application');
@@ -308,6 +311,21 @@ const ApplicationReviewPage = () => {
             }}
           >
             {error}
+          </div>
+        )}
+
+        {notice && (
+          <div
+            style={{
+              padding: '1rem',
+              background: 'rgba(167, 139, 250, 0.12)',
+              border: '1px solid rgba(167, 139, 250, 0.35)',
+              borderRadius: 'var(--radius-md)',
+              marginBottom: '1.5rem',
+              color: 'var(--text-primary)'
+            }}
+          >
+            {notice}
           </div>
         )}
 

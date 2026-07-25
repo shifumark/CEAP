@@ -136,6 +136,8 @@ model User {
   createdAnnouncements  Announcement[]              @relation("AnnouncementCreator")
   notifications         Notification[]
   auditLogs             AuditLog[]
+  deletionRequestsMade      DeletionRequest[] @relation("DeletionRequester")
+  deletionRequestsReviewed  DeletionRequest[] @relation("DeletionReviewer")
 
   @@map("users")
 }
@@ -596,4 +598,44 @@ model AuditLog {
   user User? @relation(fields: [userId], references: [id])
 
   @@map("audit_logs")
+}
+
+// ============== DELETION APPROVAL WORKFLOW ==============
+
+enum DeletionEntityType {
+  application
+  scholar
+  user
+}
+
+enum DeletionRequestStatus {
+  pending
+  approved
+  rejected
+}
+
+// When a plain Admin (never Super Admin) tries to delete an Application,
+// Scholar, or User, the delete is held here instead of happening
+// immediately — a Super Admin or a Deletion-Reviewer-flagged Admin must
+// approve it before the underlying record is actually removed. Super
+// Admin deletes always bypass this table entirely and happen at once.
+model DeletionRequest {
+  id          Int                    @id @default(autoincrement())
+  entityType  DeletionEntityType     @map("entity_type")
+  entityId    Int                    @map("entity_id")
+  // Captured at request time so the reviewer (and the history view) can
+  // still show a meaningful label even after the underlying row is gone
+  // or has changed — same rationale as AuditLog not living-joining.
+  entityLabel String                 @map("entity_label")
+  requestedBy Int                    @map("requested_by")
+  requestedAt DateTime               @default(now()) @map("requested_at")
+  status      DeletionRequestStatus  @default(pending)
+  reviewedBy  Int?                   @map("reviewed_by")
+  reviewedAt  DateTime?              @map("reviewed_at")
+  reviewNote  String?                @map("review_note")
+
+  requester User  @relation("DeletionRequester", fields: [requestedBy], references: [id])
+  reviewer  User? @relation("DeletionReviewer", fields: [reviewedBy], references: [id])
+
+  @@map("deletion_requests")
 }

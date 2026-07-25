@@ -6,7 +6,10 @@ import { prisma } from '../lib/prisma.js';
 import { JWT_SECRET } from '../lib/env.js';
 import { supabaseAdmin, DOCUMENTS_BUCKET } from '../lib/supabase.js';
 import { drive } from '../lib/googleDrive.js';
-import { User, LoginRequest, LoginResponse, UserRole, UserStatus, CreateUserRequest } from '../types.js';
+import { User, LoginRequest, LoginResponse, UserRole, UserStatus, CreateUserRequest, JWTPayload, DeletionEntityType } from '../types.js';
+import { DeletionRequestService } from './DeletionRequestService.js';
+
+const deletionRequestService = new DeletionRequestService();
 
 /**
  * Authentication service backed by Postgres via Prisma.
@@ -186,14 +189,12 @@ export class AuthService {
    * removed via Scholar Management instead, so that flow's own
    * protections aren't bypassed by a blunt account delete here.
    *
-   * UploadedDocument.userId's uploader relation has no onDelete cascade
-   * (deliberately, so an accidental delete fails loudly) — cleaned up
-   * explicitly first, remote files included. AuditLog.userId is nullable
-   * with no cascade either; detached (not deleted) so the historical
-   * action record survives the account's removal.
+   * A plain Admin's delete is held as a pending DeletionRequest instead
+   * of happening immediately — see the matching comment on
+   * ApplicationService.deleteApplication.
    */
-  async deleteUser(callerId: number, targetId: number): Promise<void> {
-    if (targetId === callerId) {
+  async deleteUser(actor: JWTPayload, targetId: number): Promise<'deleted' | 'pending'> {
+    if (targetId === actor.sub) {
       throw new Error('You cannot delete your own account');
     }
 
@@ -210,6 +211,31 @@ export class AuthService {
       throw new Error('This user is an active Scholar — remove them from Scholar Management instead');
     }
 
+    if (actor.role === UserRole.ADMIN) {
+      await deletionRequestService.create(
+        actor,
+        DeletionEntityType.USER,
+        targetId,
+        `${target.firstName} ${target.lastName} (${target.email})`
+      );
+      return 'pending';
+    }
+
+    await this.performUserDeletion(targetId);
+    return 'deleted';
+  }
+
+  /**
+   * The actual deletion primitive — see the matching comment on
+   * ApplicationService.performApplicationDeletion.
+   *
+   * UploadedDocument.userId's uploader relation has no onDelete cascade
+   * (deliberately, so an accidental delete fails loudly) — cleaned up
+   * explicitly first, remote files included. AuditLog.userId is nullable
+   * with no cascade either; detached (not deleted) so the historical
+   * action record survives the account's removal.
+   */
+  async performUserDeletion(targetId: number): Promise<void> {
     const documents = await prisma.uploadedDocument.findMany({
       where: { userId: targetId },
       select: { filePath: true, googleDriveId: true }
@@ -234,13 +260,14 @@ export class AuthService {
    * (not aborting on) any that fail their own individual checks, so one
    * ineligible id doesn't block the rest of the batch.
    */
-  async deleteManyUsers(callerId: number, targetIds: number[]): Promise<{ deleted: number; skipped: number }> {
+  async deleteManyUsers(actor: JWTPayload, targetIds: number[]): Promise<{ deleted: number; skipped: number }> {
     let deleted = 0;
     let skipped = 0;
     for (const targetId of targetIds) {
       try {
-        await this.deleteUser(callerId, targetId);
-        deleted++;
+        const result = await this.deleteUser(actor, targetId);
+        if (result === 'deleted') deleted++;
+        else skipped++;
       } catch {
         skipped++;
       }

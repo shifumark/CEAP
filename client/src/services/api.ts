@@ -33,7 +33,9 @@ import {
   CreateScholarshipProgramRequest,
   UpdateScholarshipProgramRequest,
   DashboardStats,
-  AuditLog
+  AuditLog,
+  DeletionRequest,
+  DeleteResult
 } from '../types';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
@@ -253,7 +255,7 @@ class ApiService {
     return this.request('PUT', `/applications/${id}`, data);
   }
 
-  async deleteApplication(id: number): Promise<{ message: string }> {
+  async deleteApplication(id: number): Promise<DeleteResult> {
     return this.request('DELETE', `/applications/${id}`);
   }
 
@@ -372,7 +374,7 @@ class ApiService {
     return this.request('GET', `/scholars/${id}`);
   }
 
-  async deleteScholar(id: number) {
+  async deleteScholar(id: number): Promise<DeleteResult> {
     return this.request('DELETE', `/scholars/${id}`);
   }
 
@@ -460,7 +462,7 @@ class ApiService {
     return this.request('POST', `/users/${id}/reset-password`);
   }
 
-  async deleteUser(id: number): Promise<{ message: string }> {
+  async deleteUser(id: number): Promise<DeleteResult> {
     return this.request('DELETE', `/users/${id}`);
   }
 
@@ -470,6 +472,18 @@ class ApiService {
 
   async getDeletionReport(page = 1, pageSize = 50): Promise<PaginatedResponse<AuditLog>> {
     return this.request('GET', `/audit-logs/deletions?page=${page}&pageSize=${pageSize}`);
+  }
+
+  async getPendingDeletionRequests(page = 1, pageSize = 50): Promise<PaginatedResponse<DeletionRequest>> {
+    return this.request('GET', `/deletion-requests?page=${page}&pageSize=${pageSize}`);
+  }
+
+  async approveDeletionRequest(id: number): Promise<{ message: string }> {
+    return this.request('POST', `/deletion-requests/${id}/approve`);
+  }
+
+  async rejectDeletionRequest(id: number, note?: string): Promise<{ message: string }> {
+    return this.request('POST', `/deletion-requests/${id}/reject`, note ? { note } : undefined);
   }
 
   async getUserProfileDocuments(userId: number): Promise<UploadedDocument[]> {

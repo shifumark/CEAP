@@ -19,6 +19,7 @@ import { ScholarService } from './services/ScholarService.js';
 import { AnnouncementService } from './services/AnnouncementService.js';
 import { NotificationService } from './services/NotificationService.js';
 import { DocumentRequirementService } from './services/DocumentRequirementService.js';
+import { DeletionRequestService } from './services/DeletionRequestService.js';
 import { generateApplicationFormPdf } from './services/ApplicationFormPdfService.js';
 import { prisma } from './lib/prisma.js';
 import { COLLEGE_YEAR_LEVELS, PROFESSIONAL_YEAR_LEVELS } from './lib/profileRequirements.js';
@@ -39,7 +40,8 @@ import {
   CreateViolationRequest,
   CreateAnnouncementRequest,
   AnnouncementFilters,
-  UpdateApplicantProfileRequest
+  UpdateApplicantProfileRequest,
+  DeletionEntityType
 } from './types.js';
 
 const router = express.Router();
@@ -65,6 +67,7 @@ const scholarService = new ScholarService();
 const announcementService = new AnnouncementService();
 const notificationService = new NotificationService();
 const documentRequirementService = new DocumentRequirementService();
+const deletionRequestService = new DeletionRequestService();
 
 // ============== AUTHENTICATION ROUTES ==============
 
@@ -529,13 +532,16 @@ router.get('/applications/:id/history', verifyToken, async (req: AuthenticatedRe
  */
 router.delete('/applications/:id', verifyToken, async (req: AuthenticatedRequest, res) => {
   try {
-    const deleted = await applicationService.deleteApplication(req.user!, parseInt(req.params.id));
+    const result = await applicationService.deleteApplication(req.user!, parseInt(req.params.id));
 
-    if (!deleted) {
+    if (result === 'not_found') {
       return res.status(404).json({ error: 'Application not found' });
     }
+    if (result === 'pending') {
+      return res.json({ status: 'pending', message: 'Deletion request submitted for approval by a Super Admin or Deletion Reviewer' });
+    }
 
-    res.json({ message: 'Application deleted successfully' });
+    res.json({ status: 'deleted', message: 'Application deleted successfully' });
   } catch (error: any) {
     res.status(400).json({ error: error.message });
   }
@@ -812,13 +818,16 @@ router.get('/scholars/:id', verifyToken, async (req: AuthenticatedRequest, res) 
  */
 router.delete('/scholars/:id', verifyToken, requireAdmin, async (req: AuthenticatedRequest, res) => {
   try {
-    const success = await scholarService.deleteScholar(req.user!, parseInt(req.params.id));
+    const result = await scholarService.deleteScholar(req.user!, parseInt(req.params.id));
 
-    if (!success) {
+    if (result === 'not_found') {
       return res.status(404).json({ error: 'Scholar not found' });
     }
+    if (result === 'pending') {
+      return res.json({ status: 'pending', message: 'Deletion request submitted for approval by a Super Admin or Deletion Reviewer' });
+    }
 
-    res.json({ message: 'Scholar deleted successfully' });
+    res.json({ status: 'deleted', message: 'Scholar deleted successfully' });
   } catch (error: any) {
     console.error(error); res.status(500).json({ error: 'Internal server error' });
   }
@@ -1329,8 +1338,11 @@ router.post('/users', verifyToken, requireAdmin, async (req: AuthenticatedReques
  */
 router.delete('/users/:id', verifyToken, requireAdmin, async (req: AuthenticatedRequest, res) => {
   try {
-    await authService.deleteUser(req.user!.sub, parseInt(req.params.id));
-    res.json({ message: 'User deleted successfully' });
+    const result = await authService.deleteUser(req.user!, parseInt(req.params.id));
+    if (result === 'pending') {
+      return res.json({ status: 'pending', message: 'Deletion request submitted for approval by a Super Admin or Deletion Reviewer' });
+    }
+    res.json({ status: 'deleted', message: 'User deleted successfully' });
   } catch (error: any) {
     res.status(400).json({ error: error.message });
   }
@@ -1344,7 +1356,7 @@ router.delete('/users/:id', verifyToken, requireAdmin, async (req: Authenticated
 router.delete('/users', verifyToken, requireSuperAdmin, async (req: AuthenticatedRequest, res) => {
   try {
     const ids = Array.isArray(req.body?.ids) ? req.body.ids.map((id: unknown) => parseInt(String(id), 10)) : [];
-    const result = await authService.deleteManyUsers(req.user!.sub, ids);
+    const result = await authService.deleteManyUsers(req.user!, ids);
     res.json(result);
   } catch (error: any) {
     res.status(400).json({ error: error.message });
@@ -1423,6 +1435,88 @@ router.get('/audit-logs/deletions', verifyToken, requireDeletionReviewer, async 
     res.json({ data: items, total, page, pageSize, totalPages: Math.ceil(total / pageSize) });
   } catch (error: any) {
     console.error(error); res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ============== DELETION APPROVAL WORKFLOW ROUTES ==============
+
+/**
+ * Pending deletion requests awaiting approval — an Admin's delete of an
+ * Application, Scholar, or User is held here instead of happening
+ * immediately (see ApplicationService.deleteApplication and friends).
+ * Protected - Super Admin, or an Admin flagged isDeletionReviewer.
+ */
+router.get('/deletion-requests', verifyToken, requireDeletionReviewer, async (req: AuthenticatedRequest, res) => {
+  try {
+    const page = parseInt(req.query.page as string) || 1;
+    const pageSize = parseInt(req.query.pageSize as string) || 50;
+    const result = await deletionRequestService.listPending(page, pageSize);
+    res.json(result);
+  } catch (error: any) {
+    console.error(error); res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+/**
+ * Approves a pending deletion request — actually performs the underlying
+ * delete (Application/Scholar/User) and marks the request approved.
+ * Protected - Super Admin, or an Admin flagged isDeletionReviewer.
+ */
+router.post('/deletion-requests/:id/approve', verifyToken, requireDeletionReviewer, async (req: AuthenticatedRequest, res) => {
+  try {
+    const requestId = parseInt(req.params.id);
+    const request = await deletionRequestService.getById(requestId);
+    if (!request) {
+      return res.status(404).json({ error: 'Deletion request not found' });
+    }
+    if (request.status !== 'pending') {
+      return res.status(400).json({ error: 'This request has already been reviewed' });
+    }
+
+    if (request.entityType === DeletionEntityType.APPLICATION) {
+      await applicationService.performApplicationDeletion(request.entityId);
+    } else if (request.entityType === DeletionEntityType.SCHOLAR) {
+      await scholarService.performScholarDeletion(request.entityId);
+    } else {
+      await authService.performUserDeletion(request.entityId);
+    }
+
+    await deletionRequestService.markApproved(requestId, req.user!.sub);
+    notificationService
+      .notifyRequesterOfDeletionDecision(request.requestedBy, request.entityLabel, true)
+      .catch((error) => console.error('[NotificationService] Failed to notify requester of approval', requestId, error));
+
+    res.json({ message: 'Deletion request approved and carried out' });
+  } catch (error: any) {
+    console.error(error); res.status(400).json({ error: error.message });
+  }
+});
+
+/**
+ * Rejects a pending deletion request — the underlying record is left
+ * untouched. An optional note is shown to the Admin who requested it.
+ * Protected - Super Admin, or an Admin flagged isDeletionReviewer.
+ */
+router.post('/deletion-requests/:id/reject', verifyToken, requireDeletionReviewer, async (req: AuthenticatedRequest, res) => {
+  try {
+    const requestId = parseInt(req.params.id);
+    const request = await deletionRequestService.getById(requestId);
+    if (!request) {
+      return res.status(404).json({ error: 'Deletion request not found' });
+    }
+    if (request.status !== 'pending') {
+      return res.status(400).json({ error: 'This request has already been reviewed' });
+    }
+
+    const note = typeof req.body?.note === 'string' ? req.body.note : undefined;
+    await deletionRequestService.markRejected(requestId, req.user!.sub, note);
+    notificationService
+      .notifyRequesterOfDeletionDecision(request.requestedBy, request.entityLabel, false, note)
+      .catch((error) => console.error('[NotificationService] Failed to notify requester of rejection', requestId, error));
+
+    res.json({ message: 'Deletion request rejected' });
+  } catch (error: any) {
+    console.error(error); res.status(400).json({ error: error.message });
   }
 });
 

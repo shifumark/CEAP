@@ -38,6 +38,7 @@ const UserManagementPage = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
   const [busyUserId, setBusyUserId] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState('');
@@ -143,9 +144,11 @@ const UserManagementPage = () => {
     if (!deletingUser) return;
     setDeleting(true);
     setError('');
+    setNotice('');
     try {
-      await apiService.deleteUser(deletingUser.id);
+      const result = await apiService.deleteUser(deletingUser.id);
       setDeletingUser(null);
+      if (result.status === 'pending') setNotice(result.message);
       load();
     } catch (err: any) {
       setError(err.message || 'Failed to delete user');
@@ -241,6 +244,21 @@ const UserManagementPage = () => {
             }}
           >
             {error}
+          </div>
+        )}
+
+        {notice && (
+          <div
+            style={{
+              padding: '1rem',
+              background: 'rgba(167, 139, 250, 0.12)',
+              border: '1px solid rgba(167, 139, 250, 0.35)',
+              borderRadius: 'var(--radius-md)',
+              marginBottom: '1.5rem',
+              color: 'var(--text-primary)'
+            }}
+          >
+            {notice}
           </div>
         )}
 

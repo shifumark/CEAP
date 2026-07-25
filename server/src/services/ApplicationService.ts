@@ -12,12 +12,14 @@ import {
   PaginatedResponse,
   JWTPayload,
   UserRole,
-  NotificationType
+  NotificationType,
+  DeletionEntityType
 } from '../types.js';
 import { ApplicantService } from './ApplicantService.js';
 import { ScholarService } from './ScholarService.js';
 import { NotificationService } from './NotificationService.js';
 import { EmailService } from './EmailService.js';
+import { DeletionRequestService } from './DeletionRequestService.js';
 import { supabaseAdmin, DOCUMENTS_BUCKET } from '../lib/supabase.js';
 import { drive } from '../lib/googleDrive.js';
 
@@ -25,6 +27,7 @@ const applicantService = new ApplicantService();
 const scholarService = new ScholarService();
 const notificationService = new NotificationService();
 const emailService = new EmailService();
+const deletionRequestService = new DeletionRequestService();
 
 const FINALIZED_STATUSES = ['approved', 'rejected'];
 
@@ -465,23 +468,54 @@ export class ApplicationService {
   }
 
   /**
-   * Lets a Student withdraw their own application — blocked once a final
-   * decision (approved/rejected) has been recorded, so the audit trail
-   * for a completed review is never destroyed. Cleans up any uploaded
-   * files (Drive or, for older rows, Supabase Storage) first so nothing
-   * is orphaned; the DB rows (documents, status history) cascade from
-   * the Application delete itself.
+   * Lets a Student withdraw their own application, or an Admin/Super
+   * Admin delete one during review — blocked once a final decision
+   * (approved/rejected) has been recorded, so the audit trail for a
+   * completed review is never destroyed.
+   *
+   * A plain Admin's delete doesn't happen immediately: it's held as a
+   * pending DeletionRequest until a Super Admin or Deletion-Reviewer
+   * Admin approves it (see DeletionRequestService). Students deleting
+   * their own draft and Super Admins always take effect at once — this
+   * approval gate exists to check Admins' actions, not to slow down
+   * self-service withdrawal or the Super Admin's own authority.
    */
-  async deleteApplication(user: JWTPayload, id: number): Promise<boolean> {
+  async deleteApplication(user: JWTPayload, id: number): Promise<'deleted' | 'pending' | 'not_found'> {
     if (user.role === UserRole.VIEWER) {
       throw new Error('Viewers do not have permission to delete applications');
     }
     const application = await this.getOwnedRecord(user, id);
-    if (!application) return false;
+    if (!application) return 'not_found';
 
     if (FINALIZED_STATUSES.includes(application.status)) {
       throw new Error('This application has already been decided and can no longer be deleted');
     }
+
+    if (user.role === UserRole.ADMIN) {
+      const applicantName = `${application.applicant.user.firstName} ${application.applicant.user.lastName}`;
+      await deletionRequestService.create(
+        user,
+        DeletionEntityType.APPLICATION,
+        id,
+        `${applicantName}'s application (#${id}) for ${application.scholarship?.name ?? 'a scholarship'}`
+      );
+      return 'pending';
+    }
+
+    await this.performApplicationDeletion(id, application);
+    return 'deleted';
+  }
+
+  /**
+   * The actual deletion primitive — called directly by deleteApplication
+   * for a Student/Super Admin actor, and again later by the deletion-
+   * request approval route once a Deletion Reviewer signs off on a
+   * pending Admin request. Never call this without having already
+   * confirmed the caller is authorized; it performs no checks of its own.
+   */
+  async performApplicationDeletion(id: number, preloaded?: ApplicationWithRelations): Promise<void> {
+    const application = preloaded ?? (await prisma.application.findUnique({ where: { id }, include: applicationInclude }));
+    if (!application) return;
 
     const documents = await prisma.uploadedDocument.findMany({
       where: { applicationId: id },
@@ -501,17 +535,6 @@ export class ApplicationService {
     }
 
     await prisma.application.delete({ where: { id } });
-
-    const applicantName = `${application.applicant.user.firstName} ${application.applicant.user.lastName}`;
-    notificationService
-      .notifyReviewersOfDeletion(
-        user,
-        'Application',
-        `${user.email} deleted ${applicantName}'s application (#${id}) for ${application.scholarship?.name ?? 'a scholarship'}.`
-      )
-      .catch((error) => console.error('[NotificationService] Failed to notify reviewers of application deletion', id, error));
-
-    return true;
   }
 
   /**
@@ -525,8 +548,8 @@ export class ApplicationService {
     let skipped = 0;
     for (const id of ids) {
       try {
-        const success = await this.deleteApplication(user, id);
-        if (success) deleted++;
+        const result = await this.deleteApplication(user, id);
+        if (result === 'deleted') deleted++;
         else skipped++;
       } catch {
         skipped++;

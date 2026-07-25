@@ -33,7 +33,7 @@ const SIDEBAR_PATHS = [
   '/notifications',
   '/reports',
   '/users',
-  '/deletion-report'
+  '/deletion-requests'
 ];
 
 function AppLayout() {
@@ -132,7 +132,7 @@ function AppLayout() {
             }
           />
           <Route
-            path="/deletion-report"
+            path="/deletion-requests"
             element={
               <ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.SUPER_ADMIN]}>
                 <DeletionReportPage />

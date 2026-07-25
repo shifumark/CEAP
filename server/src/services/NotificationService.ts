@@ -99,7 +99,7 @@ export class NotificationService {
    * view can decide whether the removal was appropriate. Best-effort —
    * callers wrap this in a catch.
    */
-  async notifyReviewersOfDeletion(actor: JWTPayload, entityLabel: string, description: string): Promise<void> {
+  async notifyReviewersOfDeletionRequest(actor: JWTPayload, entityLabel: string, description: string): Promise<void> {
     if (actor.role !== UserRole.ADMIN) return;
 
     const reviewers = await prisma.user.findMany({
@@ -112,11 +112,32 @@ export class NotificationService {
       data: reviewers.map((r) => ({
         userId: r.id,
         notificationType: 'system_notification' as const,
-        title: `${entityLabel} Deleted by an Admin`,
+        title: `${entityLabel} Deletion Requires Approval`,
         message: description,
-        actionUrl: '/deletion-report'
+        actionUrl: '/deletion-requests'
       }))
     });
+  }
+
+  /**
+   * Tells the Admin who originally requested a deletion whether it was
+   * approved (and therefore actually carried out) or rejected.
+   */
+  async notifyRequesterOfDeletionDecision(
+    requesterId: number,
+    entityLabel: string,
+    approved: boolean,
+    note?: string
+  ): Promise<void> {
+    await this.create(
+      requesterId,
+      NotificationType.SYSTEM_NOTIFICATION,
+      approved ? 'Deletion Request Approved' : 'Deletion Request Rejected',
+      approved
+        ? `Your request to delete ${entityLabel} was approved and the record has been deleted.`
+        : `Your request to delete ${entityLabel} was rejected.${note ? ` Reason: ${note}` : ''}`,
+      '/deletion-requests'
+    );
   }
 
   /**

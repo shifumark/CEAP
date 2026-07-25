@@ -759,6 +759,42 @@ export interface AuditLog {
   user?: { email: string; firstName: string; lastName: string; role?: UserRole };
 }
 
+// DELETION APPROVAL WORKFLOW
+export enum DeletionEntityType {
+  APPLICATION = 'application',
+  SCHOLAR = 'scholar',
+  USER = 'user'
+}
+
+export enum DeletionRequestStatus {
+  PENDING = 'pending',
+  APPROVED = 'approved',
+  REJECTED = 'rejected'
+}
+
+export interface DeletionRequest {
+  id: number;
+  entityType: DeletionEntityType;
+  entityId: number;
+  entityLabel: string;
+  requestedBy: number;
+  requestedAt: Date;
+  status: DeletionRequestStatus;
+  reviewedBy?: number;
+  reviewedAt?: Date;
+  reviewNote?: string;
+  requester?: { email: string; firstName: string; lastName: string };
+  reviewerUser?: { email: string; firstName: string; lastName: string };
+}
+
+// Shape returned by DELETE /applications/:id, /scholars/:id, /users/:id —
+// 'pending' means an Admin's delete was held for approval rather than
+// carried out immediately (see server/src/services/*.ts).
+export interface DeleteResult {
+  status: 'deleted' | 'pending';
+  message: string;
+}
+
 // DASHBOARD STATS
 export interface DashboardStats {
   totalScholars: number;

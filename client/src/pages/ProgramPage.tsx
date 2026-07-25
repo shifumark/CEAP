@@ -240,7 +240,7 @@ const ProgramPage = () => {
               border: '1px solid rgba(239, 68, 68, 0.3)',
               borderRadius: 'var(--radius-md)',
               marginBottom: '1.5rem',
-              color: '#DC2626'
+              color: '#F87171'
             }}
           >
             {error}
@@ -275,11 +275,11 @@ const ProgramPage = () => {
           <p>Loading...</p>
         ) : programs.length === 0 ? (
           <div className="card">
-            <p style={{ color: '#6B7280' }}>No scholarship programs yet.</p>
+            <p style={{ color: '#B9AFDA' }}>No scholarship programs yet.</p>
           </div>
         ) : filteredPrograms.length === 0 ? (
           <div className="card">
-            <p style={{ color: '#6B7280' }}>No programs match this filter.</p>
+            <p style={{ color: '#B9AFDA' }}>No programs match this filter.</p>
           </div>
         ) : (
           <div className="grid grid-2">
@@ -291,7 +291,7 @@ const ProgramPage = () => {
                     {program.status}
                   </span>
                 </div>
-                <p style={{ color: '#6B7280', margin: '0.5rem 0' }}>{program.description}</p>
+                <p style={{ color: '#B9AFDA', margin: '0.5rem 0' }}>{program.description}</p>
                 <p style={{ fontSize: '0.9rem' }}>
                   <strong>Sponsor:</strong> {program.sponsor}
                 </p>
@@ -301,10 +301,10 @@ const ProgramPage = () => {
                 <p style={{ fontSize: '0.9rem' }}>
                   <strong>Eligibility:</strong> {program.eligibilityRequirements}
                 </p>
-                <p style={{ fontSize: '0.9rem', color: '#6B7280' }}>
+                <p style={{ fontSize: '0.9rem', color: '#B9AFDA' }}>
                   {program.numberOfSlots} slots · {formatDate(program.openingDate)} – {formatDate(program.closingDate)}
                 </p>
-                <p style={{ fontSize: '0.8rem', color: '#6B7280' }}>Created: {formatDate(program.createdAt)}</p>
+                <p style={{ fontSize: '0.8rem', color: '#B9AFDA' }}>Created: {formatDate(program.createdAt)}</p>
 
                 {isAdmin && (
                   <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
@@ -342,7 +342,7 @@ const ProgramPage = () => {
                     </span>
                     <button
                       className="btn btn-outline btn-sm"
-                      style={{ color: '#DC2626', borderColor: '#DC2626' }}
+                      style={{ color: '#F87171', borderColor: '#F87171' }}
                       disabled={busyId === program.id}
                       onClick={() => setDeletingProgram(program)}
                     >
@@ -618,7 +618,7 @@ const ProgramPage = () => {
               background: 'rgba(239, 68, 68, 0.1)',
               border: '1px solid rgba(239, 68, 68, 0.3)',
               borderRadius: 'var(--radius-md)',
-              color: '#DC2626'
+              color: '#F87171'
             }}
           >
             Warning: Deleting <strong>{deletingProgram.name}</strong> permanently removes it along with every
@@ -628,7 +628,7 @@ const ProgramPage = () => {
             <button
               className="btn btn-primary"
               type="button"
-              style={{ background: '#DC2626' }}
+              style={{ background: '#F87171' }}
               disabled={deleting}
               onClick={handleConfirmDelete}
             >

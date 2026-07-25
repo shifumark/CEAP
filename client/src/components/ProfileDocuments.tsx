@@ -118,14 +118,14 @@ const ProfileDocuments = ({ onChange }: Props) => {
   };
 
   if (loading) {
-    return <p style={{ fontSize: '0.85rem', color: '#6B7280' }}>Loading documents...</p>;
+    return <p style={{ fontSize: '0.85rem', color: '#B9AFDA' }}>Loading documents...</p>;
   }
 
   const otherRequiredTypes = requiredTypes.filter((t) => t !== VALID_ID_TYPE);
 
   return (
     <div>
-      {error && <p style={{ color: '#DC2626', fontSize: '0.8rem', marginBottom: '0.75rem' }}>{error}</p>}
+      {error && <p style={{ color: '#F87171', fontSize: '0.8rem', marginBottom: '0.75rem' }}>{error}</p>}
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
         {otherRequiredTypes.map((documentType) => {
@@ -137,7 +137,7 @@ const ProfileDocuments = ({ onChange }: Props) => {
             >
               <div>
                 <div>{documentType}</div>
-                {existing && <div style={{ fontSize: '0.75rem', color: '#6B7280', marginTop: '0.15rem' }}>{existing.fileName}</div>}
+                {existing && <div style={{ fontSize: '0.75rem', color: '#B9AFDA', marginTop: '0.15rem' }}>{existing.fileName}</div>}
               </div>
               {existing ? (
                 <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>

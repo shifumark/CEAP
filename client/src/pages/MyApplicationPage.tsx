@@ -121,7 +121,7 @@ const MyApplicationPage = () => {
               border: '1px solid rgba(239, 68, 68, 0.3)',
               borderRadius: 'var(--radius-md)',
               marginBottom: '1.5rem',
-              color: '#DC2626'
+              color: '#F87171'
             }}
           >
             {error}
@@ -141,7 +141,7 @@ const MyApplicationPage = () => {
                 </div>
 
                 {applications.length === 0 ? (
-                  <p style={{ color: '#6B7280' }}>
+                  <p style={{ color: '#B9AFDA' }}>
                     You haven't applied to any scholarship yet. Browse open programs on the{' '}
                     <Link to="/programs">Programs</Link> page.
                   </p>
@@ -159,21 +159,21 @@ const MyApplicationPage = () => {
                       >
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', flexWrap: 'wrap', gap: '0.5rem' }}>
                           <div>
-                            <strong style={{ color: '#1F2937' }}>{application.scholarshipName ?? `Scholarship #${application.scholarshipId}`}</strong>
+                            <strong style={{ color: '#F5F3FF' }}>{application.scholarshipName ?? `Scholarship #${application.scholarshipId}`}</strong>
                             <div style={{ marginTop: '0.35rem' }}>
                               <span className={`badge ${STATUS_BADGE[application.status]}`}>
                                 {STATUS_LABEL[application.status]}
                               </span>
                             </div>
                           </div>
-                          <div style={{ textAlign: 'right', fontSize: '0.85rem', color: '#6B7280' }}>
+                          <div style={{ textAlign: 'right', fontSize: '0.85rem', color: '#B9AFDA' }}>
                             <div>Applied: {formatDate(application.createdAt)}</div>
                             {application.submissionDate && <div>Submitted: {formatDate(application.submissionDate)}</div>}
                           </div>
                         </div>
 
                         {application.comments && (
-                          <p style={{ marginTop: '0.75rem', fontSize: '0.9rem', color: '#6B7280' }}>
+                          <p style={{ marginTop: '0.75rem', fontSize: '0.9rem', color: '#B9AFDA' }}>
                             <strong>Reviewer note:</strong> {application.comments}
                           </p>
                         )}
@@ -193,7 +193,7 @@ const MyApplicationPage = () => {
                           {DELETABLE_STATUSES.has(application.status) && (
                             <button
                               className="btn btn-outline btn-sm"
-                              style={{ color: '#DC2626', borderColor: '#DC2626' }}
+                              style={{ color: '#F87171', borderColor: '#F87171' }}
                               disabled={busyId === application.id}
                               onClick={() => setDeletingApplication(application)}
                             >
@@ -219,7 +219,7 @@ const MyApplicationPage = () => {
               background: 'rgba(239, 68, 68, 0.1)',
               border: '1px solid rgba(239, 68, 68, 0.3)',
               borderRadius: 'var(--radius-md)',
-              color: '#DC2626'
+              color: '#F87171'
             }}
           >
             Delete your application to <strong>{deletingApplication.scholarshipName ?? 'this scholarship'}</strong>?
@@ -229,7 +229,7 @@ const MyApplicationPage = () => {
             <button
               className="btn btn-primary"
               type="button"
-              style={{ background: '#DC2626' }}
+              style={{ background: '#F87171' }}
               disabled={deleting}
               onClick={handleConfirmDelete}
             >

@@ -213,7 +213,7 @@ const ReportsPage = () => {
               border: '1px solid rgba(239, 68, 68, 0.3)',
               borderRadius: 'var(--radius-md)',
               marginBottom: '1.5rem',
-              color: '#DC2626'
+              color: '#F87171'
             }}
           >
             {error}
@@ -256,11 +256,11 @@ const ReportsPage = () => {
           {loading ? (
             <p>Loading...</p>
           ) : rows.length === 0 ? (
-            <p style={{ color: '#6B7280' }}>No applicants match this filter.</p>
+            <p style={{ color: '#B9AFDA' }}>No applicants match this filter.</p>
           ) : (
             <>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                <p style={{ fontSize: '0.85rem', color: '#6B7280', margin: 0 }}>
+                <p style={{ fontSize: '0.85rem', color: '#B9AFDA', margin: 0 }}>
                   <strong>{totalCount.toLocaleString()}</strong> row{totalCount === 1 ? '' : 's'} total — showing page {page} of{' '}
                   {totalPages}
                 </p>

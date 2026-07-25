@@ -32,7 +32,7 @@ const DashboardPage = () => {
   ];
 
   return (
-    <div className="dashboard-page">
+    <div>
       <nav className="navbar">
         <div className="navbar-brand">Dashboard</div>
         <div className="navbar-actions">
@@ -57,7 +57,7 @@ const DashboardPage = () => {
               border: '1px solid rgba(239, 68, 68, 0.3)',
               borderRadius: 'var(--radius-md)',
               marginBottom: '1.5rem',
-              color: '#DC2626'
+              color: '#F87171'
             }}
           >
             {statsError}
@@ -113,7 +113,7 @@ const DashboardPage = () => {
                   borderRadius: '12px',
                   cursor: 'pointer',
                   fontWeight: 500,
-                  color: '#1F2937',
+                  color: '#F5F3FF',
                   textAlign: 'left',
                   transition: 'all 0.3s ease'
                 }}
@@ -122,7 +122,7 @@ const DashboardPage = () => {
                   <span style={{ fontSize: '1.25rem' }}>📝</span>
                   <span>Review Applications</span>
                 </div>
-                <p style={{ fontSize: '0.85rem', color: '#6B7280', margin: '0.5rem 0 0 0' }}>
+                <p style={{ fontSize: '0.85rem', color: '#B9AFDA', margin: '0.5rem 0 0 0' }}>
                   Applications awaiting a decision
                 </p>
               </button>
@@ -135,7 +135,7 @@ const DashboardPage = () => {
                   borderRadius: '12px',
                   cursor: 'pointer',
                   fontWeight: 500,
-                  color: '#1F2937',
+                  color: '#F5F3FF',
                   textAlign: 'left',
                   transition: 'all 0.3s ease'
                 }}
@@ -144,7 +144,7 @@ const DashboardPage = () => {
                   <span style={{ fontSize: '1.25rem' }}>👥</span>
                   <span>Manage Scholars & Renewals</span>
                 </div>
-                <p style={{ fontSize: '0.85rem', color: '#6B7280', margin: '0.5rem 0 0 0' }}>
+                <p style={{ fontSize: '0.85rem', color: '#B9AFDA', margin: '0.5rem 0 0 0' }}>
                   Grades, allowances, and pending renewal requests
                 </p>
               </button>

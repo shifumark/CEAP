@@ -157,7 +157,7 @@ const ScholarManagementPage = () => {
             <button
               className="btn btn-outline btn-sm"
               type="button"
-              style={{ color: '#DC2626', borderColor: '#DC2626' }}
+              style={{ color: '#F87171', borderColor: '#F87171' }}
               disabled={filtered.length === 0}
               onClick={() => setShowDeleteAll(true)}
             >
@@ -184,7 +184,7 @@ const ScholarManagementPage = () => {
               border: '1px solid rgba(239, 68, 68, 0.3)',
               borderRadius: 'var(--radius-md)',
               marginBottom: '1.5rem',
-              color: '#DC2626'
+              color: '#F87171'
             }}
           >
             {error}
@@ -195,7 +195,7 @@ const ScholarManagementPage = () => {
           <p>Loading...</p>
         ) : scholars.length === 0 ? (
           <div className="card">
-            <p style={{ color: '#6B7280' }}>
+            <p style={{ color: '#B9AFDA' }}>
               No scholars yet — scholars are created automatically when an application is approved.
             </p>
           </div>
@@ -247,14 +247,14 @@ const ScholarManagementPage = () => {
 
             {displayGroups.length === 0 ? (
               <div className="card">
-                <p style={{ color: '#6B7280' }}>No scholars match this filter.</p>
+                <p style={{ color: '#B9AFDA' }}>No scholars match this filter.</p>
               </div>
             ) : (
               displayGroups.map((group) => (
                 <section key={group.scholarshipName} style={{ marginBottom: '2rem' }}>
                   <h3 style={{ marginBottom: '0.75rem' }}>
                     {group.scholarshipName}{' '}
-                    <span style={{ fontSize: '0.85rem', fontWeight: 400, color: '#6B7280' }}>
+                    <span style={{ fontSize: '0.85rem', fontWeight: 400, color: '#B9AFDA' }}>
                       ({group.scholars.length} scholar{group.scholars.length === 1 ? '' : 's'})
                     </span>
                   </h3>
@@ -278,7 +278,7 @@ const ScholarManagementPage = () => {
                             <td>{scholar.scholarIdNumber ?? '—'}</td>
                             <td>
                               <div>{scholar.studentName}</div>
-                              <div style={{ fontSize: '0.8rem', color: '#6B7280' }}>{scholar.studentEmail}</div>
+                              <div style={{ fontSize: '0.8rem', color: '#B9AFDA' }}>{scholar.studentEmail}</div>
                             </td>
                             <td>
                               <span className={`badge ${STATUS_BADGE[scholar.status] ?? 'badge-secondary'}`}>
@@ -295,7 +295,7 @@ const ScholarManagementPage = () => {
                                 {!isViewer && (
                                   <button
                                     className="btn btn-outline btn-sm"
-                                    style={{ color: '#DC2626', borderColor: '#DC2626' }}
+                                    style={{ color: '#F87171', borderColor: '#F87171' }}
                                     onClick={() => setDeletingScholar(scholar)}
                                   >
                                     Delete
@@ -323,7 +323,7 @@ const ScholarManagementPage = () => {
               background: 'rgba(239, 68, 68, 0.1)',
               border: '1px solid rgba(239, 68, 68, 0.3)',
               borderRadius: 'var(--radius-md)',
-              color: '#DC2626'
+              color: '#F87171'
             }}
           >
             Delete <strong>{deletingScholar.studentName}</strong> from <strong>{deletingScholar.scholarshipName}</strong>?
@@ -334,7 +334,7 @@ const ScholarManagementPage = () => {
             <button
               className="btn btn-primary"
               type="button"
-              style={{ background: '#DC2626' }}
+              style={{ background: '#F87171' }}
               disabled={deleting}
               onClick={handleConfirmDelete}
             >
@@ -355,7 +355,7 @@ const ScholarManagementPage = () => {
               background: 'rgba(239, 68, 68, 0.1)',
               border: '1px solid rgba(239, 68, 68, 0.3)',
               borderRadius: 'var(--radius-md)',
-              color: '#DC2626'
+              color: '#F87171'
             }}
           >
             Delete <strong>{filtered.length}</strong> scholar{filtered.length === 1 ? '' : 's'} matching the current filters/search?
@@ -366,7 +366,7 @@ const ScholarManagementPage = () => {
             <button
               className="btn btn-primary"
               type="button"
-              style={{ background: '#DC2626' }}
+              style={{ background: '#F87171' }}
               disabled={deletingAll}
               onClick={handleConfirmDeleteAll}
             >

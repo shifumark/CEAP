@@ -46,7 +46,7 @@ const RegisterPage = () => {
               border: '1px solid rgba(239, 68, 68, 0.3)',
               borderRadius: 'var(--radius-md)',
               marginBottom: '1.5rem',
-              color: '#DC2626',
+              color: '#F87171',
               fontSize: '0.9rem'
             }}
           >

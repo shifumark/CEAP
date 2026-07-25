@@ -17,14 +17,14 @@ function yesNo(value?: boolean) {
 
 const Field = ({ label, value }: { label: string; value?: string | number | null }) => (
   <div style={{ minWidth: '180px', flex: '1 1 220px' }}>
-    <div style={{ fontSize: '0.75rem', color: '#6B7280' }}>{label}</div>
+    <div style={{ fontSize: '0.75rem', color: '#B9AFDA' }}>{label}</div>
     <div style={{ fontSize: '0.9rem' }}>{value === undefined || value === null || value === '' ? '—' : value}</div>
   </div>
 );
 
 const ProfileSection = ({ title, children }: { title: string; children: React.ReactNode }) => (
   <div style={{ marginBottom: '1rem' }}>
-    <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#4B5563', marginBottom: '0.4rem' }}>{title}</div>
+    <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#B9AFDA', marginBottom: '0.4rem' }}>{title}</div>
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>{children}</div>
   </div>
 );
@@ -42,10 +42,10 @@ interface Props {
  */
 const ApplicantProfileView = ({ profile, loading, email }: Props) => {
   if (loading) {
-    return <p style={{ fontSize: '0.85rem', color: '#6B7280', marginTop: '0.5rem' }}>Loading...</p>;
+    return <p style={{ fontSize: '0.85rem', color: '#B9AFDA', marginTop: '0.5rem' }}>Loading...</p>;
   }
   if (!profile) {
-    return <p style={{ fontSize: '0.85rem', color: '#6B7280', marginTop: '0.5rem' }}>Profile not available.</p>;
+    return <p style={{ fontSize: '0.85rem', color: '#B9AFDA', marginTop: '0.5rem' }}>Profile not available.</p>;
   }
 
   return (

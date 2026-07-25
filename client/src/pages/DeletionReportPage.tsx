@@ -64,7 +64,7 @@ const DeletionReportPage = () => {
             <h1>Deletion Report</h1>
           </div>
           <div className="card">
-            <p style={{ color: '#6B7280' }}>
+            <p style={{ color: '#B9AFDA' }}>
               This report is only visible to the Super Admin and Admins assigned as Deletion Reviewers.
             </p>
           </div>
@@ -96,7 +96,7 @@ const DeletionReportPage = () => {
               border: '1px solid rgba(239, 68, 68, 0.3)',
               borderRadius: 'var(--radius-md)',
               marginBottom: '1.5rem',
-              color: '#DC2626'
+              color: '#F87171'
             }}
           >
             {error}
@@ -107,7 +107,7 @@ const DeletionReportPage = () => {
           {loading ? (
             <p>Loading...</p>
           ) : rows.length === 0 ? (
-            <p style={{ color: '#6B7280' }}>No deletions recorded yet.</p>
+            <p style={{ color: '#B9AFDA' }}>No deletions recorded yet.</p>
           ) : (
             <>
               <div
@@ -120,7 +120,7 @@ const DeletionReportPage = () => {
                   marginBottom: '0.5rem'
                 }}
               >
-                <p style={{ fontSize: '0.85rem', color: '#6B7280', margin: 0 }}>
+                <p style={{ fontSize: '0.85rem', color: '#B9AFDA', margin: 0 }}>
                   <strong>{totalCount.toLocaleString()}</strong> deletion{totalCount === 1 ? '' : 's'} total — showing page {page}{' '}
                   of {totalPages}
                 </p>

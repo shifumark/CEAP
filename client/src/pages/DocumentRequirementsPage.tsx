@@ -171,7 +171,7 @@ const DocumentRequirementsPage = () => {
               border: '1px solid rgba(239, 68, 68, 0.3)',
               borderRadius: 'var(--radius-md)',
               marginBottom: '1.5rem',
-              color: '#DC2626'
+              color: '#F87171'
             }}
           >
             {error}
@@ -201,7 +201,7 @@ const DocumentRequirementsPage = () => {
           <p>Loading...</p>
         ) : requirements.length === 0 ? (
           <div className="card">
-            <p style={{ color: '#6B7280' }}>No document requirements yet — add one above.</p>
+            <p style={{ color: '#B9AFDA' }}>No document requirements yet — add one above.</p>
           </div>
         ) : (
           <div className="card" style={{ overflowX: 'auto' }}>
@@ -224,7 +224,7 @@ const DocumentRequirementsPage = () => {
                       {!isViewer && (
                         <button
                           className="btn btn-outline btn-sm"
-                          style={{ color: '#DC2626', borderColor: '#DC2626' }}
+                          style={{ color: '#F87171', borderColor: '#F87171' }}
                           onClick={() => setDeletingRequirement(requirement)}
                         >
                           Delete
@@ -261,7 +261,7 @@ const DocumentRequirementsPage = () => {
               {userSearch && (
                 <div style={{ marginTop: '0.75rem' }}>
                   {filteredApplicants.length === 0 ? (
-                    <p style={{ color: '#6B7280', fontSize: '0.85rem' }}>No matching students.</p>
+                    <p style={{ color: '#B9AFDA', fontSize: '0.85rem' }}>No matching students.</p>
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                       {filteredApplicants.map((u) => (
@@ -276,7 +276,7 @@ const DocumentRequirementsPage = () => {
                           }}
                           onClick={() => openUser(u)}
                         >
-                          {u.firstName} {u.lastName} <span style={{ color: '#6B7280', marginLeft: '0.5rem' }}>{u.email}</span>
+                          {u.firstName} {u.lastName} <span style={{ color: '#B9AFDA', marginLeft: '0.5rem' }}>{u.email}</span>
                         </button>
                       ))}
                     </div>
@@ -306,13 +306,13 @@ const DocumentRequirementsPage = () => {
             </div>
 
             {documentsError && (
-              <p style={{ color: '#DC2626', fontSize: '0.85rem', marginBottom: '0.75rem' }}>{documentsError}</p>
+              <p style={{ color: '#F87171', fontSize: '0.85rem', marginBottom: '0.75rem' }}>{documentsError}</p>
             )}
 
             {documentsLoading ? (
-              <p style={{ color: '#6B7280' }}>Loading...</p>
+              <p style={{ color: '#B9AFDA' }}>Loading...</p>
             ) : userDocuments.length === 0 ? (
-              <p style={{ color: '#6B7280' }}>This student hasn't uploaded any documents yet.</p>
+              <p style={{ color: '#B9AFDA' }}>This student hasn't uploaded any documents yet.</p>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
                 {userDocuments.map((doc) => (
@@ -329,7 +329,7 @@ const DocumentRequirementsPage = () => {
                   >
                     <div>
                       <div>{doc.documentType}</div>
-                      <div style={{ fontSize: '0.75rem', color: '#6B7280' }}>{doc.fileName}</div>
+                      <div style={{ fontSize: '0.75rem', color: '#B9AFDA' }}>{doc.fileName}</div>
                     </div>
                     <button
                       className="btn btn-outline btn-sm"
@@ -354,7 +354,7 @@ const DocumentRequirementsPage = () => {
               background: 'rgba(239, 68, 68, 0.1)',
               border: '1px solid rgba(239, 68, 68, 0.3)',
               borderRadius: 'var(--radius-md)',
-              color: '#DC2626'
+              color: '#F87171'
             }}
           >
             Remove <strong>{deletingRequirement.documentType}</strong> from the required documents list? Scholars will
@@ -365,7 +365,7 @@ const DocumentRequirementsPage = () => {
             <button
               className="btn btn-primary"
               type="button"
-              style={{ background: '#DC2626' }}
+              style={{ background: '#F87171' }}
               disabled={deleting}
               onClick={handleConfirmDelete}
             >

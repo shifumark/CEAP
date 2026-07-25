@@ -121,7 +121,7 @@ const AnnouncementsPage = () => {
               border: '1px solid rgba(239, 68, 68, 0.3)',
               borderRadius: 'var(--radius-md)',
               marginBottom: '1.5rem',
-              color: '#DC2626'
+              color: '#F87171'
             }}
           >
             {error}
@@ -132,7 +132,7 @@ const AnnouncementsPage = () => {
           <p>Loading...</p>
         ) : announcements.length === 0 ? (
           <div className="card">
-            <p style={{ color: '#6B7280' }}>No announcements yet.</p>
+            <p style={{ color: '#B9AFDA' }}>No announcements yet.</p>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -145,10 +145,10 @@ const AnnouncementsPage = () => {
                       {announcement.announcementType && (
                         <span className="badge badge-secondary">{TYPE_LABEL[announcement.announcementType]}</span>
                       )}
-                      <span style={{ fontSize: '0.8rem', color: '#6B7280' }}>{formatDate(announcement.publishedAt)}</span>
+                      <span style={{ fontSize: '0.8rem', color: '#B9AFDA' }}>{formatDate(announcement.publishedAt)}</span>
                     </div>
                     <h3 style={{ marginBottom: '0.5rem' }}>{announcement.title}</h3>
-                    <p style={{ color: '#374151', whiteSpace: 'pre-wrap' }}>{announcement.content}</p>
+                    <p style={{ color: '#D8D0EF', whiteSpace: 'pre-wrap' }}>{announcement.content}</p>
                   </div>
                   {isAdmin && (
                     <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0 }}>

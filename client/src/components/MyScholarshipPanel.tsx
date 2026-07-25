@@ -101,12 +101,12 @@ const MyScholarshipPanel = () => {
           <span className={`badge ${SCHOLAR_STATUS_BADGE[scholar.status] ?? 'badge-secondary'}`}>{scholar.status}</span>
         </div>
 
-        {error && <p style={{ color: '#DC2626', fontSize: '0.85rem', marginBottom: '1rem' }}>{error}</p>}
+        {error && <p style={{ color: '#F87171', fontSize: '0.85rem', marginBottom: '1rem' }}>{error}</p>}
 
         <p style={{ marginBottom: '1.5rem' }}>
           <strong>{scholar.scholarshipName}</strong>
           {scholar.scholarIdNumber && (
-            <span style={{ color: '#6B7280' }}> — Scholar ID: {scholar.scholarIdNumber}</span>
+            <span style={{ color: '#B9AFDA' }}> — Scholar ID: {scholar.scholarIdNumber}</span>
           )}
         </p>
 
@@ -114,7 +114,7 @@ const MyScholarshipPanel = () => {
           <div>
             <strong style={{ fontSize: '0.9rem' }}>Grades</strong>
             {grades.length === 0 ? (
-              <p style={{ fontSize: '0.85rem', color: '#6B7280', marginTop: '0.5rem' }}>No grades recorded yet.</p>
+              <p style={{ fontSize: '0.85rem', color: '#B9AFDA', marginTop: '0.5rem' }}>No grades recorded yet.</p>
             ) : (
               <ul style={{ marginTop: '0.5rem', paddingLeft: '1.1rem', fontSize: '0.85rem' }}>
                 {grades.map((grade) => (
@@ -129,7 +129,7 @@ const MyScholarshipPanel = () => {
           <div>
             <strong style={{ fontSize: '0.9rem' }}>Allowances</strong>
             {allowances.length === 0 ? (
-              <p style={{ fontSize: '0.85rem', color: '#6B7280', marginTop: '0.5rem' }}>No allowances recorded yet.</p>
+              <p style={{ fontSize: '0.85rem', color: '#B9AFDA', marginTop: '0.5rem' }}>No allowances recorded yet.</p>
             ) : (
               <ul style={{ marginTop: '0.5rem', paddingLeft: '1.1rem', fontSize: '0.85rem' }}>
                 {allowances.map((allowance) => (
@@ -168,7 +168,7 @@ const MyScholarshipPanel = () => {
                   <span className={`badge ${RENEWAL_STATUS_BADGE[renewal.status] ?? 'badge-secondary'}`}>
                     {renewal.status}
                   </span>
-                  {renewal.notes && <div style={{ color: '#6B7280' }}>{renewal.notes}</div>}
+                  {renewal.notes && <div style={{ color: '#B9AFDA' }}>{renewal.notes}</div>}
                 </li>
               ))}
             </ul>

@@ -447,7 +447,7 @@ const ProfilePage = () => {
                   border: '1px solid rgba(245, 158, 11, 0.3)',
                   borderRadius: 'var(--radius-md)',
                   marginBottom: '1.5rem',
-                  color: '#92400E'
+                  color: '#FBBF24'
                 }}
               >
                 <strong>Your profile is incomplete.</strong> The following are still missing:
@@ -467,7 +467,7 @@ const ProfilePage = () => {
                   border: '1px solid rgba(16, 185, 129, 0.3)',
                   borderRadius: 'var(--radius-md)',
                   marginBottom: '1.5rem',
-                  color: '#065F46'
+                  color: '#34D399'
                 }}
               >
                 Your profile is complete. You're ready to submit applications.
@@ -482,7 +482,7 @@ const ProfilePage = () => {
                   border: '1px solid rgba(239, 68, 68, 0.3)',
                   borderRadius: 'var(--radius-md)',
                   marginBottom: '1.5rem',
-                  color: '#DC2626'
+                  color: '#F87171'
                 }}
               >
                 {error}
@@ -553,7 +553,7 @@ const ProfilePage = () => {
                 <div className="form-group">
                   <label htmlFor="age">Age</label>
                   <input id="age" type="number" value={form.age} disabled />
-                  <small style={{ color: '#6B7280' }}>Computed automatically from Date of Birth</small>
+                  <small style={{ color: '#B9AFDA' }}>Computed automatically from Date of Birth</small>
                 </div>
                 <div className="form-group">
                   <label htmlFor="placeOfBirth">Place of Birth</label>
@@ -637,7 +637,7 @@ const ProfilePage = () => {
                     value={form.contactEmail}
                     onChange={(e) => set('contactEmail', e.target.value)}
                   />
-                  <small style={{ color: '#6B7280' }}>
+                  <small style={{ color: '#B9AFDA' }}>
                     Where we'll send application status updates and new program announcements. Leave blank to use
                     your account email instead.
                   </small>
@@ -648,7 +648,7 @@ const ProfilePage = () => {
                 <div className="card-header">
                   <h3>IV. Socio-economic / Sectoral Classification</h3>
                 </div>
-                <p style={{ fontSize: '0.85rem', color: '#6B7280', marginTop: 0 }}>Check all applicable.</p>
+                <p style={{ fontSize: '0.85rem', color: '#B9AFDA', marginTop: 0 }}>Check all applicable.</p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                   {SECTORAL_CLASSIFICATIONS.map((option) => (
                     <label key={option} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem' }}>
@@ -683,7 +683,7 @@ const ProfilePage = () => {
                 <div className="form-group">
                   <label htmlFor="fatherName">Name</label>
                   <input id="fatherName" value={form.father.name} onChange={(e) => setFamilyField('father', 'name', e.target.value)} />
-                  <small style={{ color: '#6B7280' }}>Format: First Name, Middle Initial, Last Name</small>
+                  <small style={{ color: '#B9AFDA' }}>Format: First Name, Middle Initial, Last Name</small>
                 </div>
                 <div className="form-group">
                   <label htmlFor="fatherOccupation">Occupation</label>
@@ -715,7 +715,7 @@ const ProfilePage = () => {
                 <div className="form-group">
                   <label htmlFor="motherName">Name</label>
                   <input id="motherName" value={form.mother.name} onChange={(e) => setFamilyField('mother', 'name', e.target.value)} />
-                  <small style={{ color: '#6B7280' }}>Format: First Name, Middle Initial, Last Name</small>
+                  <small style={{ color: '#B9AFDA' }}>Format: First Name, Middle Initial, Last Name</small>
                 </div>
                 <div className="form-group">
                   <label htmlFor="motherOccupation">Occupation</label>
@@ -745,7 +745,7 @@ const ProfilePage = () => {
 
                 <h4>Guardian (if applicable)</h4>
                 {hasBothParents && (
-                  <p style={{ fontSize: '0.85rem', color: '#6B7280', marginTop: 0 }}>
+                  <p style={{ fontSize: '0.85rem', color: '#B9AFDA', marginTop: 0 }}>
                     Not needed — Father and Mother information is already provided above.
                   </p>
                 )}
@@ -1053,7 +1053,7 @@ const ProfilePage = () => {
                     borderRadius: 'var(--radius-md)'
                   }}
                 >
-                  <p style={{ margin: 0, fontSize: '0.85rem', color: '#6B7280' }}>
+                  <p style={{ margin: 0, fontSize: '0.85rem', color: '#B9AFDA' }}>
                     Don't have the official CEAP application form? Generate one pre-filled with your profile
                     information, then print and sign it before uploading it below as your "Application Form".
                   </p>
@@ -1076,7 +1076,7 @@ const ProfilePage = () => {
                     onChange={(e) => set('lbpAtmAccountNumber', e.target.value)}
                   />
                 </div>
-                <p style={{ fontSize: '0.85rem', color: '#6B7280' }}>
+                <p style={{ fontSize: '0.85rem', color: '#B9AFDA' }}>
                   Upload the LBP ATM Card photocopy under "LBP ATM Card Photocopy" in section VIII above.
                 </p>
               </div>
@@ -1106,14 +1106,14 @@ const ProfilePage = () => {
               <div className="card-header">
                 <h3>Change Password</h3>
               </div>
-              <p style={{ fontSize: '0.85rem', color: '#6B7280' }}>
+              <p style={{ fontSize: '0.85rem', color: '#B9AFDA' }}>
                 If an admin gave you a temporary password, sign in with it and use this form to set your own.
               </p>
               {passwordError && (
-                <p style={{ color: '#DC2626', fontSize: '0.85rem', marginBottom: '0.75rem' }}>{passwordError}</p>
+                <p style={{ color: '#F87171', fontSize: '0.85rem', marginBottom: '0.75rem' }}>{passwordError}</p>
               )}
               {passwordSuccess && (
-                <p style={{ color: '#065F46', fontSize: '0.85rem', marginBottom: '0.75rem' }}>{passwordSuccess}</p>
+                <p style={{ color: '#34D399', fontSize: '0.85rem', marginBottom: '0.75rem' }}>{passwordSuccess}</p>
               )}
               <form onSubmit={handleChangePassword}>
                 <div className="form-group">

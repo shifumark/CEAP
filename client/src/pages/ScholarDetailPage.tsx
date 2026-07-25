@@ -233,7 +233,7 @@ const ScholarDetailPage = () => {
               border: '1px solid rgba(239, 68, 68, 0.3)',
               borderRadius: 'var(--radius-md)',
               marginBottom: '1.5rem',
-              color: '#DC2626'
+              color: '#F87171'
             }}
           >
             {error}
@@ -347,7 +347,7 @@ const ScholarDetailPage = () => {
               <h3>Renewals</h3>
             </div>
             {renewals.length === 0 ? (
-              <p style={{ color: '#6B7280', fontSize: '0.9rem' }}>No renewal requests yet.</p>
+              <p style={{ color: '#B9AFDA', fontSize: '0.9rem' }}>No renewal requests yet.</p>
             ) : (
               renewals.map((renewal) => (
                 <div key={renewal.id} style={{ marginBottom: '0.75rem', fontSize: '0.9rem' }}>
@@ -430,7 +430,7 @@ const ScholarDetailPage = () => {
               <div className="card-header">
                 <h3>Account</h3>
               </div>
-              <p style={{ fontSize: '0.9rem', color: '#6B7280', margin: '0 0 1rem' }}>{account.email}</p>
+              <p style={{ fontSize: '0.9rem', color: '#B9AFDA', margin: '0 0 1rem' }}>{account.email}</p>
 
               <div className="form-group">
                 <label htmlFor="accountRole">Role</label>

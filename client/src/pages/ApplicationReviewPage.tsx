@@ -277,7 +277,7 @@ const ApplicationReviewPage = () => {
             <button
               className="btn btn-outline btn-sm"
               type="button"
-              style={{ color: '#DC2626', borderColor: '#DC2626' }}
+              style={{ color: '#F87171', borderColor: '#F87171' }}
               disabled={deletableFilteredIds.length === 0}
               onClick={() => setShowDeleteAll(true)}
             >
@@ -304,7 +304,7 @@ const ApplicationReviewPage = () => {
               border: '1px solid rgba(239, 68, 68, 0.3)',
               borderRadius: 'var(--radius-md)',
               marginBottom: '1.5rem',
-              color: '#DC2626'
+              color: '#F87171'
             }}
           >
             {error}
@@ -350,7 +350,7 @@ const ApplicationReviewPage = () => {
           <p>Loading...</p>
         ) : filteredApplications.length === 0 ? (
           <div className="card">
-            <p style={{ color: '#6B7280' }}>No applications match this filter.</p>
+            <p style={{ color: '#B9AFDA' }}>No applications match this filter.</p>
           </div>
         ) : (
           <div className="card" style={{ overflowX: 'auto' }}>
@@ -372,7 +372,7 @@ const ApplicationReviewPage = () => {
                     <td>{index + 1}</td>
                     <td>
                       <div>{application.applicantName ?? `Applicant #${application.applicantId}`}</div>
-                      <div style={{ fontSize: '0.8rem', color: '#6B7280' }}>{application.applicantEmail}</div>
+                      <div style={{ fontSize: '0.8rem', color: '#B9AFDA' }}>{application.applicantEmail}</div>
                     </td>
                     <td>{application.scholarshipName ?? `#${application.scholarshipId}`}</td>
                     <td>
@@ -390,7 +390,7 @@ const ApplicationReviewPage = () => {
                         {!isViewer && DELETABLE_STATUSES.has(application.status) && (
                           <button
                             className="btn btn-outline btn-sm"
-                            style={{ color: '#DC2626', borderColor: '#DC2626' }}
+                            style={{ color: '#F87171', borderColor: '#F87171' }}
                             onClick={() => setDeletingApplication(application)}
                           >
                             Delete
@@ -407,7 +407,7 @@ const ApplicationReviewPage = () => {
 
         {selected && (
           <Modal title={`Review: ${selected.applicantName} — ${selected.scholarshipName}`} onClose={() => setSelectedId(null)}>
-            <p style={{ fontSize: '0.85rem', color: '#6B7280', marginTop: 0 }}>
+            <p style={{ fontSize: '0.85rem', color: '#B9AFDA', marginTop: 0 }}>
               <strong>Date Submitted:</strong> {formatDate(selected.submissionDate)}
               {' · '}
               <strong>Date Received:</strong> {formatDate(selected.receivedDate)}
@@ -421,9 +421,9 @@ const ApplicationReviewPage = () => {
             <div style={{ marginBottom: '1.25rem' }}>
               <strong style={{ fontSize: '0.85rem' }}>Uploaded Documents</strong>
               {documentsLoading ? (
-                <p style={{ fontSize: '0.85rem', color: '#6B7280', marginTop: '0.5rem' }}>Loading...</p>
+                <p style={{ fontSize: '0.85rem', color: '#B9AFDA', marginTop: '0.5rem' }}>Loading...</p>
               ) : documents.length === 0 ? (
-                <p style={{ fontSize: '0.85rem', color: '#6B7280', marginTop: '0.5rem' }}>No documents uploaded yet.</p>
+                <p style={{ fontSize: '0.85rem', color: '#B9AFDA', marginTop: '0.5rem' }}>No documents uploaded yet.</p>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', marginTop: '0.6rem' }}>
                   {documents.map((doc) => (
@@ -540,7 +540,7 @@ const ApplicationReviewPage = () => {
                 background: 'rgba(239, 68, 68, 0.1)',
                 border: '1px solid rgba(239, 68, 68, 0.3)',
                 borderRadius: 'var(--radius-md)',
-                color: '#DC2626'
+                color: '#F87171'
               }}
             >
               Delete <strong>{deletingApplication.applicantName}</strong>'s application for{' '}
@@ -551,7 +551,7 @@ const ApplicationReviewPage = () => {
               <button
                 className="btn btn-primary"
                 type="button"
-                style={{ background: '#DC2626' }}
+                style={{ background: '#F87171' }}
                 disabled={deleting}
                 onClick={handleConfirmDelete}
               >
@@ -572,7 +572,7 @@ const ApplicationReviewPage = () => {
                 background: 'rgba(239, 68, 68, 0.1)',
                 border: '1px solid rgba(239, 68, 68, 0.3)',
                 borderRadius: 'var(--radius-md)',
-                color: '#DC2626'
+                color: '#F87171'
               }}
             >
               Delete <strong>{deletableFilteredIds.length}</strong> application{deletableFilteredIds.length === 1 ? '' : 's'} matching
@@ -583,7 +583,7 @@ const ApplicationReviewPage = () => {
               <button
                 className="btn btn-primary"
                 type="button"
-                style={{ background: '#DC2626' }}
+                style={{ background: '#F87171' }}
                 disabled={deletingAll}
                 onClick={handleConfirmDeleteAll}
               >

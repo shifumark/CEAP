@@ -25,7 +25,7 @@ const HomePage = () => {
 
         {/* Features Section */}
         <section style={{ marginTop: '4rem' }}>
-          <h2 style={{ fontSize: '2rem', marginBottom: '3rem', textAlign: 'center', color: '#1F2937' }}>
+          <h2 style={{ fontSize: '2rem', marginBottom: '3rem', textAlign: 'center', color: '#F5F3FF' }}>
             Powerful features
           </h2>
           <div className="features">
@@ -97,8 +97,8 @@ const HomePage = () => {
           textAlign: 'center',
           marginBottom: '2rem'
         }}>
-          <h2 style={{ fontSize: '1.75rem', marginBottom: '1rem', color: '#1F2937' }}>Ready to transform scholarship management?</h2>
-          <p style={{ color: '#6B7280', marginBottom: '2rem', fontSize: '1.1rem' }}>
+          <h2 style={{ fontSize: '1.75rem', marginBottom: '1rem', color: '#F5F3FF' }}>Ready to transform scholarship management?</h2>
+          <p style={{ color: '#B9AFDA', marginBottom: '2rem', fontSize: '1.1rem' }}>
             Join thousands of institutions using ScholarshipHub to streamline their scholarship operations.
           </p>
           <Link className="btn btn-primary btn-lg" to="/register">Get Started</Link>

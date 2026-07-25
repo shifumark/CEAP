@@ -208,7 +208,7 @@ const UserManagementPage = () => {
             <button
               className="btn btn-outline btn-sm"
               type="button"
-              style={{ color: '#DC2626', borderColor: '#DC2626' }}
+              style={{ color: '#F87171', borderColor: '#F87171' }}
               disabled={deletableFilteredIds.length === 0}
               onClick={() => setShowDeleteAll(true)}
             >
@@ -237,7 +237,7 @@ const UserManagementPage = () => {
               border: '1px solid rgba(239, 68, 68, 0.3)',
               borderRadius: 'var(--radius-md)',
               marginBottom: '1.5rem',
-              color: '#DC2626'
+              color: '#F87171'
             }}
           >
             {error}
@@ -282,7 +282,7 @@ const UserManagementPage = () => {
           <p>Loading...</p>
         ) : filtered.length === 0 ? (
           <div className="card">
-            <p style={{ color: '#6B7280' }}>No users match this filter.</p>
+            <p style={{ color: '#B9AFDA' }}>No users match this filter.</p>
           </div>
         ) : (
           <div className="card" style={{ overflowX: 'auto' }}>
@@ -307,7 +307,7 @@ const UserManagementPage = () => {
                     <tr key={u.id}>
                       <td>
                         {u.firstName} {u.lastName}
-                        {isSelf && <span style={{ fontSize: '0.75rem', color: '#6B7280' }}> (you)</span>}
+                        {isSelf && <span style={{ fontSize: '0.75rem', color: '#B9AFDA' }}> (you)</span>}
                       </td>
                       <td>{u.email}</td>
                       <td>
@@ -361,7 +361,7 @@ const UserManagementPage = () => {
                             {u.role === UserRole.APPLICANT && (
                               <button
                                 className="btn btn-outline btn-sm"
-                                style={{ color: '#DC2626', borderColor: '#DC2626' }}
+                                style={{ color: '#F87171', borderColor: '#F87171' }}
                                 disabled={busy}
                                 onClick={() => setDeletingUser(u)}
                               >
@@ -384,7 +384,7 @@ const UserManagementPage = () => {
         <Modal title="Reset Password" onClose={closeResetModal}>
           {temporaryPassword ? (
             <>
-              <p style={{ color: '#065F46' }}>
+              <p style={{ color: '#34D399' }}>
                 Password reset for <strong>{resettingUser.email}</strong>. Share this temporary password with them now —
                 it will not be shown again.
               </p>
@@ -415,7 +415,7 @@ const UserManagementPage = () => {
                   background: 'rgba(239, 68, 68, 0.1)',
                   border: '1px solid rgba(239, 68, 68, 0.3)',
                   borderRadius: 'var(--radius-md)',
-                  color: '#DC2626'
+                  color: '#F87171'
                 }}
               >
                 Reset <strong>{resettingUser.email}</strong>'s password? Their current password will stop working
@@ -444,7 +444,7 @@ const UserManagementPage = () => {
                   background: 'rgba(239, 68, 68, 0.1)',
                   border: '1px solid rgba(239, 68, 68, 0.3)',
                   borderRadius: 'var(--radius-md)',
-                  color: '#DC2626',
+                  color: '#F87171',
                   marginBottom: '1rem'
                 }}
               >
@@ -490,7 +490,7 @@ const UserManagementPage = () => {
                 minLength={8}
                 required
               />
-              <small style={{ color: '#6B7280' }}>At least 8 characters. Share this with them directly.</small>
+              <small style={{ color: '#B9AFDA' }}>At least 8 characters. Share this with them directly.</small>
             </div>
             <div className="form-group">
               <label htmlFor="createRole">Role</label>
@@ -526,7 +526,7 @@ const UserManagementPage = () => {
               background: 'rgba(239, 68, 68, 0.1)',
               border: '1px solid rgba(239, 68, 68, 0.3)',
               borderRadius: 'var(--radius-md)',
-              color: '#DC2626'
+              color: '#F87171'
             }}
           >
             Delete <strong>{deletingUser.firstName} {deletingUser.lastName}</strong> ({deletingUser.email})? This permanently
@@ -536,7 +536,7 @@ const UserManagementPage = () => {
             <button
               className="btn btn-primary"
               type="button"
-              style={{ background: '#DC2626' }}
+              style={{ background: '#F87171' }}
               disabled={deleting}
               onClick={handleConfirmDeleteUser}
             >
@@ -557,7 +557,7 @@ const UserManagementPage = () => {
               background: 'rgba(239, 68, 68, 0.1)',
               border: '1px solid rgba(239, 68, 68, 0.3)',
               borderRadius: 'var(--radius-md)',
-              color: '#DC2626'
+              color: '#F87171'
             }}
           >
             Delete <strong>{deletableFilteredIds.length}</strong> student account{deletableFilteredIds.length === 1 ? '' : 's'}{' '}
@@ -568,7 +568,7 @@ const UserManagementPage = () => {
             <button
               className="btn btn-primary"
               type="button"
-              style={{ background: '#DC2626' }}
+              style={{ background: '#F87171' }}
               disabled={deletingAll}
               onClick={handleConfirmDeleteAll}
             >

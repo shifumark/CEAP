@@ -88,12 +88,12 @@ const ValidIdUpload = ({ onChange }: Props) => {
   };
 
   if (loading) {
-    return <p style={{ fontSize: '0.85rem', color: '#6B7280' }}>Loading...</p>;
+    return <p style={{ fontSize: '0.85rem', color: '#B9AFDA' }}>Loading...</p>;
   }
 
   return (
     <div className="form-group">
-      {error && <p style={{ color: '#DC2626', fontSize: '0.8rem', marginBottom: '0.5rem' }}>{error}</p>}
+      {error && <p style={{ color: '#F87171', fontSize: '0.8rem', marginBottom: '0.5rem' }}>{error}</p>}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
         <label style={{ margin: 0 }}>
           Upload Photo of ID ({uploaded.length}/{VALID_ID_MAX_FILES})
@@ -121,7 +121,7 @@ const ValidIdUpload = ({ onChange }: Props) => {
           key={doc.id}
           style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', marginTop: '0.4rem', flexWrap: 'wrap', gap: '0.5rem' }}
         >
-          <span style={{ color: '#6B7280' }}>{doc.fileName}</span>
+          <span style={{ color: '#B9AFDA' }}>{doc.fileName}</span>
           <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <button className="btn btn-outline btn-sm" type="button" onClick={() => handleView(doc.id)}>
               View File

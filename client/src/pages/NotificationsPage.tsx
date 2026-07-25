@@ -99,7 +99,7 @@ const NotificationsPage = () => {
             )}
             <button
               className="btn btn-outline btn-sm"
-              style={{ color: '#DC2626', borderColor: '#DC2626' }}
+              style={{ color: '#F87171', borderColor: '#F87171' }}
               disabled={deletingAll}
               onClick={handleDeleteAll}
             >
@@ -123,7 +123,7 @@ const NotificationsPage = () => {
               border: '1px solid rgba(245, 158, 11, 0.3)',
               borderRadius: 'var(--radius-md)',
               marginBottom: '1.5rem',
-              color: '#92400E',
+              color: '#FBBF24',
               fontSize: '0.85rem'
             }}
           >
@@ -139,7 +139,7 @@ const NotificationsPage = () => {
               border: '1px solid rgba(239, 68, 68, 0.3)',
               borderRadius: 'var(--radius-md)',
               marginBottom: '1.5rem',
-              color: '#DC2626'
+              color: '#F87171'
             }}
           >
             {error}
@@ -150,7 +150,7 @@ const NotificationsPage = () => {
           <p>Loading...</p>
         ) : notifications.length === 0 ? (
           <div className="card">
-            <p style={{ color: '#6B7280' }}>No notifications yet.</p>
+            <p style={{ color: '#B9AFDA' }}>No notifications yet.</p>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
@@ -166,8 +166,8 @@ const NotificationsPage = () => {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem' }}>
                   <div>
                     <strong>{notification.title}</strong>
-                    <p style={{ margin: '0.35rem 0', color: '#374151' }}>{notification.message}</p>
-                    <span style={{ fontSize: '0.8rem', color: '#6B7280' }}>{formatDateTime(notification.createdAt)}</span>
+                    <p style={{ margin: '0.35rem 0', color: '#D8D0EF' }}>{notification.message}</p>
+                    <span style={{ fontSize: '0.8rem', color: '#B9AFDA' }}>{formatDateTime(notification.createdAt)}</span>
                     {notification.actionUrl && (
                       <>
                         {' · '}
@@ -185,7 +185,7 @@ const NotificationsPage = () => {
                     )}
                     <button
                       className="btn btn-outline btn-sm"
-                      style={{ color: '#DC2626', borderColor: '#DC2626' }}
+                      style={{ color: '#F87171', borderColor: '#F87171' }}
                       disabled={deletingId === notification.id}
                       onClick={() => handleDelete(notification.id)}
                     >

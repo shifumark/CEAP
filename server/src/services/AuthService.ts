@@ -35,7 +35,7 @@ export class AuthService {
   async login(request: LoginRequest): Promise<LoginResponse> {
     const user = await prisma.user.findUnique({ where: { email: request.email } });
 
-    if (!user || user.deletedAt || !bcrypt.compareSync(request.password, user.passwordHash)) {
+    if (!user || user.deletedAt || !(await bcrypt.compare(request.password, user.passwordHash))) {
       throw new Error('Invalid email or password');
     }
 
@@ -64,7 +64,7 @@ export class AuthService {
     const created = await prisma.user.create({
       data: {
         email: request.email,
-        passwordHash: bcrypt.hashSync(request.password, 10),
+        passwordHash: await bcrypt.hash(request.password, 10),
         firstName: request.firstName,
         lastName: request.lastName,
         // Self-registration always lands as Student (APPLICANT) unless a
@@ -89,7 +89,7 @@ export class AuthService {
 
     await prisma.user.update({
       where: { id: user.id },
-      data: { passwordHash: bcrypt.hashSync(newPassword, 10) }
+      data: { passwordHash: await bcrypt.hash(newPassword, 10) }
     });
   }
 
@@ -102,13 +102,13 @@ export class AuthService {
    */
   async changeOwnPassword(userId: number, currentPassword: string, newPassword: string): Promise<void> {
     const user = await prisma.user.findUnique({ where: { id: userId } });
-    if (!user || !bcrypt.compareSync(currentPassword, user.passwordHash)) {
+    if (!user || !(await bcrypt.compare(currentPassword, user.passwordHash))) {
       throw new Error('Current password is incorrect');
     }
 
     await prisma.user.update({
       where: { id: userId },
-      data: { passwordHash: bcrypt.hashSync(newPassword, 10) }
+      data: { passwordHash: await bcrypt.hash(newPassword, 10) }
     });
   }
 
@@ -163,7 +163,7 @@ export class AuthService {
     const temporaryPassword = crypto.randomBytes(9).toString('base64url'); // 12 chars, URL-safe
     const updated = await prisma.user.update({
       where: { id: userId },
-      data: { passwordHash: bcrypt.hashSync(temporaryPassword, 10) }
+      data: { passwordHash: await bcrypt.hash(temporaryPassword, 10) }
     });
     return { user: toUser(updated), temporaryPassword };
   }

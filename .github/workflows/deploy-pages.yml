@@ -1,7 +1,4 @@
 name: Deploy client to GitHub Pages
-# Retriggered again — GitHub's status page shows a Pages/Actions
-# incident today, the likely cause of the prior two deploy-pages
-# failures (the build job itself succeeded both times).
 
 on:
   push:

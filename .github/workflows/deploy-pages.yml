@@ -48,6 +48,10 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    # Caps how long a hung deploy-pages step can run before failing fast —
+    # without this, a stuck deployment can sit for the default 6h job
+    # limit instead of surfacing quickly.
+    timeout-minutes: 5
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

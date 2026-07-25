@@ -43,6 +43,19 @@ import {
 } from './types.js';
 
 const router = express.Router();
+
+// Every response from this API is either dynamic/authenticated data or a
+// freshly generated file (PDF, document stream) — none of it should ever
+// be reused from a cache. Without this, a browser (or an intermediary
+// like a CDN sitting in front of Render) can serve a stale GET response
+// after data changes elsewhere — e.g. a deleted application still
+// showing up on the Dashboard or Reports page. Applied globally rather
+// than per-route so newly added GET endpoints are covered automatically.
+router.use((req, res, next) => {
+  res.setHeader('Cache-Control', 'no-store');
+  next();
+});
+
 const authService = new AuthService();
 const scholarshipService = new ScholarshipService();
 const applicationService = new ApplicationService();
@@ -389,11 +402,6 @@ router.get('/applicants/me/application-form.pdf', verifyToken, async (req: Authe
     console.log('[application-form.pdf] generated,', buffer.length, 'bytes');
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', 'inline; filename="CEAP-Application-Form.pdf"');
-    // This is regenerated fresh from the applicant's current profile on
-    // every request — without this, a browser could serve a stale cached
-    // copy after a profile edit (e.g. changing Year Level) since neither
-    // the URL nor the request otherwise varies between downloads.
-    res.setHeader('Cache-Control', 'no-store');
     res.send(buffer);
   } catch (error: any) {
     console.error('[application-form.pdf] failed:', error);

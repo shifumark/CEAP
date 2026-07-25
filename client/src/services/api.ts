@@ -74,7 +74,13 @@ class ApiService {
 
     const config: RequestInit = {
       method,
-      headers
+      headers,
+      // Belt-and-suspenders alongside the server's own Cache-Control:
+      // no-store — every endpoint here is dynamic/authenticated data, so a
+      // browser-cached GET response could otherwise show stale data after
+      // something changes elsewhere (e.g. a deleted application still
+      // appearing on the Dashboard or Reports page).
+      cache: 'no-store'
     };
 
     if (body) {
@@ -302,7 +308,7 @@ class ApiService {
       headers.Authorization = `Bearer ${this.token}`;
     }
 
-    const response = await fetch(`${API_BASE_URL}/documents/${documentId}/download`, { headers });
+    const response = await fetch(`${API_BASE_URL}/documents/${documentId}/download`, { headers, cache: 'no-store' });
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));
@@ -476,7 +482,7 @@ class ApiService {
       headers.Authorization = `Bearer ${this.token}`;
     }
 
-    const response = await fetch(`${API_BASE_URL}/users/${userId}/profile-documents/merged-pdf`, { headers });
+    const response = await fetch(`${API_BASE_URL}/users/${userId}/profile-documents/merged-pdf`, { headers, cache: 'no-store' });
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));

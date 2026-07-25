@@ -32,7 +32,7 @@ const DashboardPage = () => {
   ];
 
   return (
-    <div>
+    <div className="dashboard-page">
       <nav className="navbar">
         <div className="navbar-brand">Dashboard</div>
         <div className="navbar-actions">

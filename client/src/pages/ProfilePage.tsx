@@ -3,6 +3,7 @@ import { apiService } from '../services/api';
 import { Applicant, ProfileCompleteness, UpdateApplicantProfileRequest } from '../types';
 import ProfileDocuments from '../components/ProfileDocuments';
 import ValidIdUpload from '../components/ValidIdUpload';
+import Modal from '../components/Modal';
 import {
   SEX_OPTIONS,
   CIVIL_STATUS_OPTIONS,
@@ -17,6 +18,9 @@ import {
   SCHOOL_TYPE_OPTIONS,
   ACADEMIC_STATUS_OPTIONS
 } from '../constants/profileOptions';
+
+const CERTIFICATION_TEXT =
+  'I hereby Certify that all the information I have provided is true and correct to the best of my knowledge. I further certify that all Documents attached are authentic, complete, and have not been altered or falsified.';
 
 // Local, string-only mirror of UpdateApplicantProfileRequest so every
 // input can stay a simple controlled <input>/<select> — converted to the
@@ -282,8 +286,11 @@ const ProfilePage = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
   const [downloadingForm, setDownloadingForm] = useState(false);
+  // Must be re-checked before every save (not persisted) — an affirmative,
+  // in-the-moment attestation that what's about to be saved is accurate.
+  const [certified, setCertified] = useState(false);
+  const [showSavedModal, setShowSavedModal] = useState(false);
   // Tracks an explicit "Other" click on the Special Course sub-dropdown,
   // independent of courseName — courseName is cleared to '' right after
   // choosing "Other" (so the text field starts blank), and deriving the
@@ -338,14 +345,18 @@ const ProfilePage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSaving(true);
     setError('');
-    setSuccess('');
+    if (!certified) {
+      setError('Please check the certification box before saving your profile.');
+      return;
+    }
+    setSaving(true);
     try {
       const updated = await apiService.updateMyProfile(formToRequest(form));
       setForm(applicantToForm(updated));
       await loadCompleteness();
-      setSuccess('Profile saved.');
+      setCertified(false);
+      setShowSavedModal(true);
     } catch (err: any) {
       setError(err.message || 'Failed to save profile');
     } finally {
@@ -475,21 +486,6 @@ const ProfilePage = () => {
                 }}
               >
                 {error}
-              </div>
-            )}
-
-            {success && (
-              <div
-                style={{
-                  padding: '1rem',
-                  background: 'rgba(16, 185, 129, 0.1)',
-                  border: '1px solid rgba(16, 185, 129, 0.3)',
-                  borderRadius: 'var(--radius-md)',
-                  marginBottom: '1.5rem',
-                  color: '#065F46'
-                }}
-              >
-                {success}
               </div>
             )}
 
@@ -1085,7 +1081,23 @@ const ProfilePage = () => {
                 </p>
               </div>
 
-              <button className="btn btn-primary" type="submit" disabled={saving}>
+              <div
+                className="card"
+                style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'flex-start', gap: '0.6rem' }}
+              >
+                <input
+                  id="certification"
+                  type="checkbox"
+                  checked={certified}
+                  onChange={(e) => setCertified(e.target.checked)}
+                  style={{ marginTop: '0.2rem' }}
+                />
+                <label htmlFor="certification" style={{ fontSize: '0.85rem', fontWeight: 400 }}>
+                  {CERTIFICATION_TEXT}
+                </label>
+              </div>
+
+              <button className="btn btn-primary" type="submit" disabled={saving || !certified}>
                 {saving ? 'Saving...' : 'Save Profile'}
               </button>
             </form>
@@ -1144,6 +1156,15 @@ const ProfilePage = () => {
           </>
         )}
       </div>
+
+      {showSavedModal && (
+        <Modal title="Profile is Saved" onClose={() => setShowSavedModal(false)}>
+          <p>Your profile has been saved successfully.</p>
+          <button className="btn btn-primary" type="button" onClick={() => setShowSavedModal(false)}>
+            OK
+          </button>
+        </Modal>
+      )}
     </div>
   );
 };

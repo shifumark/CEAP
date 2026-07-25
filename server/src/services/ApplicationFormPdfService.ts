@@ -31,10 +31,11 @@ function capitalize(text: string): string {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
-// The form's "YEAR" field shows which school level the specific year
+// The form's header title shows which school level the specific year
 // level belongs to, not the year level itself (e.g. "1st Year College"
 // -> "COLLEGE") — capitalize() only touches the first character, so
-// these all-caps labels pass through it unchanged.
+// these all-caps labels pass through it unchanged. The "YEAR:" field
+// further down the form shows the actual year level verbatim instead.
 function yearLevelCategory(yearLevel: string | undefined): string {
   if (!yearLevel) return '';
   if (SENIOR_HIGH_ALS_YEAR_LEVELS.includes(yearLevel)) return 'SENIOR HIGH SCHOOL';
@@ -186,7 +187,7 @@ function draw(doc: PDFKit.PDFDocument, applicant: Applicant): void {
     doc.font('Helvetica-Bold').fontSize(10).text('COURSE:', contentLeft + 8, y + 11);
     value(doc, applicant.courseName ?? '', contentLeft + 8 + 55, y + 11, courseBoxWidth * 0.55 - 55);
     doc.font('Helvetica-Bold').text('YEAR:', contentLeft + courseBoxWidth * 0.6, y + 11);
-    value(doc, yearLevelCategory(applicant.yearLevel), contentLeft + courseBoxWidth * 0.6 + 38, y + 11, courseBoxWidth * 0.4 - 38);
+    value(doc, applicant.yearLevel ?? '', contentLeft + courseBoxWidth * 0.6 + 38, y + 11, courseBoxWidth * 0.4 - 38);
 
     doc.roundedRect(mobileBoxX, y, mobileBoxWidth, rowHeight, 4).stroke();
     doc.font('Helvetica-Bold').fontSize(10).text('MOBILE NO.:', mobileBoxX + 8, y + 11);

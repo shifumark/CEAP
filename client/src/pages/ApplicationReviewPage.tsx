@@ -201,16 +201,19 @@ const ApplicationReviewPage = () => {
 
   const handleViewDocument = async (documentId: number) => {
     try {
-      const { blob, fileName } = await apiService.downloadDocument(documentId);
+      const { blob } = await apiService.downloadDocument(documentId);
       const objectUrl = URL.createObjectURL(blob);
-      // A direct <a download> click, not window.open(blobUrl, '_blank') —
-      // mobile browsers (Android Chrome especially) block/ignore the popup
+      // Reviewers should be able to inspect a document without it landing
+      // in their Downloads folder — target="_blank" (no `download`
+      // attribute) opens it in the browser's own PDF/image viewer instead.
+      // Still a clicked <a>, not window.open(blobUrl, '_blank') directly —
+      // mobile browsers (Android Chrome especially) block/ignore a popup
       // once the surrounding await has broken the user-activation window,
-      // so nothing visibly happens. A forced download always works, and
-      // the device's own viewer opens it from there.
+      // whereas a synthetic click on an anchor element isn't affected.
       const link = document.createElement('a');
       link.href = objectUrl;
-      link.download = fileName;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);

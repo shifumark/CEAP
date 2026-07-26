@@ -5,7 +5,7 @@ import type { User as PrismaUser } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { JWT_SECRET } from '../lib/env.js';
 import { supabaseAdmin, DOCUMENTS_BUCKET } from '../lib/supabase.js';
-import { drive } from '../lib/googleDrive.js';
+import { getDriveAccount } from '../lib/googleDrive.js';
 import { User, LoginRequest, LoginResponse, UserRole, UserStatus, CreateUserRequest, JWTPayload, DeletionEntityType } from '../types.js';
 import { DeletionRequestService } from './DeletionRequestService.js';
 import { EmailService } from './EmailService.js';
@@ -293,12 +293,21 @@ export class AuthService {
   async performUserDeletion(targetId: number): Promise<void> {
     const documents = await prisma.uploadedDocument.findMany({
       where: { userId: targetId },
-      select: { filePath: true, googleDriveId: true }
+      select: { filePath: true, googleDriveId: true, driveAccount: true }
     });
-    const driveIds = documents.filter((d) => d.googleDriveId).map((d) => d.googleDriveId as string);
+    const driveFiles = documents.filter((d) => d.googleDriveId).map((d) => ({ fileId: d.googleDriveId as string, driveAccount: d.driveAccount }));
     const legacyPaths = documents.filter((d) => !d.googleDriveId).map((d) => d.filePath);
 
-    await Promise.all(driveIds.map((fileId) => drive.files.delete({ fileId }).catch(() => undefined)));
+    // Each file may live in a different configured Drive account (see
+    // driveAccount on the schema), so the right client has to be looked
+    // up per file rather than assuming they're all in the same one.
+    await Promise.all(
+      driveFiles.map(({ fileId, driveAccount }) =>
+        getDriveAccount(driveAccount)
+          .drive.files.delete({ fileId })
+          .catch(() => undefined)
+      )
+    );
     if (legacyPaths.length > 0) {
       await supabaseAdmin.storage.from(DOCUMENTS_BUCKET).remove(legacyPaths).catch(() => undefined);
     }

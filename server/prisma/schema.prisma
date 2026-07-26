@@ -416,6 +416,13 @@ model UploadedDocument {
   // provider); null for older documents that predate the switch and
   // still live in Supabase Storage at `filePath`.
   googleDriveId        String?                     @map("google_drive_id")
+  // Which configured Drive account (see lib/googleDrive.ts) googleDriveId
+  // belongs to — needed because a file id is only meaningful in the
+  // context of the OAuth client that created it. Defaults to 1 (the
+  // original/primary account) so every pre-existing row stays correct
+  // without a backfill script; new uploads get whichever account
+  // selectDriveAccountForUpload actually picked.
+  driveAccount         Int                         @default(1) @map("drive_account")
   fileSize             Int?                        @map("file_size")
   fileType             String?                     @map("file_type")
   verificationStatus   DocumentVerificationStatus  @default(pending) @map("verification_status")

@@ -3,7 +3,7 @@ import { PDFDocument as PDFLibDocument, StandardFonts, type PDFImage } from 'pdf
 import type { UploadedDocument as PrismaUploadedDocument } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { supabaseAdmin, DOCUMENTS_BUCKET } from '../lib/supabase.js';
-import { drive, DRIVE_FOLDER_ID } from '../lib/googleDrive.js';
+import { getDriveAccount, selectDriveAccountForUpload } from '../lib/googleDrive.js';
 import { ApplicationService } from './ApplicationService.js';
 import { NotificationService } from './NotificationService.js';
 import { UploadedDocument, DocumentVerificationStatus, JWTPayload, UserRole, NotificationType } from '../types.js';
@@ -90,11 +90,17 @@ export class DocumentService {
     // recompresses before anything reaches Drive.
     file = await processUploadedFile(file);
 
+    // Picked by real-time free space, not a fixed assignment — whichever
+    // configured account still has room gets this upload, so a second
+    // (or third) account only starts taking traffic once an earlier one
+    // actually fills up.
+    const account = await selectDriveAccountForUpload(file.size);
+
     const safeName = file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_');
-    const driveFile = await drive.files.create({
+    const driveFile = await account.drive.files.create({
       requestBody: {
         name: `${applicationId !== null ? `application-${applicationId}` : 'profile'}-${Date.now()}-${safeName}`,
-        parents: DRIVE_FOLDER_ID ? [DRIVE_FOLDER_ID] : undefined
+        parents: account.folderId ? [account.folderId] : undefined
       },
       media: {
         mimeType: file.mimetype,
@@ -116,6 +122,7 @@ export class DocumentService {
         fileName: file.originalname,
         filePath: fileId,
         googleDriveId: fileId,
+        driveAccount: account.id,
         fileSize: file.size,
         fileType: file.mimetype,
         verificationStatus: 'pending'
@@ -177,7 +184,8 @@ export class DocumentService {
     }
 
     if (doc.googleDriveId) {
-      const response = await drive.files.get(
+      const account = getDriveAccount(doc.driveAccount);
+      const response = await account.drive.files.get(
         { fileId: doc.googleDriveId, alt: 'media' },
         { responseType: 'stream' }
       );
@@ -248,7 +256,7 @@ export class DocumentService {
 
     if (doc.googleDriveId) {
       try {
-        await drive.files.delete({ fileId: doc.googleDriveId });
+        await getDriveAccount(doc.driveAccount).drive.files.delete({ fileId: doc.googleDriveId });
       } catch (error: any) {
         // Already gone on Drive (e.g. manually deleted) — fine to proceed
         // and clean up our own row; anything else is a real failure.
@@ -301,7 +309,8 @@ export class DocumentService {
    */
   private async fetchFileBytes(doc: PrismaUploadedDocument): Promise<Buffer> {
     if (doc.googleDriveId) {
-      const response = await drive.files.get(
+      const account = getDriveAccount(doc.driveAccount);
+      const response = await account.drive.files.get(
         { fileId: doc.googleDriveId, alt: 'media' },
         { responseType: 'arraybuffer' }
       );

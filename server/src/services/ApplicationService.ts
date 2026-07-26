@@ -21,7 +21,7 @@ import { NotificationService } from './NotificationService.js';
 import { EmailService } from './EmailService.js';
 import { DeletionRequestService } from './DeletionRequestService.js';
 import { supabaseAdmin, DOCUMENTS_BUCKET } from '../lib/supabase.js';
-import { drive } from '../lib/googleDrive.js';
+import { getDriveAccount } from '../lib/googleDrive.js';
 
 const applicantService = new ApplicantService();
 const scholarService = new ScholarService();
@@ -527,13 +527,21 @@ export class ApplicationService {
 
     const documents = await prisma.uploadedDocument.findMany({
       where: { applicationId: id },
-      select: { filePath: true, googleDriveId: true }
+      select: { filePath: true, googleDriveId: true, driveAccount: true }
     });
 
-    const driveIds = documents.filter((d) => d.googleDriveId).map((d) => d.googleDriveId as string);
+    const driveFiles = documents.filter((d) => d.googleDriveId).map((d) => ({ fileId: d.googleDriveId as string, driveAccount: d.driveAccount }));
     const legacyPaths = documents.filter((d) => !d.googleDriveId).map((d) => d.filePath);
 
-    await Promise.all(driveIds.map((fileId) => drive.files.delete({ fileId }).catch(() => undefined)));
+    // Each file may live in a different configured Drive account — see
+    // the matching comment in AuthService.performUserDeletion.
+    await Promise.all(
+      driveFiles.map(({ fileId, driveAccount }) =>
+        getDriveAccount(driveAccount)
+          .drive.files.delete({ fileId })
+          .catch(() => undefined)
+      )
+    );
 
     if (legacyPaths.length > 0) {
       const { error: storageError } = await supabaseAdmin.storage.from(DOCUMENTS_BUCKET).remove(legacyPaths);

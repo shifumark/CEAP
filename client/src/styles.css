@@ -76,6 +76,16 @@ a { color: inherit; text-decoration: none; }
   height: 100%;
 }
 
+/* Wraps every page that has no sidebar (Home, Login, Register,
+   Verify Email). Without this, the div is an unstyled flex item of
+   #root — flex items size to their content's natural width by default,
+   not the row's full width, so everything inside (including
+   .login-container) only spanned as wide as the login card itself. */
+.page-root {
+  width: 100%;
+  height: 100%;
+}
+
 .app-sidebar {
   width: 260px;
   background: linear-gradient(180deg, var(--sidebar-dark) 0%, #2E0B5C 100%);

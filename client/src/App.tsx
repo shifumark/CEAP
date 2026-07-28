@@ -44,7 +44,7 @@ function AppLayout() {
   );
 
   return (
-    <div className={showSidebar ? 'app-layout' : ''}>
+    <div className={showSidebar ? 'app-layout' : 'page-root'}>
       {showSidebar && <Sidebar />}
       <div className={showSidebar ? 'app-main' : 'page-scroll'}>
         <Routes>

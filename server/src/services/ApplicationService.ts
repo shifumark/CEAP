@@ -109,16 +109,27 @@ export class ApplicationService {
       throw new Error('You have already applied to this scholarship');
     }
 
-    const created = await prisma.application.create({
-      data: {
-        applicantId: applicant.id,
-        scholarshipId: request.scholarshipId,
-        status: 'draft'
-      },
-      include: applicationInclude
-    });
+    try {
+      const created = await prisma.application.create({
+        data: {
+          applicantId: applicant.id,
+          scholarshipId: request.scholarshipId,
+          status: 'draft'
+        },
+        include: applicationInclude
+      });
 
-    return toApplication(created);
+      return toApplication(created);
+    } catch (error: any) {
+      // The check above has a race: two concurrent submits can both pass
+      // it before either commits. The @@unique([applicantId,
+      // scholarshipId]) constraint is the real guard; this just turns its
+      // P2002 into the same friendly message instead of a raw 500.
+      if (error?.code === 'P2002') {
+        throw new Error('You have already applied to this scholarship');
+      }
+      throw error;
+    }
   }
 
   async submitApplication(user: JWTPayload, applicationId: number): Promise<Application> {

@@ -221,6 +221,9 @@ model Applicant {
   educationalRecords  EducationalRecord[]
   applications        Application[]
 
+  // Filtered on every Dashboard load (4 separate counts by yearLevel
+  // bucket) — see routes.ts's /dashboard/stats.
+  @@index([yearLevel])
   @@map("applicants")
 }
 
@@ -305,6 +308,7 @@ model EducationalRecord {
   school    School?   @relation(fields: [schoolId], references: [id])
   course    Course?   @relation(fields: [courseId], references: [id])
 
+  @@index([applicantId])
   @@map("educational_records")
 }
 
@@ -332,6 +336,7 @@ model ScholarshipProgram {
   applications       Application[]
   scholars           Scholar[]
 
+  @@index([status])
   @@map("scholarship_programs")
 }
 
@@ -346,6 +351,7 @@ model RequiredDocument {
 
   scholarship ScholarshipProgram @relation(fields: [scholarshipId], references: [id], onDelete: Cascade)
 
+  @@index([scholarshipId])
   @@map("required_documents")
 }
 
@@ -387,6 +393,13 @@ model Application {
   statusHistory ApplicationStatusHistory[]
   documents     UploadedDocument[]
 
+  // One application per applicant per program — also closes a
+  // check-then-create race in ApplicationService.createApplication where
+  // two concurrent submits could otherwise both pass the "no existing
+  // application" check before either had committed.
+  @@unique([applicantId, scholarshipId])
+  @@index([scholarshipId])
+  @@index([status])
   @@map("applications")
 }
 
@@ -402,6 +415,7 @@ model ApplicationStatusHistory {
   application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
   changer     User?       @relation("StatusChanger", fields: [changedBy], references: [id])
 
+  @@index([applicationId])
   @@map("application_status_history")
 }
 
@@ -436,6 +450,8 @@ model UploadedDocument {
   uploader    User         @relation("DocumentUploader", fields: [userId], references: [id])
   verifier    User?        @relation("DocumentVerifier", fields: [verifiedBy], references: [id])
 
+  @@index([applicationId])
+  @@index([userId])
   @@map("uploaded_documents")
 }
 
@@ -459,6 +475,8 @@ model Scholar {
   allowances  Allowance[]
   violations  Violation[]
 
+  @@index([scholarshipId])
+  @@index([status])
   @@map("scholars")
 }
 
@@ -476,6 +494,7 @@ model Grade {
 
   scholar Scholar @relation(fields: [scholarId], references: [id], onDelete: Cascade)
 
+  @@index([scholarId])
   @@map("grades")
 }
 
@@ -496,6 +515,8 @@ model Renewal {
   scholar  Scholar @relation(fields: [scholarId], references: [id], onDelete: Cascade)
   reviewer User?   @relation("RenewalReviewer", fields: [reviewedBy], references: [id])
 
+  @@index([scholarId])
+  @@index([status])
   @@map("renewals")
 }
 
@@ -514,6 +535,7 @@ model Allowance {
 
   scholar Scholar @relation(fields: [scholarId], references: [id], onDelete: Cascade)
 
+  @@index([scholarId])
   @@map("allowances")
 }
 
@@ -533,6 +555,7 @@ model Violation {
   scholar Scholar @relation(fields: [scholarId], references: [id], onDelete: Cascade)
   creator User?   @relation("ViolationCreator", fields: [createdBy], references: [id])
 
+  @@index([scholarId])
   @@map("violations")
 }
 
@@ -567,6 +590,7 @@ model AnnouncementAttachment {
 
   announcement Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
 
+  @@index([announcementId])
   @@map("announcement_attachments")
 }
 
@@ -585,6 +609,7 @@ model Notification {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
   @@map("notifications")
 }
 
@@ -604,6 +629,8 @@ model AuditLog {
 
   user User? @relation(fields: [userId], references: [id])
 
+  @@index([userId])
+  @@index([entityType])
   @@map("audit_logs")
 }
 
@@ -647,5 +674,6 @@ model DeletionRequest {
   requester User? @relation("DeletionRequester", fields: [requestedBy], references: [id])
   reviewer  User? @relation("DeletionReviewer", fields: [reviewedBy], references: [id])
 
+  @@index([status])
   @@map("deletion_requests")
 }

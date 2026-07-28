@@ -114,6 +114,25 @@ export class DocumentService {
       throw new Error('Upload failed: Google Drive did not return a file id');
     }
 
+    // Re-checked here, right before the DB insert, not just at the top of
+    // this method — the original check-then-create gap spanned image
+    // processing plus the full Drive upload round trip (multi-second),
+    // wide enough for concurrent uploads to all pass it. This can't close
+    // the race entirely without holding a DB transaction open across that
+    // external I/O (worse: ties up a pooled connection for seconds), but
+    // narrows the window to just this final check.
+    if (applicationId === null && documentType === 'Valid ID') {
+      const currentCount = await prisma.uploadedDocument.count({
+        where: { userId: user.sub, applicationId: null, documentType: 'Valid ID' }
+      });
+      if (currentCount >= 5) {
+        await getDriveAccount(account.id)
+          .drive.files.delete({ fileId })
+          .catch(() => undefined);
+        throw new Error('You can only upload up to 5 Valid ID files');
+      }
+    }
+
     const created = await prisma.uploadedDocument.create({
       data: {
         applicationId,

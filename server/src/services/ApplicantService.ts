@@ -104,8 +104,20 @@ export class ApplicantService {
     const existing = await prisma.applicant.findUnique({ where: { userId }, include: applicantInclude });
     if (existing) return toApplicant(existing);
 
-    const created = await prisma.applicant.create({ data: { userId }, include: applicantInclude });
-    return toApplicant(created);
+    try {
+      const created = await prisma.applicant.create({ data: { userId }, include: applicantInclude });
+      return toApplicant(created);
+    } catch (error: any) {
+      // Applicant.userId is @unique, so a concurrent call that also lost
+      // the race above hits P2002 here rather than corrupting anything —
+      // just fetch the row the other call created instead of surfacing a
+      // raw 500 for what isn't actually a failure.
+      if (error?.code === 'P2002') {
+        const created = await prisma.applicant.findUnique({ where: { userId }, include: applicantInclude });
+        if (created) return toApplicant(created);
+      }
+      throw error;
+    }
   }
 
   async getProfile(userId: number): Promise<Applicant | undefined> {

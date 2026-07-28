@@ -37,17 +37,7 @@ const ApplyModal = ({ scholarship, onClose, onSuccess }: Props) => {
   return (
     <Modal title={`Apply: ${scholarship.name}`} onClose={onClose}>
       {error && (
-        <div
-          style={{
-            padding: '0.75rem',
-            background: 'rgba(239, 68, 68, 0.1)',
-            border: '1px solid rgba(239, 68, 68, 0.3)',
-            borderRadius: 'var(--radius-md)',
-            marginBottom: '1rem',
-            color: '#F87171',
-            fontSize: '0.9rem'
-          }}
-        >
+        <div className="alert-error" style={{ padding: '0.75rem', marginBottom: '1rem', fontSize: '0.9rem' }}>
           {error}
         </div>
       )}

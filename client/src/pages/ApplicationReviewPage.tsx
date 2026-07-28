@@ -303,16 +303,7 @@ const ApplicationReviewPage = () => {
         </div>
 
         {error && (
-          <div
-            style={{
-              padding: '1rem',
-              background: 'rgba(239, 68, 68, 0.1)',
-              border: '1px solid rgba(239, 68, 68, 0.3)',
-              borderRadius: 'var(--radius-md)',
-              marginBottom: '1.5rem',
-              color: '#F87171'
-            }}
-          >
+          <div className="alert-error" style={{ padding: '1rem', marginBottom: '1.5rem' }}>
             {error}
           </div>
         )}
@@ -555,15 +546,7 @@ const ApplicationReviewPage = () => {
 
         {deletingApplication && (
           <Modal title="Delete Application" onClose={() => setDeletingApplication(null)}>
-            <p
-              style={{
-                padding: '0.85rem',
-                background: 'rgba(239, 68, 68, 0.1)',
-                border: '1px solid rgba(239, 68, 68, 0.3)',
-                borderRadius: 'var(--radius-md)',
-                color: '#F87171'
-              }}
-            >
+            <p className="alert-error" style={{ padding: '0.85rem' }}>
               Delete <strong>{deletingApplication.applicantName}</strong>'s application for{' '}
               <strong>{deletingApplication.scholarshipName}</strong>? This permanently removes the application, its
               uploaded documents, and its review history. This cannot be undone.
@@ -587,15 +570,7 @@ const ApplicationReviewPage = () => {
 
         {showDeleteAll && (
           <Modal title="Delete All Applications" onClose={() => setShowDeleteAll(false)}>
-            <p
-              style={{
-                padding: '0.85rem',
-                background: 'rgba(239, 68, 68, 0.1)',
-                border: '1px solid rgba(239, 68, 68, 0.3)',
-                borderRadius: 'var(--radius-md)',
-                color: '#F87171'
-              }}
-            >
+            <p className="alert-error" style={{ padding: '0.85rem' }}>
               Delete <strong>{deletableFilteredIds.length}</strong> application{deletableFilteredIds.length === 1 ? '' : 's'} matching
               the current filters/search? Approved and rejected applications are never included. This permanently removes each
               application, its uploaded documents, and its review history. This cannot be undone.

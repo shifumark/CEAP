@@ -180,16 +180,7 @@ const ScholarManagementPage = () => {
         </div>
 
         {error && (
-          <div
-            style={{
-              padding: '1rem',
-              background: 'rgba(239, 68, 68, 0.1)',
-              border: '1px solid rgba(239, 68, 68, 0.3)',
-              borderRadius: 'var(--radius-md)',
-              marginBottom: '1.5rem',
-              color: '#F87171'
-            }}
-          >
+          <div className="alert-error" style={{ padding: '1rem', marginBottom: '1.5rem' }}>
             {error}
           </div>
         )}
@@ -335,15 +326,7 @@ const ScholarManagementPage = () => {
 
       {deletingScholar && (
         <Modal title="Delete Scholar" onClose={() => setDeletingScholar(null)}>
-          <p
-            style={{
-              padding: '0.85rem',
-              background: 'rgba(239, 68, 68, 0.1)',
-              border: '1px solid rgba(239, 68, 68, 0.3)',
-              borderRadius: 'var(--radius-md)',
-              color: '#F87171'
-            }}
-          >
+          <p className="alert-error" style={{ padding: '0.85rem' }}>
             Delete <strong>{deletingScholar.studentName}</strong> from <strong>{deletingScholar.scholarshipName}</strong>?
             This permanently removes the scholar record, their approved application, and all associated grades,
             renewals, allowances, and violations. This cannot be undone.
@@ -367,15 +350,7 @@ const ScholarManagementPage = () => {
 
       {showDeleteAll && (
         <Modal title="Delete All Scholars" onClose={() => setShowDeleteAll(false)}>
-          <p
-            style={{
-              padding: '0.85rem',
-              background: 'rgba(239, 68, 68, 0.1)',
-              border: '1px solid rgba(239, 68, 68, 0.3)',
-              borderRadius: 'var(--radius-md)',
-              color: '#F87171'
-            }}
-          >
+          <p className="alert-error" style={{ padding: '0.85rem' }}>
             Delete <strong>{filtered.length}</strong> scholar{filtered.length === 1 ? '' : 's'} matching the current filters/search?
             This permanently removes each scholar record, their approved application, and all associated grades, renewals,
             allowances, and violations. This cannot be undone.

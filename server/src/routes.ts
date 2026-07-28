@@ -496,13 +496,31 @@ router.get('/applications', verifyToken, async (req: AuthenticatedRequest, res) 
  */
 router.get('/applications/report', verifyToken, requireAdminOrViewer, async (req: AuthenticatedRequest, res) => {
   try {
-    const result = await applicationService.getReport({
+    const filters = {
       name: typeof req.query.name === 'string' && req.query.name ? req.query.name : undefined,
       barangay: typeof req.query.barangay === 'string' && req.query.barangay ? req.query.barangay : undefined,
       status: typeof req.query.status === 'string' && req.query.status ? (req.query.status as ApplicationStatus) : undefined,
       page: req.query.page ? parseInt(req.query.page as string) : undefined,
       pageSize: req.query.pageSize ? parseInt(req.query.pageSize as string) : undefined
-    });
+    };
+    const result = await applicationService.getReport(filters);
+
+    // Bulk applicant PII export — the generic auditLog middleware only
+    // fires on non-GET requests, so a read this size (every applicant's
+    // profile + application data) would otherwise leave no audit trail.
+    prisma.auditLog
+      .create({
+        data: {
+          userId: req.user!.sub,
+          action: 'GET /applications/report',
+          entityType: 'application_report',
+          newValues: { filters, resultCount: result.data.length },
+          ipAddress: req.ip,
+          userAgent: req.headers['user-agent']
+        }
+      })
+      .catch((error) => console.error('[AuditLog] Failed to log application report export', error));
+
     res.json(result);
   } catch (error: any) {
     console.error(error); res.status(500).json({ error: 'Internal server error' });
@@ -1412,6 +1430,22 @@ router.get('/users/:id/profile-documents/merged-pdf', verifyToken, requireAdminO
     }
 
     const { buffer, fileName } = await documentService.getMergedProfileDocumentsPdf(req.user!, userId);
+
+    // Bulk document download — same rationale as the application report
+    // export above; the generic auditLog middleware never sees this GET.
+    prisma.auditLog
+      .create({
+        data: {
+          userId: req.user!.sub,
+          action: 'GET /users/:id/profile-documents/merged-pdf',
+          entityType: 'user',
+          entityId: userId,
+          ipAddress: req.ip,
+          userAgent: req.headers['user-agent']
+        }
+      })
+      .catch((error) => console.error('[AuditLog] Failed to log merged document PDF download', error));
+
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(fileName)}"`);
     res.send(buffer);

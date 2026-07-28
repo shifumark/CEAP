@@ -39,17 +39,7 @@ const RegisterPage = () => {
         <p>Register to apply for scholarships and track your application status</p>
 
         {error && (
-          <div
-            style={{
-              padding: '1rem',
-              background: 'rgba(239, 68, 68, 0.1)',
-              border: '1px solid rgba(239, 68, 68, 0.3)',
-              borderRadius: 'var(--radius-md)',
-              marginBottom: '1.5rem',
-              color: '#F87171',
-              fontSize: '0.9rem'
-            }}
-          >
+          <div className="alert-error" style={{ padding: '1rem', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
             {error}
           </div>
         )}

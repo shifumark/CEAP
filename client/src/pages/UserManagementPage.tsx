@@ -233,16 +233,7 @@ const UserManagementPage = () => {
         </div>
 
         {error && (
-          <div
-            style={{
-              padding: '1rem',
-              background: 'rgba(239, 68, 68, 0.1)',
-              border: '1px solid rgba(239, 68, 68, 0.3)',
-              borderRadius: 'var(--radius-md)',
-              marginBottom: '1.5rem',
-              color: '#F87171'
-            }}
-          >
+          <div className="alert-error" style={{ padding: '1rem', marginBottom: '1.5rem' }}>
             {error}
           </div>
         )}
@@ -427,15 +418,7 @@ const UserManagementPage = () => {
             </>
           ) : (
             <>
-              <p
-                style={{
-                  padding: '0.85rem',
-                  background: 'rgba(239, 68, 68, 0.1)',
-                  border: '1px solid rgba(239, 68, 68, 0.3)',
-                  borderRadius: 'var(--radius-md)',
-                  color: '#F87171'
-                }}
-              >
+              <p className="alert-error" style={{ padding: '0.85rem' }}>
                 Reset <strong>{resettingUser.email}</strong>'s password? Their current password will stop working
                 immediately.
               </p>
@@ -456,16 +439,7 @@ const UserManagementPage = () => {
         <Modal title="Register New User" onClose={closeCreateForm}>
           <form onSubmit={handleCreateUser}>
             {createError && (
-              <p
-                style={{
-                  padding: '0.75rem',
-                  background: 'rgba(239, 68, 68, 0.1)',
-                  border: '1px solid rgba(239, 68, 68, 0.3)',
-                  borderRadius: 'var(--radius-md)',
-                  color: '#F87171',
-                  marginBottom: '1rem'
-                }}
-              >
+              <p className="alert-error" style={{ padding: '0.75rem', marginBottom: '1rem' }}>
                 {createError}
               </p>
             )}
@@ -538,15 +512,7 @@ const UserManagementPage = () => {
 
       {deletingUser && (
         <Modal title="Delete User" onClose={() => setDeletingUser(null)}>
-          <p
-            style={{
-              padding: '0.85rem',
-              background: 'rgba(239, 68, 68, 0.1)',
-              border: '1px solid rgba(239, 68, 68, 0.3)',
-              borderRadius: 'var(--radius-md)',
-              color: '#F87171'
-            }}
-          >
+          <p className="alert-error" style={{ padding: '0.85rem' }}>
             Delete <strong>{deletingUser.firstName} {deletingUser.lastName}</strong> ({deletingUser.email})? This permanently
             removes their account, applicant profile, applications, and uploaded documents. This cannot be undone.
           </p>
@@ -569,15 +535,7 @@ const UserManagementPage = () => {
 
       {showDeleteAll && (
         <Modal title="Delete All Students" onClose={() => setShowDeleteAll(false)}>
-          <p
-            style={{
-              padding: '0.85rem',
-              background: 'rgba(239, 68, 68, 0.1)',
-              border: '1px solid rgba(239, 68, 68, 0.3)',
-              borderRadius: 'var(--radius-md)',
-              color: '#F87171'
-            }}
-          >
+          <p className="alert-error" style={{ padding: '0.85rem' }}>
             Delete <strong>{deletableFilteredIds.length}</strong> student account{deletableFilteredIds.length === 1 ? '' : 's'}{' '}
             matching the current filters/search? Admin and Super Admin accounts are never included. This permanently removes
             each account, applicant profile, applications, and uploaded documents. This cannot be undone.

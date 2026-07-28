@@ -9,12 +9,14 @@ const DashboardPage = () => {
   const navigate = useNavigate();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [statsError, setStatsError] = useState('');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     apiService
       .getDashboardStats()
       .then(setStats)
-      .catch((err) => setStatsError(err.message || 'Failed to load dashboard stats'));
+      .catch((err) => setStatsError(err.message || 'Failed to load dashboard stats'))
+      .finally(() => setLoading(false));
   }, []);
 
   const statCards = [
@@ -50,52 +52,49 @@ const DashboardPage = () => {
         </div>
 
         {statsError && (
-          <div
-            style={{
-              padding: '1rem',
-              background: 'rgba(239, 68, 68, 0.1)',
-              border: '1px solid rgba(239, 68, 68, 0.3)',
-              borderRadius: 'var(--radius-md)',
-              marginBottom: '1.5rem',
-              color: '#F87171'
-            }}
-          >
+          <div className="alert-error" style={{ padding: '1rem', marginBottom: '1.5rem' }}>
             {statsError}
           </div>
         )}
 
-        {/* Key Metrics */}
-        <section style={{ marginBottom: '3rem' }}>
-          <div className="stats">
-            {statCards.map((item) => (
-              <div className="stat" key={item.label}>
-                <div className="stat-icon" style={{ background: `linear-gradient(135deg, ${item.color}, ${item.color}BB)` }}>
-                  {item.icon}
-                </div>
-                <h3>{item.value.toLocaleString()}</h3>
-                <p>{item.label}</p>
+        {loading ? (
+          <p>Loading...</p>
+        ) : (
+          <>
+            {/* Key Metrics */}
+            <section style={{ marginBottom: '3rem' }}>
+              <div className="stats">
+                {statCards.map((item) => (
+                  <div className="stat" key={item.label}>
+                    <div className="stat-icon" style={{ background: `linear-gradient(135deg, ${item.color}, ${item.color}BB)` }}>
+                      {item.icon}
+                    </div>
+                    <h3>{item.value.toLocaleString()}</h3>
+                    <p>{item.label}</p>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </section>
+            </section>
 
-        {/* Applicants by Category */}
-        <section style={{ marginBottom: '3rem' }}>
-          <div className="card-header" style={{ marginBottom: '1rem' }}>
-            <h3>Applicants by Category</h3>
-          </div>
-          <div className="stats">
-            {applicantCategoryCards.map((item) => (
-              <div className="stat" key={item.label}>
-                <div className="stat-icon" style={{ background: `linear-gradient(135deg, ${item.color}, ${item.color}BB)` }}>
-                  {item.icon}
-                </div>
-                <h3>{item.value.toLocaleString()}</h3>
-                <p>{item.label}</p>
+            {/* Applicants by Category */}
+            <section style={{ marginBottom: '3rem' }}>
+              <div className="card-header" style={{ marginBottom: '1rem' }}>
+                <h3>Applicants by Category</h3>
               </div>
-            ))}
-          </div>
-        </section>
+              <div className="stats">
+                {applicantCategoryCards.map((item) => (
+                  <div className="stat" key={item.label}>
+                    <div className="stat-icon" style={{ background: `linear-gradient(135deg, ${item.color}, ${item.color}BB)` }}>
+                      {item.icon}
+                    </div>
+                    <h3>{item.value.toLocaleString()}</h3>
+                    <p>{item.label}</p>
+                  </div>
+                ))}
+              </div>
+            </section>
+          </>
+        )}
 
         {/* Quick Actions */}
         <section>

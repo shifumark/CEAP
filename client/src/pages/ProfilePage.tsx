@@ -475,16 +475,7 @@ const ProfilePage = () => {
             )}
 
             {error && (
-              <div
-                style={{
-                  padding: '1rem',
-                  background: 'rgba(239, 68, 68, 0.1)',
-                  border: '1px solid rgba(239, 68, 68, 0.3)',
-                  borderRadius: 'var(--radius-md)',
-                  marginBottom: '1.5rem',
-                  color: '#F87171'
-                }}
-              >
+              <div className="alert-error" style={{ padding: '1rem', marginBottom: '1.5rem' }}>
                 {error}
               </div>
             )}

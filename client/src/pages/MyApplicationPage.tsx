@@ -115,14 +115,8 @@ const MyApplicationPage = () => {
 
         {error && (
           <div
-            style={{
-              padding: '1rem',
-              background: 'rgba(239, 68, 68, 0.1)',
-              border: '1px solid rgba(239, 68, 68, 0.3)',
-              borderRadius: 'var(--radius-md)',
-              marginBottom: '1.5rem',
-              color: '#F87171'
-            }}
+            className="alert-error"
+            style={{ padding: '1rem', marginBottom: '1.5rem' }}
           >
             {error}
           </div>
@@ -213,14 +207,7 @@ const MyApplicationPage = () => {
 
       {deletingApplication && (
         <Modal title="Delete Application" onClose={() => setDeletingApplication(null)}>
-          <p
-            style={{
-              padding: '0.85rem',
-              background: 'rgba(239, 68, 68, 0.1)',
-              border: '1px solid rgba(239, 68, 68, 0.3)',
-              borderRadius: 'var(--radius-md)',
-              color: '#F87171'
-            }}
+          <p className="alert-error" style={{ padding: '0.85rem' }}
           >
             Delete your application to <strong>{deletingApplication.scholarshipName ?? 'this scholarship'}</strong>?
             This cannot be undone.

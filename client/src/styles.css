@@ -46,6 +46,10 @@
 
 html, body {
   height: 100%;
+  /* This theme is dark-only (no light variant) — without this, native
+     controls (date-picker popups/icons, scrollbars, checkboxes) render
+     with the OS's light defaults and visibly clash with the dark UI. */
+  color-scheme: dark;
 }
 
 body {
@@ -494,6 +498,19 @@ a { color: inherit; text-decoration: none; }
 .form-error {
   color: #EF4444;
   font-size: 0.85rem;
+}
+
+/* The same error-banner colors/border were duplicated inline across ~28
+   call sites in 16 page/component files. Consolidated here so a future
+   restyle only touches one place; padding/margin still vary by context
+   (page-level banner vs. a shorter modal warning), so those stay as
+   per-instance inline overrides alongside this class rather than being
+   forced into one shape. */
+.alert-error {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: var(--radius-md);
+  color: #F87171;
 }
 
 /* ===========================

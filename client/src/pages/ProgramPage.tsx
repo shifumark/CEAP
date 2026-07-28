@@ -234,16 +234,7 @@ const ProgramPage = () => {
         </div>
 
         {error && (
-          <div
-            style={{
-              padding: '1rem',
-              background: 'rgba(239, 68, 68, 0.1)',
-              border: '1px solid rgba(239, 68, 68, 0.3)',
-              borderRadius: 'var(--radius-md)',
-              marginBottom: '1.5rem',
-              color: '#F87171'
-            }}
-          >
+          <div className="alert-error" style={{ padding: '1rem', marginBottom: '1.5rem' }}>
             {error}
           </div>
         )}
@@ -616,13 +607,8 @@ const ProgramPage = () => {
       {deletingProgram && (
         <Modal title="Delete Program" onClose={() => setDeletingProgram(null)}>
           <p
-            style={{
-              padding: '0.85rem',
-              background: 'rgba(239, 68, 68, 0.1)',
-              border: '1px solid rgba(239, 68, 68, 0.3)',
-              borderRadius: 'var(--radius-md)',
-              color: '#F87171'
-            }}
+            className="alert-error"
+            style={{ padding: '0.85rem' }}
           >
             Warning: Deleting <strong>{deletingProgram.name}</strong> permanently removes it along with every
             application, scholar record, grade, renewal, allowance, and violation tied to it. This cannot be undone.

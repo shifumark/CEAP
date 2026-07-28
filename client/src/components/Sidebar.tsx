@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { UserRole } from '../types';
+import connerSeal from '../assets/images/conner-seal.jpg';
 
 const NAV_ITEMS_BY_ROLE: Record<UserRole, Array<{ path: string; label: string; icon: string }>> = {
   [UserRole.SUPER_ADMIN]: [
@@ -84,8 +85,8 @@ function Sidebar() {
 
       <aside className={`app-sidebar${isOpen ? ' open' : ''}`}>
         <div className="sidebar-logo">
-          <span style={{ fontSize: '1.5rem' }}>✨</span>
-          <span>ScholarshipHub</span>
+          <img src={connerSeal} alt="" width={32} height={32} style={{ borderRadius: '50%', flexShrink: 0 }} />
+          <span>ECEAP</span>
         </div>
 
         <nav className="sidebar-nav">

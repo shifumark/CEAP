@@ -151,6 +151,13 @@ class ApiService {
     });
   }
 
+  async confirmPasswordReset(token: string, newPassword: string): Promise<{ message: string }> {
+    return this.request<{ message: string }>('POST', '/auth/reset-password', {
+      token,
+      newPassword
+    });
+  }
+
   async changePassword(currentPassword: string, newPassword: string): Promise<{ message: string }> {
     return this.request<{ message: string }>('POST', '/auth/change-password', {
       currentPassword,

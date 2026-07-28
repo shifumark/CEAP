@@ -174,18 +174,43 @@ router.get('/auth/me', verifyToken, async (req: AuthenticatedRequest, res) => {
 });
 
 /**
- * Request password reset
+ * Request password reset — emails a signed, 1-hour reset link if the
+ * address belongs to an account. Always returns the same generic
+ * message regardless of whether it does, so this can't be used to
+ * enumerate registered emails. Rate-limited per IP+email like login,
+ * since (unlike a login attempt) each call here sends a real email.
  * Public
  */
-router.post('/auth/forgot-password', async (req, res) => {
+router.post('/auth/forgot-password', loginRateLimit(5, 15 * 60 * 1000), async (req, res) => {
   try {
     const { email } = req.body;
     if (!email) {
       return res.status(400).json({ error: 'Email is required' });
     }
 
-    // In production, generate reset token and send email
-    res.json({ message: 'Password reset link sent to email' });
+    await authService.requestPasswordReset(email);
+    res.json({ message: 'If that email is registered, a password reset link has been sent.' });
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+/**
+ * Completes a password reset started via /auth/forgot-password.
+ * Public - the token itself is the credential.
+ */
+router.post('/auth/reset-password', async (req, res) => {
+  try {
+    const { token, newPassword } = req.body as { token?: string; newPassword?: string };
+    if (!token || !newPassword) {
+      return res.status(400).json({ error: 'Token and new password are required' });
+    }
+    if (newPassword.length < 8) {
+      return res.status(400).json({ error: 'New password must be at least 8 characters' });
+    }
+
+    await authService.confirmPasswordReset(token, newPassword);
+    res.json({ message: 'Password reset successfully' });
   } catch (error: any) {
     res.status(400).json({ error: error.message });
   }

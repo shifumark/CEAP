@@ -13,6 +13,7 @@ import { EmailService } from './EmailService.js';
 const deletionRequestService = new DeletionRequestService();
 const emailService = new EmailService();
 const EMAIL_VERIFICATION_PURPOSE = 'email_verification';
+const PASSWORD_RESET_PURPOSE = 'password_reset';
 
 /**
  * Authentication service backed by Postgres via Prisma.
@@ -94,16 +95,55 @@ export class AuthService {
     return jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] });
   }
 
-  async resetPassword(email: string, newPassword: string): Promise<void> {
+  /**
+   * Self-service "forgot password" — the actual delivery. Never reveals
+   * whether the email exists (same response either way from the route),
+   * so no `throw` for "not found"; a real account just gets an email, an
+   * unrecognized one gets nothing.
+   */
+  async requestPasswordReset(email: string): Promise<void> {
     const user = await prisma.user.findUnique({ where: { email } });
-    if (!user) {
-      throw new Error('User not found');
+    if (!user || user.deletedAt) return;
+
+    emailService
+      .sendPasswordReset(user.email, user.firstName, this.generatePasswordResetToken(user.id))
+      .catch((error) => console.error('[EmailService] Failed to send password reset email', user.id, error));
+  }
+
+  /**
+   * Signed, stateless reset link — same no-DB-column approach as email
+   * verification (see generateEmailVerificationToken), but a much
+   * shorter expiry: a leaked/intercepted reset link is a direct
+   * account-takeover vector in a way an email-confirmation link isn't.
+   */
+  private generatePasswordResetToken(userId: number): string {
+    return jwt.sign({ sub: userId, purpose: PASSWORD_RESET_PURPOSE }, JWT_SECRET, {
+      expiresIn: '1h',
+      algorithm: 'HS256'
+    });
+  }
+
+  /**
+   * Confirms the reset link's token and sets the new password. Invalid,
+   * expired, or already-used-for-a-different-purpose tokens all fail the
+   * same generic way — same rationale as confirmEmailVerification.
+   */
+  async confirmPasswordReset(token: string, newPassword: string): Promise<void> {
+    let payload: any;
+    try {
+      payload = jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] });
+    } catch {
+      throw new Error('This password reset link is invalid or has expired.');
+    }
+    if (payload?.purpose !== PASSWORD_RESET_PURPOSE || typeof payload.sub !== 'number') {
+      throw new Error('This password reset link is invalid.');
     }
 
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { passwordHash: await bcrypt.hash(newPassword, 10) }
-    });
+    await prisma.user
+      .update({ where: { id: payload.sub }, data: { passwordHash: await bcrypt.hash(newPassword, 10) } })
+      .catch(() => {
+        throw new Error('This password reset link is invalid.');
+      });
   }
 
   /**

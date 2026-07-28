@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { roleHome } from '../components/ProtectedRoute';
 
@@ -9,7 +9,9 @@ const LoginPage = () => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
   const { login } = useAuth();
+  const passwordResetSuccess = Boolean((location.state as { passwordResetSuccess?: boolean } | null)?.passwordResetSuccess);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,6 +33,22 @@ const LoginPage = () => {
       <div className="login-card">
         <h2>Welcome back</h2>
         <p>Sign in to access the scholarship management portal</p>
+
+        {passwordResetSuccess && !error && (
+          <div
+            style={{
+              padding: '1rem',
+              background: 'rgba(16, 185, 129, 0.1)',
+              border: '1px solid rgba(16, 185, 129, 0.3)',
+              borderRadius: 'var(--radius-md)',
+              marginBottom: '1.5rem',
+              color: '#34D399',
+              fontSize: '0.9rem'
+            }}
+          >
+            Your password has been reset — sign in with your new password.
+          </div>
+        )}
 
         {error && (
           <div className="alert-error" style={{ padding: '1rem', marginBottom: '1.5rem', fontSize: '0.9rem' }}>
@@ -60,6 +78,9 @@ const LoginPage = () => {
               onChange={(e) => setPassword(e.target.value)}
               required
             />
+            <Link to="/forgot-password" style={{ fontSize: '0.85rem', alignSelf: 'flex-end' }}>
+              Forgot password?
+            </Link>
           </div>
           <button className="btn btn-primary btn-lg" type="submit" disabled={isLoading} style={{ width: '100%' }}>
             {isLoading ? 'Signing in...' : 'Sign in'}

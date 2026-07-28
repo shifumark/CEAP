@@ -83,6 +83,19 @@ export class EmailService {
     );
   }
 
+  async sendPasswordReset(to: string, firstName: string, token: string): Promise<void> {
+    const resetUrl = `${APP_URL}/reset-password?token=${encodeURIComponent(token)}`;
+    await this.send(
+      to,
+      'Reset Your Password - CEAP',
+      `<p>Hi ${firstName},</p>
+       <p>We received a request to reset your password. Click the link below to choose a new one.</p>
+       <p><a href="${resetUrl}">Reset my password</a></p>
+       <p style="font-size: 0.85rem; color: #6B7280;">This link expires in 1 hour. If you didn't request this,
+       you can safely ignore this email — your password won't be changed.</p>`
+    );
+  }
+
   async sendApplicationStatusUpdate(to: string, scholarshipName: string, status: string): Promise<void> {
     const readableStatus = status.replace(/_/g, ' ');
     await this.send(

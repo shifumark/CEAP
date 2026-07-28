@@ -6,7 +6,7 @@ import { NotificationService } from './NotificationService.js';
 const notificationService = new NotificationService();
 
 type DeletionRequestWithUsers = PrismaDeletionRequest & {
-  requester: { email: string; firstName: string; lastName: string };
+  requester: { email: string; firstName: string; lastName: string } | null;
   reviewer: { email: string; firstName: string; lastName: string } | null;
 };
 
@@ -16,13 +16,13 @@ function toDeletionRequest(record: DeletionRequestWithUsers): DeletionRequest {
     entityType: record.entityType as unknown as DeletionEntityType,
     entityId: record.entityId,
     entityLabel: record.entityLabel,
-    requestedBy: record.requestedBy,
+    requestedBy: record.requestedBy ?? undefined,
     requestedAt: record.requestedAt,
     status: record.status as unknown as DeletionRequestStatus,
     reviewedBy: record.reviewedBy ?? undefined,
     reviewedAt: record.reviewedAt ?? undefined,
     reviewNote: record.reviewNote ?? undefined,
-    requester: record.requester,
+    requester: record.requester ?? undefined,
     reviewerUser: record.reviewer ?? undefined
   };
 }

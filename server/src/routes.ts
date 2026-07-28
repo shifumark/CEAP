@@ -1464,9 +1464,13 @@ router.post('/deletion-requests/:id/approve', verifyToken, requireDeletionReview
     }
 
     await deletionRequestService.markApproved(requestId, req.user!.sub);
-    notificationService
-      .notifyRequesterOfDeletionDecision(request.requestedBy, request.entityLabel, true)
-      .catch((error) => console.error('[NotificationService] Failed to notify requester of approval', requestId, error));
+    // requestedBy is only absent if the requester's own account has since
+    // been deleted — nothing to notify in that case.
+    if (request.requestedBy !== undefined) {
+      notificationService
+        .notifyRequesterOfDeletionDecision(request.requestedBy, request.entityLabel, true)
+        .catch((error) => console.error('[NotificationService] Failed to notify requester of approval', requestId, error));
+    }
 
     res.json({ message: 'Deletion request approved and carried out' });
   } catch (error: any) {
@@ -1492,9 +1496,11 @@ router.post('/deletion-requests/:id/reject', verifyToken, requireDeletionReviewe
 
     const note = typeof req.body?.note === 'string' ? req.body.note : undefined;
     await deletionRequestService.markRejected(requestId, req.user!.sub, note);
-    notificationService
-      .notifyRequesterOfDeletionDecision(request.requestedBy, request.entityLabel, false, note)
-      .catch((error) => console.error('[NotificationService] Failed to notify requester of rejection', requestId, error));
+    if (request.requestedBy !== undefined) {
+      notificationService
+        .notifyRequesterOfDeletionDecision(request.requestedBy, request.entityLabel, false, note)
+        .catch((error) => console.error('[NotificationService] Failed to notify requester of rejection', requestId, error));
+    }
 
     res.json({ message: 'Deletion request rejected' });
   } catch (error: any) {

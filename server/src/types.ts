@@ -783,7 +783,9 @@ export interface DeletionRequest {
   entityType: DeletionEntityType;
   entityId: number;
   entityLabel: string;
-  requestedBy: number;
+  // Undefined once the requester's own account has since been deleted —
+  // see AuthService.performUserDeletion.
+  requestedBy?: number;
   requestedAt: Date;
   status: DeletionRequestStatus;
   reviewedBy?: number;

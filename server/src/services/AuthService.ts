@@ -286,9 +286,10 @@ export class AuthService {
    *
    * UploadedDocument.userId's uploader relation has no onDelete cascade
    * (deliberately, so an accidental delete fails loudly) — cleaned up
-   * explicitly first, remote files included. AuditLog.userId is nullable
-   * with no cascade either; detached (not deleted) so the historical
-   * action record survives the account's removal.
+   * explicitly first, remote files included. AuditLog.userId and
+   * DeletionRequest.requestedBy/reviewedBy are nullable with no cascade
+   * either; detached (not deleted) so the historical record survives the
+   * account's removal.
    */
   async performUserDeletion(targetId: number): Promise<void> {
     const documents = await prisma.uploadedDocument.findMany({
@@ -314,6 +315,11 @@ export class AuthService {
 
     await prisma.uploadedDocument.deleteMany({ where: { userId: targetId } });
     await prisma.auditLog.updateMany({ where: { userId: targetId }, data: { userId: null } });
+    // Same detach-not-cascade treatment as AuditLog.userId above — a
+    // deletion request this account filed (or reviewed) survives as
+    // history even after the account itself is gone.
+    await prisma.deletionRequest.updateMany({ where: { requestedBy: targetId }, data: { requestedBy: null } });
+    await prisma.deletionRequest.updateMany({ where: { reviewedBy: targetId }, data: { reviewedBy: null } });
 
     // Cascades: User -> Applicant -> Application -> (status history, docs).
     await prisma.user.delete({ where: { id: targetId } });

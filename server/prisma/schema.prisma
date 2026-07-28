@@ -634,14 +634,17 @@ model DeletionRequest {
   // still show a meaningful label even after the underlying row is gone
   // or has changed — same rationale as AuditLog not living-joining.
   entityLabel String                 @map("entity_label")
-  requestedBy Int                    @map("requested_by")
+  // Nullable so AuthService.performUserDeletion can detach (not cascade
+  // delete) this record when the requester's own account is later
+  // removed — same rationale as AuditLog.userId below.
+  requestedBy Int?                   @map("requested_by")
   requestedAt DateTime               @default(now()) @map("requested_at")
   status      DeletionRequestStatus  @default(pending)
   reviewedBy  Int?                   @map("reviewed_by")
   reviewedAt  DateTime?              @map("reviewed_at")
   reviewNote  String?                @map("review_note")
 
-  requester User  @relation("DeletionRequester", fields: [requestedBy], references: [id])
+  requester User? @relation("DeletionRequester", fields: [requestedBy], references: [id])
   reviewer  User? @relation("DeletionReviewer", fields: [reviewedBy], references: [id])
 
   @@map("deletion_requests")

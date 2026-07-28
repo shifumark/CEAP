@@ -748,11 +748,18 @@ tr:hover {
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 100%;
   min-height: 100vh;
   padding: 2rem;
+  box-sizing: border-box;
+  /* Not `fixed` attachment — inside a flex/scroll ancestor (.page-scroll)
+     that can misrender, leaving a visible gap where the image stops
+     covering the box. Plain `cover` always sizes against this element's
+     own box instead, so it fills it reliably regardless of ancestor
+     layout. */
   background:
     linear-gradient(160deg, rgba(30, 8, 61, 0.88) 0%, rgba(91, 33, 182, 0.72) 55%, rgba(12, 3, 28, 0.92) 100%),
-    url('./assets/images/municipal-hall.jpg') center/cover no-repeat fixed;
+    url('./assets/images/municipal-hall.jpg') center/cover no-repeat;
 }
 
 .login-card {

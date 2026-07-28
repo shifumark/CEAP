@@ -292,6 +292,12 @@ export class AuthService {
    * account's removal.
    */
   async performUserDeletion(targetId: number): Promise<void> {
+    // Idempotent: a pending deletion request can outlive its target (e.g.
+    // approved twice, or the account removed some other way in the
+    // meantime) — nothing left to do, not an error.
+    const exists = await prisma.user.findUnique({ where: { id: targetId }, select: { id: true } });
+    if (!exists) return;
+
     const documents = await prisma.uploadedDocument.findMany({
       where: { userId: targetId },
       select: { filePath: true, googleDriveId: true, driveAccount: true }

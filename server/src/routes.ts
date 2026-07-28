@@ -303,7 +303,7 @@ router.put('/scholarships/:id', verifyToken, requireAdmin, async (req: Authentic
  * Delete scholarship program
  * Protected - requires super admin role
  */
-router.delete('/scholarships/:id', verifyToken, requireAdmin, async (req: AuthenticatedRequest, res) => {
+router.delete('/scholarships/:id', verifyToken, requireSuperAdmin, async (req: AuthenticatedRequest, res) => {
   try {
     const success = await scholarshipService.deleteProgram(parseInt(req.params.id));
 
@@ -1460,6 +1460,23 @@ router.post('/deletion-requests/:id/approve', verifyToken, requireDeletionReview
     } else if (request.entityType === DeletionEntityType.SCHOLAR) {
       await scholarService.performScholarDeletion(request.entityId);
     } else {
+      // Re-verify eligibility at approval time, not just at request time —
+      // performUserDeletion is a trusted primitive with no checks of its
+      // own (deliberately, since it's also used directly for one-off admin
+      // cleanup), so the "Student account, not a Scholar" guard that
+      // originally gated this request has to be re-applied here in case
+      // the account's role changed (or it became a Scholar) in the time
+      // between the request being filed and now being reviewed.
+      const target = await prisma.user.findUnique({ where: { id: request.entityId }, select: { role: true } });
+      if (target && target.role !== 'applicant') {
+        return res.status(400).json({ error: 'This account is no longer a Student account and can no longer be deleted this way.' });
+      }
+      if (target) {
+        const scholar = await prisma.scholar.findUnique({ where: { userId: request.entityId }, select: { id: true } });
+        if (scholar) {
+          return res.status(400).json({ error: 'This user has since become a Scholar — remove them from Scholar Management instead.' });
+        }
+      }
       await authService.performUserDeletion(request.entityId);
     }
 

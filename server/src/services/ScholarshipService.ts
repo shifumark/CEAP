@@ -10,8 +10,12 @@ import {
   RequiredDocument
 } from '../types.js';
 import { NotificationService } from './NotificationService.js';
+import { ApplicationService } from './ApplicationService.js';
+import { ScholarService } from './ScholarService.js';
 
 const notificationService = new NotificationService();
+const applicationService = new ApplicationService();
+const scholarService = new ScholarService();
 
 function toProgram(record: PrismaScholarshipProgram): ScholarshipProgram {
   return {
@@ -165,25 +169,35 @@ export class ScholarshipService {
   // Deletes a program along with everything tied to it, even if
   // applications or scholars already exist. Applications and Scholars
   // reference scholarshipId without an onDelete cascade at the DB level
-  // (deliberately, so a plain delete fails loudly in the normal case) —
-  // this explicitly clears them first, in FK-safe order, inside a
-  // transaction. Their own children (status history, uploaded documents,
-  // grades, renewals, allowances, violations) cascade automatically once
-  // the Application/Scholar row itself is gone.
+  // (deliberately, so a plain delete fails loudly in the normal case).
+  // Routes through ApplicationService/ScholarService's own deletion
+  // primitives (not a bare cascading transaction) specifically so their
+  // Drive/Supabase file cleanup runs — a raw `deleteMany` would cascade
+  // the DB rows away instantly while leaving every attached document
+  // orphaned in remote storage. Super Admin only (see the route), so
+  // there's no deletion-review workflow to route through here the way an
+  // individual application/scholar delete would.
   async deleteProgram(id: number): Promise<boolean> {
-    try {
-      await prisma.$transaction([
-        prisma.application.deleteMany({ where: { scholarshipId: id } }),
-        prisma.scholar.deleteMany({ where: { scholarshipId: id } }),
-        prisma.scholarshipProgram.delete({ where: { id } })
-      ]);
-      return true;
-    } catch (error: any) {
-      if (error?.code === 'P2025') {
-        return false;
-      }
-      throw error;
+    const program = await prisma.scholarshipProgram.findUnique({ where: { id }, select: { id: true } });
+    if (!program) return false;
+
+    const [applications, scholars] = await Promise.all([
+      prisma.application.findMany({ where: { scholarshipId: id }, select: { id: true } }),
+      prisma.scholar.findMany({ where: { scholarshipId: id }, select: { id: true } })
+    ]);
+
+    for (const scholar of scholars) {
+      await scholarService.performScholarDeletion(scholar.id);
     }
+    // Scholars already took their own linked application with them above;
+    // this catches any application under the program that never became a
+    // scholar (rejected/pending/withdrawn).
+    for (const application of applications) {
+      await applicationService.performApplicationDeletion(application.id);
+    }
+
+    await prisma.scholarshipProgram.delete({ where: { id } });
+    return true;
   }
 
   async getProgramStats(): Promise<any> {

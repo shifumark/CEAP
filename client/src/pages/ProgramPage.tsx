@@ -27,6 +27,7 @@ function formatDate(value?: string | Date) {
 const ProgramPage = () => {
   const { user } = useAuth();
   const isAdmin = user?.role === UserRole.ADMIN || user?.role === UserRole.SUPER_ADMIN;
+  const isSuperAdmin = user?.role === UserRole.SUPER_ADMIN;
   const isApplicant = user?.role === UserRole.APPLICANT;
 
   const [programs, setPrograms] = useState<ScholarshipProgram[]>([]);
@@ -340,14 +341,16 @@ const ProgramPage = () => {
                         +1 Day
                       </button>
                     </span>
-                    <button
-                      className="btn btn-outline btn-sm"
-                      style={{ color: '#F87171', borderColor: '#F87171' }}
-                      disabled={busyId === program.id}
-                      onClick={() => setDeletingProgram(program)}
-                    >
-                      Delete Program
-                    </button>
+                    {isSuperAdmin && (
+                      <button
+                        className="btn btn-outline btn-sm"
+                        style={{ color: '#F87171', borderColor: '#F87171' }}
+                        disabled={busyId === program.id}
+                        onClick={() => setDeletingProgram(program)}
+                      >
+                        Delete Program
+                      </button>
+                    )}
                   </div>
                 )}
 

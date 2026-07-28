@@ -319,16 +319,21 @@ export class AuthService {
       await supabaseAdmin.storage.from(DOCUMENTS_BUCKET).remove(legacyPaths).catch(() => undefined);
     }
 
-    await prisma.uploadedDocument.deleteMany({ where: { userId: targetId } });
-    await prisma.auditLog.updateMany({ where: { userId: targetId }, data: { userId: null } });
-    // Same detach-not-cascade treatment as AuditLog.userId above — a
-    // deletion request this account filed (or reviewed) survives as
-    // history even after the account itself is gone.
-    await prisma.deletionRequest.updateMany({ where: { requestedBy: targetId }, data: { requestedBy: null } });
-    await prisma.deletionRequest.updateMany({ where: { reviewedBy: targetId }, data: { reviewedBy: null } });
-
-    // Cascades: User -> Applicant -> Application -> (status history, docs).
-    await prisma.user.delete({ where: { id: targetId } });
+    // Batched in one transaction — previously 5 separate awaited calls,
+    // so a crash/error partway through (e.g. after documents were wiped
+    // but before the user row itself was deleted) could leave the account
+    // in an inconsistent half-deleted state.
+    await prisma.$transaction([
+      prisma.uploadedDocument.deleteMany({ where: { userId: targetId } }),
+      prisma.auditLog.updateMany({ where: { userId: targetId }, data: { userId: null } }),
+      // Same detach-not-cascade treatment as AuditLog.userId above — a
+      // deletion request this account filed (or reviewed) survives as
+      // history even after the account itself is gone.
+      prisma.deletionRequest.updateMany({ where: { requestedBy: targetId }, data: { requestedBy: null } }),
+      prisma.deletionRequest.updateMany({ where: { reviewedBy: targetId }, data: { reviewedBy: null } }),
+      // Cascades: User -> Applicant -> Application -> (status history, docs).
+      prisma.user.delete({ where: { id: targetId } })
+    ]);
   }
 
   /**

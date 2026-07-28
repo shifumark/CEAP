@@ -22,6 +22,8 @@ import {
 } from '../types.js';
 import { NotificationService } from './NotificationService.js';
 import { DeletionRequestService } from './DeletionRequestService.js';
+import { supabaseAdmin, DOCUMENTS_BUCKET } from '../lib/supabase.js';
+import { getDriveAccount } from '../lib/googleDrive.js';
 
 const notificationService = new NotificationService();
 const deletionRequestService = new DeletionRequestService();
@@ -297,6 +299,32 @@ export class ScholarService {
     if (!scholar) return;
 
     const applicantId = scholar.user?.applicant?.id;
+
+    // The transaction below cascade-deletes UploadedDocument rows (via
+    // Application's onDelete: Cascade) for whatever application this
+    // scholar came from, but that's a DB-row-only cascade — it never
+    // touches the actual remote file. Without this, the Drive/Supabase
+    // file becomes orphaned (still billed/counted against quota) with no
+    // DB row left to ever find and clean it up again.
+    if (applicantId !== undefined) {
+      const documents = await prisma.uploadedDocument.findMany({
+        where: { application: { applicantId, scholarshipId: scholar.scholarshipId } },
+        select: { filePath: true, googleDriveId: true, driveAccount: true }
+      });
+      const driveFiles = documents.filter((d) => d.googleDriveId).map((d) => ({ fileId: d.googleDriveId as string, driveAccount: d.driveAccount }));
+      const legacyPaths = documents.filter((d) => !d.googleDriveId).map((d) => d.filePath);
+
+      await Promise.all(
+        driveFiles.map(({ fileId, driveAccount }) =>
+          getDriveAccount(driveAccount)
+            .drive.files.delete({ fileId })
+            .catch(() => undefined)
+        )
+      );
+      if (legacyPaths.length > 0) {
+        await supabaseAdmin.storage.from(DOCUMENTS_BUCKET).remove(legacyPaths).catch(() => undefined);
+      }
+    }
 
     await prisma.$transaction(async (tx) => {
       if (applicantId !== undefined) {

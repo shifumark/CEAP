@@ -85,8 +85,8 @@ function Sidebar() {
 
       <aside className={`app-sidebar${isOpen ? ' open' : ''}`}>
         <div className="sidebar-logo">
-          <img src={connerSeal} alt="" width={32} height={32} style={{ borderRadius: '50%', flexShrink: 0 }} />
-          <span>ECEAP</span>
+          <img src={connerSeal} alt="" width={44} height={44} style={{ borderRadius: '50%', flexShrink: 0 }} />
+          <span style={{ fontSize: '1.6rem' }}>ECEAP</span>
         </div>
 
         <nav className="sidebar-nav">

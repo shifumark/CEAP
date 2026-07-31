@@ -490,6 +490,26 @@ router.get('/applicants/by-user/:userId', verifyToken, requireAdminOrViewer, asy
   }
 });
 
+/**
+ * Locks or unlocks a student's ability to edit their own profile — set
+ * automatically true on application submission; this is the only way to
+ * clear it. Keyed by User.id (matching by-user/:userId above), since
+ * that's what every admin-facing student view already has on hand.
+ * Protected - admin/super admin only
+ */
+router.put('/applicants/by-user/:userId/profile-lock', verifyToken, requireAdmin, async (req: AuthenticatedRequest, res) => {
+  try {
+    const { locked } = req.body as { locked?: boolean };
+    if (typeof locked !== 'boolean') {
+      return res.status(400).json({ error: '"locked" (boolean) is required' });
+    }
+    const profile = await applicantService.setProfileLocked(parseInt(req.params.userId), locked);
+    res.json(profile);
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
 // ============== APPLICATION ROUTES ==============
 
 /**

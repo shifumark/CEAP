@@ -13,6 +13,7 @@ export const SECTORAL_CLASSIFICATIONS = [
   'Child of Overseas Filipino Worker (OFW)',
   'Child of Farmer/Fisherfolk',
   'Self-Supporting Student',
+  'Government Employee',
   'Others'
 ];
 
@@ -41,7 +42,7 @@ export const COLLEGE_YEAR_LEVELS = [
 // Grouped under the "Special Course" heading in the Year Level dropdown.
 // Must stay in sync with server/src/lib/profileRequirements.ts's
 // PROFESSIONAL_YEAR_LEVELS — used to conditionally require Course.
-export const PROFESSIONAL_YEAR_LEVELS = ['First Year', 'Second Year', 'Third Year', 'Fourth Year'];
+export const PROFESSIONAL_YEAR_LEVELS = ['First Year', 'Second Year', 'Third Year', 'Fourth Year', 'Fifth Year'];
 
 // Shown as a dropdown (plus a free-text "Other") once one of the
 // PROFESSIONAL_YEAR_LEVELS above is selected — selection is stored in the
@@ -57,5 +58,6 @@ export const ACADEMIC_STATUS_OPTIONS = [
   'With failing grades (Below 30% of total subjects)',
   'Incomplete (INC) grade/s',
   'With failed subject/s (30% or more of total subjects)',
-  'Dropped subject/s'
+  'Dropped subject/s',
+  'No Grades'
 ];

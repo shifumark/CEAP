@@ -59,6 +59,7 @@ function toScholar(record: ScholarWithRelations, submissionDate?: Date, received
     createdAt: record.createdAt,
     updatedAt: record.updatedAt,
     scholarshipName: record.scholarship?.name,
+    scholarshipStatus: record.scholarship?.status,
     studentName: record.user ? `${record.user.firstName} ${record.user.lastName}` : undefined,
     studentEmail: record.user?.email,
     studentBarangay: record.user?.applicant?.barangay ?? undefined,

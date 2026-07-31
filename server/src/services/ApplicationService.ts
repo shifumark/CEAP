@@ -52,6 +52,7 @@ function toApplication(record: ApplicationWithRelations): Application {
     createdAt: record.createdAt,
     updatedAt: record.updatedAt,
     scholarshipName: record.scholarship?.name,
+    scholarshipStatus: record.scholarship?.status,
     applicantName: record.applicant?.user
       ? `${record.applicant.user.firstName} ${record.applicant.user.lastName}`
       : undefined,
@@ -165,6 +166,10 @@ export class ApplicationService {
           changedBy: user.sub
         }
       });
+      // Locks profile editing the moment an application is actually
+      // submitted (not at draft creation) — only an Admin/Super Admin can
+      // clear it again (ApplicantService.setProfileLocked).
+      await tx.applicant.update({ where: { id: application.applicantId }, data: { profileLocked: true } });
       return app;
     });
 

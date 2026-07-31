@@ -27,12 +27,18 @@ function formatDate(value?: string | Date) {
   return new Date(value).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
+interface Props {
+  // From the parent's Applicant profile — a locked profile also blocks
+  // requesting a renewal, not just editing the profile itself.
+  profileLocked: boolean;
+}
+
 /**
  * Shown on the student dashboard once their application has been approved
  * and a Scholar record exists for them. Read-only except for requesting a
  * renewal, which the student initiates themselves.
  */
-const MyScholarshipPanel = () => {
+const MyScholarshipPanel = ({ profileLocked }: Props) => {
   const [scholar, setScholar] = useState<Scholar | null>(null);
   const [grades, setGrades] = useState<Grade[]>([]);
   const [renewals, setRenewals] = useState<Renewal[]>([]);
@@ -92,6 +98,8 @@ const MyScholarshipPanel = () => {
 
   if (loading) return null;
   if (!scholar) return null;
+
+  const canRequestRenewal = !profileLocked && scholar.scholarshipStatus === 'active';
 
   return (
     <section style={{ marginBottom: '3rem' }}>
@@ -174,34 +182,42 @@ const MyScholarshipPanel = () => {
             </ul>
           )}
 
-          <form
-            onSubmit={handleRequestRenewal}
-            style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-end', marginTop: '1rem', flexWrap: 'wrap' }}
-          >
-            <div className="form-group" style={{ margin: 0 }}>
-              <label htmlFor="renewalYear">Academic Year</label>
-              <input
-                id="renewalYear"
-                placeholder="2025-2026"
-                value={renewalYear}
-                onChange={(e) => setRenewalYear(e.target.value)}
-                required
-              />
-            </div>
-            <div className="form-group" style={{ margin: 0 }}>
-              <label htmlFor="renewalSemester">Semester</label>
-              <input
-                id="renewalSemester"
-                placeholder="1st Semester"
-                value={renewalSemester}
-                onChange={(e) => setRenewalSemester(e.target.value)}
-                required
-              />
-            </div>
-            <button className="btn btn-primary btn-sm" type="submit" disabled={submittingRenewal}>
-              {submittingRenewal ? 'Submitting...' : 'Request Renewal'}
-            </button>
-          </form>
+          {canRequestRenewal ? (
+            <form
+              onSubmit={handleRequestRenewal}
+              style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-end', marginTop: '1rem', flexWrap: 'wrap' }}
+            >
+              <div className="form-group" style={{ margin: 0 }}>
+                <label htmlFor="renewalYear">Academic Year</label>
+                <input
+                  id="renewalYear"
+                  placeholder="2025-2026"
+                  value={renewalYear}
+                  onChange={(e) => setRenewalYear(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="form-group" style={{ margin: 0 }}>
+                <label htmlFor="renewalSemester">Semester</label>
+                <input
+                  id="renewalSemester"
+                  placeholder="1st Semester"
+                  value={renewalSemester}
+                  onChange={(e) => setRenewalSemester(e.target.value)}
+                  required
+                />
+              </div>
+              <button className="btn btn-primary btn-sm" type="submit" disabled={submittingRenewal}>
+                {submittingRenewal ? 'Submitting...' : 'Request Renewal'}
+              </button>
+            </form>
+          ) : (
+            <p style={{ fontSize: '0.85rem', color: '#B9AFDA', marginTop: '0.75rem' }}>
+              {profileLocked
+                ? 'Renewal requests are unavailable while your profile is locked. Ask an administrator to unlock it.'
+                : 'Renewal requests are only open while this scholarship program is accepting them.'}
+            </p>
+          )}
         </div>
       </div>
     </section>

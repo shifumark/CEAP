@@ -211,7 +211,7 @@ function draw(doc: PDFKit.PDFDocument, applicant: Applicant): void {
   box("GUARDIAN'S NAME:", 26, (x, ty, w) => {
     value(doc, applicant.guardian?.name ?? '', x + 105, ty + 5, w * 0.45 - 105);
     doc.font('Helvetica-Bold').fontSize(10).text('RELATIONSHIP:', x + w * 0.48, ty + 5);
-    // Left blank — relationship isn't captured in the profile; filled in by hand.
+    value(doc, applicant.guardian?.relationship ?? '', x + w * 0.48 + 85, ty + 5, w * 0.24 - 85);
     doc.font('Helvetica-Bold').text('OCCUPATION:', x + w * 0.72, ty + 5);
     value(doc, applicant.guardian?.occupation ?? '', x + w * 0.72 + 80, ty + 5, w * 0.28 - 80);
   }, fullRowWidth, 5);

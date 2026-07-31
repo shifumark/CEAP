@@ -22,7 +22,8 @@ function toFamilyMemberDetail(record: PrismaFamilyMember | undefined): FamilyMem
     name: record.name ?? undefined,
     occupation: record.occupation ?? undefined,
     monthlyIncome: record.monthlyIncome ? record.monthlyIncome.toNumber() : undefined,
-    educationalAttainment: record.educationalAttainment ?? undefined
+    educationalAttainment: record.educationalAttainment ?? undefined,
+    relationship: record.relationship ?? undefined
   };
 }
 
@@ -85,9 +86,13 @@ function toApplicant(record: ApplicantWithFamily): Applicant {
     currentAssistanceAmount: record.currentAssistanceAmount ? record.currentAssistanceAmount.toNumber() : undefined,
     appliedOtherScholarship: record.appliedOtherScholarship ?? undefined,
     otherScholarshipProgram: record.otherScholarshipProgram ?? undefined,
+    receivedCeapAssistance: record.receivedCeapAssistance ?? undefined,
+    ceapAssistanceAmount: record.ceapAssistanceAmount ? record.ceapAssistanceAmount.toNumber() : undefined,
     academicDistinctionExtracurricular: record.academicDistinctionExtracurricular ?? undefined,
 
     lbpAtmAccountNumber: record.lbpAtmAccountNumber ?? undefined,
+
+    profileLocked: record.profileLocked,
 
     createdAt: record.createdAt,
     updatedAt: record.updatedAt
@@ -139,6 +144,11 @@ export class ApplicantService {
   async updateProfile(userId: number, request: UpdateApplicantProfileRequest): Promise<Applicant> {
     // Ensure a row exists first (applicant profiles are created lazily).
     const applicant = await this.getOrCreateForUser(userId);
+    if (applicant.profileLocked) {
+      throw new Error(
+        'Your profile is locked because you have submitted an application. Ask an administrator to unlock it before making changes.'
+      );
+    }
     const { father, mother, guardian, firstName, lastName } = request;
 
     // Built field-by-field from an explicit whitelist rather than
@@ -186,6 +196,8 @@ export class ApplicantService {
       currentAssistanceAmount: request.currentAssistanceAmount,
       appliedOtherScholarship: request.appliedOtherScholarship,
       otherScholarshipProgram: request.otherScholarshipProgram,
+      receivedCeapAssistance: request.receivedCeapAssistance,
+      ceapAssistanceAmount: request.ceapAssistanceAmount,
       academicDistinctionExtracurricular: request.academicDistinctionExtracurricular,
       lbpAtmAccountNumber: request.lbpAtmAccountNumber
     };
@@ -205,7 +217,8 @@ export class ApplicantService {
             name: detail.name,
             occupation: detail.occupation,
             monthlyIncome: detail.monthlyIncome,
-            educationalAttainment: detail.educationalAttainment
+            educationalAttainment: detail.educationalAttainment,
+            relationship: detail.relationship
           },
           create: {
             applicantId: applicant.id,
@@ -213,7 +226,8 @@ export class ApplicantService {
             name: detail.name ?? '',
             occupation: detail.occupation,
             monthlyIncome: detail.monthlyIncome,
-            educationalAttainment: detail.educationalAttainment
+            educationalAttainment: detail.educationalAttainment,
+            relationship: detail.relationship
           }
         });
       };
@@ -244,5 +258,21 @@ export class ApplicantService {
       missingFields,
       missingDocuments
     };
+  }
+
+  /**
+   * Admin/Super Admin only — locks or unlocks a student's ability to edit
+   * their own profile. Auto-set true by
+   * ApplicationService.submitApplication; this is the only way to clear
+   * it back to false. Callers must enforce the role check themselves
+   * (see routes.ts); this method has no such check of its own.
+   */
+  async setProfileLocked(applicantUserId: number, locked: boolean): Promise<Applicant> {
+    const updated = await prisma.applicant.update({
+      where: { userId: applicantUserId },
+      data: { profileLocked: locked },
+      include: applicantInclude
+    });
+    return toApplicant(updated);
   }
 }

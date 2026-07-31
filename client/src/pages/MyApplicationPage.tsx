@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { apiService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import { Application, ApplicationStatus } from '../types';
+import { Application, ApplicationStatus, Applicant } from '../types';
 import MyScholarshipPanel from '../components/MyScholarshipPanel';
 import Modal from '../components/Modal';
 
@@ -45,6 +45,7 @@ function formatDate(value?: string | Date) {
 const MyApplicationPage = () => {
   const { user } = useAuth();
   const [applications, setApplications] = useState<Application[]>([]);
+  const [applicant, setApplicant] = useState<Applicant | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [busyId, setBusyId] = useState<number | null>(null);
@@ -54,14 +55,29 @@ const MyApplicationPage = () => {
   const loadData = async () => {
     setError('');
     try {
-      const applicationsResult = await apiService.getApplications({ pageSize: 50 });
+      const [applicationsResult, profile] = await Promise.all([
+        apiService.getApplications({ pageSize: 50 }),
+        apiService.getMyProfile()
+      ]);
       setApplications(applicationsResult.data);
+      setApplicant(profile);
     } catch (err: any) {
       setError(err.message || 'Failed to load your applications');
     } finally {
       setLoading(false);
     }
   };
+
+  // Editing (and, in MyScholarshipPanel, requesting a renewal) is only
+  // available once a student has an application to edit against and its
+  // program is still open — locked automatically on submission
+  // (ApplicationService.submitApplication) until an Admin/Super Admin
+  // re-enables it, and additionally gated on the program itself still
+  // being open even once unlocked. A student with no applications yet
+  // (still filling out their profile for the first time) is unaffected —
+  // there's no program to check yet.
+  const hasOpenProgram = applications.length === 0 || applications.some((a) => a.scholarshipStatus === 'active');
+  const canEditProfile = !applicant?.profileLocked && hasOpenProgram;
 
   useEffect(() => {
     loadData();
@@ -101,9 +117,24 @@ const MyApplicationPage = () => {
       <nav className="navbar">
         <div className="navbar-brand">My Application</div>
         <div className="navbar-actions">
-          <Link to="/profile" className="btn btn-outline btn-sm">
-            Edit My Information
-          </Link>
+          {canEditProfile ? (
+            <Link to="/profile" className="btn btn-outline btn-sm">
+              Edit My Information
+            </Link>
+          ) : (
+            <button
+              className="btn btn-outline btn-sm"
+              type="button"
+              disabled
+              title={
+                !applicant?.profileLocked
+                  ? "Editing is unavailable — none of your applications' programs are currently open."
+                  : 'Your profile is locked because you submitted an application. Ask an administrator to unlock it.'
+              }
+            >
+              Edit My Information
+            </button>
+          )}
         </div>
       </nav>
 
@@ -126,7 +157,7 @@ const MyApplicationPage = () => {
           <p>Loading...</p>
         ) : (
           <>
-            <MyScholarshipPanel />
+            <MyScholarshipPanel profileLocked={applicant?.profileLocked ?? false} />
 
             <section style={{ marginBottom: '3rem' }}>
               <div className="card">

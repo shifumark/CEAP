@@ -235,7 +235,13 @@ const ScholarDetailPage = () => {
           <div className="card-header">
             <h3>Profile</h3>
           </div>
-          <ApplicantProfileView profile={profile} loading={profileLoading} email={scholar.studentEmail} />
+          <ApplicantProfileView
+            profile={profile}
+            loading={profileLoading}
+            email={scholar.studentEmail}
+            userId={scholar.userId}
+            canManageLock={!isViewer}
+          />
         </div>
 
         <div className="grid grid-2">

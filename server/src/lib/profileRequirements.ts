@@ -16,7 +16,7 @@ export const COLLEGE_YEAR_LEVELS = [
 
 // "Special Course" group in the Year Level dropdown — mirrored in
 // client/src/constants/profileOptions.ts as PROFESSIONAL_YEAR_LEVELS.
-export const PROFESSIONAL_YEAR_LEVELS = ['First Year', 'Second Year', 'Third Year', 'Fourth Year'];
+export const PROFESSIONAL_YEAR_LEVELS = ['First Year', 'Second Year', 'Third Year', 'Fourth Year', 'Fifth Year'];
 
 // Year levels where courseName is conditionally required (College and
 // Special Course collect it, just via different input widgets
@@ -79,7 +79,7 @@ const UNCONDITIONAL_RULES: FieldRule[] = [
   { label: 'General Weighted Average (GWA)', present: (a) => !isEmpty(a.gwa) },
   { label: 'Academic Status', present: (a) => !isEmpty(a.academicStatus) },
   {
-    label: 'Currently receiving any scholarship/assistance?',
+    label: 'Are you currently or have you previously received any scholarship or financial assistance?',
     present: (a) => !isEmpty(a.currentlyReceivingAssistance)
   },
   {

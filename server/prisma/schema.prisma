@@ -207,10 +207,21 @@ model Applicant {
   currentAssistanceAmount            Decimal? @map("current_assistance_amount") @db.Decimal(12, 2)
   appliedOtherScholarship            Boolean? @map("applied_other_scholarship")
   otherScholarshipProgram            String?  @map("other_scholarship_program")
+  // Separate from currentlyReceivingAssistance/currentAssistanceProgram
+  // above, which cover any OTHER program — this is specifically about
+  // CEAP itself (e.g. a prior year's award), asked as its own yes/no.
+  receivedCeapAssistance             Boolean? @map("received_ceap_assistance")
+  ceapAssistanceAmount               Decimal? @map("ceap_assistance_amount") @db.Decimal(12, 2)
   academicDistinctionExtracurricular String?  @map("academic_distinction_extracurricular")
 
   // IX. ATM
   lbpAtmAccountNumber String? @map("lbp_atm_account_number")
+
+  // Auto-set true the moment the student submits any application
+  // (ApplicationService.submitApplication) — profile editing is then
+  // locked until an Admin/Super Admin explicitly re-enables it, so a
+  // decision isn't made against information that changed underneath it.
+  profileLocked Boolean @default(false) @map("profile_locked")
 
   createdAt               DateTime  @default(now()) @map("created_at")
   updatedAt               DateTime  @updatedAt @map("updated_at")

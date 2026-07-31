@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import { Applicant } from '../types';
+import { apiService } from '../services/api';
 
 function formatDate(value?: string | Date) {
   if (!value) return '—';
@@ -33,6 +35,10 @@ interface Props {
   profile: Applicant | null;
   loading: boolean;
   email?: string;
+  // Only Admin/Super Admin pass these — Viewer (read-only) omits them, so
+  // no lock/unlock control renders for a role that can't mutate anything.
+  userId?: number;
+  canManageLock?: boolean;
 }
 
 /**
@@ -40,7 +46,11 @@ interface Props {
  * documents) — shared by ApplicationReviewPage (reviewing an
  * application) and ScholarDetailPage (managing an approved scholar).
  */
-const ApplicantProfileView = ({ profile, loading, email }: Props) => {
+const ApplicantProfileView = ({ profile, loading, email, userId, canManageLock }: Props) => {
+  const [locked, setLocked] = useState(profile?.profileLocked ?? false);
+  const [togglingLock, setTogglingLock] = useState(false);
+  const [lockError, setLockError] = useState('');
+
   if (loading) {
     return <p style={{ fontSize: '0.85rem', color: '#B9AFDA', marginTop: '0.5rem' }}>Loading...</p>;
   }
@@ -48,8 +58,50 @@ const ApplicantProfileView = ({ profile, loading, email }: Props) => {
     return <p style={{ fontSize: '0.85rem', color: '#B9AFDA', marginTop: '0.5rem' }}>Profile not available.</p>;
   }
 
+  const handleToggleLock = async () => {
+    if (!userId) return;
+    setTogglingLock(true);
+    setLockError('');
+    try {
+      const updated = await apiService.setProfileLock(userId, !locked);
+      setLocked(updated.profileLocked);
+    } catch (err: any) {
+      setLockError(err.message || 'Failed to update profile lock');
+    } finally {
+      setTogglingLock(false);
+    }
+  };
+
   return (
     <div style={{ marginTop: '0.6rem' }}>
+      {canManageLock && userId !== undefined && (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.75rem',
+            marginBottom: '1rem',
+            padding: '0.6rem 0.85rem',
+            background: 'rgba(139, 92, 246, 0.06)',
+            borderRadius: 'var(--radius-md)',
+            flexWrap: 'wrap'
+          }}
+        >
+          <span className={`badge ${locked ? 'badge-warning' : 'badge-success'}`}>
+            Profile {locked ? 'Locked' : 'Unlocked'}
+          </span>
+          <span style={{ fontSize: '0.8rem', color: '#B9AFDA' }}>
+            {locked
+              ? "Student can't edit their profile or request a renewal until you unlock it."
+              : 'Student can currently edit their own profile.'}
+          </span>
+          <button className="btn btn-outline btn-sm" type="button" disabled={togglingLock} onClick={handleToggleLock}>
+            {togglingLock ? 'Updating...' : locked ? 'Unlock Profile' : 'Lock Profile'}
+          </button>
+          {lockError && <span style={{ color: '#F87171', fontSize: '0.8rem' }}>{lockError}</span>}
+        </div>
+      )}
+
       <ProfileSection title="Personal Information">
         <Field label="Last Name" value={profile.lastName} />
         <Field label="First Name" value={profile.firstName} />
@@ -92,16 +144,16 @@ const ApplicantProfileView = ({ profile, loading, email }: Props) => {
         <Field label="Father's Occupation" value={profile.father?.occupation} />
         <Field label="Father's Monthly Income" value={formatMoney(profile.father?.monthlyIncome)} />
         <Field label="Father's Education" value={profile.father?.educationalAttainment} />
-        <Field label="Mother's Name" value={profile.mother?.name} />
+        <Field label="Mother's Maiden Name" value={profile.mother?.name} />
         <Field label="Mother's Occupation" value={profile.mother?.occupation} />
         <Field label="Mother's Monthly Income" value={formatMoney(profile.mother?.monthlyIncome)} />
         <Field label="Mother's Education" value={profile.mother?.educationalAttainment} />
         {profile.guardian?.name && (
           <>
             <Field label="Guardian's Name" value={profile.guardian?.name} />
+            <Field label="Guardian's Relationship" value={profile.guardian?.relationship} />
             <Field label="Guardian's Occupation" value={profile.guardian?.occupation} />
             <Field label="Guardian's Monthly Income" value={formatMoney(profile.guardian?.monthlyIncome)} />
-            <Field label="Guardian's Education" value={profile.guardian?.educationalAttainment} />
           </>
         )}
         <Field label="Total Household Monthly Income" value={formatMoney(profile.householdMonthlyIncome)} />
@@ -122,13 +174,18 @@ const ApplicantProfileView = ({ profile, loading, email }: Props) => {
       </ProfileSection>
 
       <ProfileSection title="Other Educational Assistance">
-        <Field label="Currently receiving assistance?" value={yesNo(profile.currentlyReceivingAssistance)} />
+        <Field
+          label="Currently or previously received any scholarship/assistance?"
+          value={yesNo(profile.currentlyReceivingAssistance)}
+        />
         {profile.currentlyReceivingAssistance && (
           <>
             <Field label="Program" value={profile.currentAssistanceProgram} />
             <Field label="Amount" value={formatMoney(profile.currentAssistanceAmount)} />
           </>
         )}
+        <Field label="Received CEAP assistance before?" value={yesNo(profile.receivedCeapAssistance)} />
+        {profile.receivedCeapAssistance && <Field label="CEAP Amount" value={formatMoney(profile.ceapAssistanceAmount)} />}
         <Field label="Applied for other scholarships?" value={yesNo(profile.appliedOtherScholarship)} />
         {profile.appliedOtherScholarship && <Field label="Program Applied To" value={profile.otherScholarshipProgram} />}
         <Field label="Academic Distinction & Extracurricular" value={profile.academicDistinctionExtracurricular} />

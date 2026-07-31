@@ -187,6 +187,10 @@ class ApiService {
     return this.request('GET', `/applicants/by-user/${userId}`);
   }
 
+  async setProfileLock(userId: number, locked: boolean): Promise<Applicant> {
+    return this.request('PUT', `/applicants/by-user/${userId}/profile-lock`, { locked });
+  }
+
   // ============== SCHOLARSHIPS ==============
 
   async getScholarships(page = 1, pageSize = 10): Promise<PaginatedResponse<ScholarshipProgram>> {

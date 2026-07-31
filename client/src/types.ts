@@ -151,6 +151,9 @@ export interface FamilyMemberDetail {
   occupation?: string;
   monthlyIncome?: number;
   educationalAttainment?: string;
+  // Only meaningful for guardian — father/mother's relationship to the
+  // applicant is fixed and never collected.
+  relationship?: string;
 }
 
 export interface Applicant {
@@ -216,10 +219,17 @@ export interface Applicant {
   currentAssistanceAmount?: number;
   appliedOtherScholarship?: boolean;
   otherScholarshipProgram?: string;
+  receivedCeapAssistance?: boolean;
+  ceapAssistanceAmount?: number;
   academicDistinctionExtracurricular?: string;
 
   // IX. ATM
   lbpAtmAccountNumber?: string;
+
+  // True once the student has submitted any application — Edit
+  // Information and Request Renewal are then disabled until an Admin/
+  // Super Admin re-enables it.
+  profileLocked: boolean;
 
   createdAt: Date;
   updatedAt: Date;
@@ -286,6 +296,8 @@ export interface UpdateApplicantProfileRequest {
   currentAssistanceAmount?: number;
   appliedOtherScholarship?: boolean;
   otherScholarshipProgram?: string;
+  receivedCeapAssistance?: boolean;
+  ceapAssistanceAmount?: number;
   academicDistinctionExtracurricular?: string;
   lbpAtmAccountNumber?: string;
   father?: FamilyMemberDetail;
@@ -446,6 +458,9 @@ export interface Application {
   createdAt: Date;
   updatedAt: Date;
   scholarshipName?: string;
+  // The program's own status ('active'/'closed') — used to gate whether
+  // the applicant can still edit their profile / request a renewal.
+  scholarshipStatus?: string;
   applicantName?: string;
   applicantEmail?: string;
   applicantBarangay?: string;
@@ -588,6 +603,9 @@ export interface Scholar {
   createdAt: Date;
   updatedAt: Date;
   scholarshipName?: string;
+  // The program's own status ('active'/'closed') — used to gate whether
+  // the scholar can still request a renewal.
+  scholarshipStatus?: string;
   studentName?: string;
   studentEmail?: string;
   studentBarangay?: string;

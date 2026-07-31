@@ -30,6 +30,8 @@ interface FamilyMemberForm {
   occupation: string;
   monthlyIncome: string;
   educationalAttainment: string;
+  // Only shown/edited for guardian — father/mother's relationship is fixed.
+  relationship: string;
 }
 
 interface FormState {
@@ -72,6 +74,8 @@ interface FormState {
   currentAssistanceAmount: string;
   appliedOtherScholarship: string;
   otherScholarshipProgram: string;
+  receivedCeapAssistance: string;
+  ceapAssistanceAmount: string;
   academicDistinctionExtracurricular: string;
   lbpAtmAccountNumber: string;
   father: FamilyMemberForm;
@@ -79,7 +83,7 @@ interface FormState {
   guardian: FamilyMemberForm;
 }
 
-const emptyFamilyMember: FamilyMemberForm = { name: '', occupation: '', monthlyIncome: '', educationalAttainment: '' };
+const emptyFamilyMember: FamilyMemberForm = { name: '', occupation: '', monthlyIncome: '', educationalAttainment: '', relationship: '' };
 
 const emptyForm: FormState = {
   firstName: '',
@@ -121,6 +125,8 @@ const emptyForm: FormState = {
   currentAssistanceAmount: '',
   appliedOtherScholarship: '',
   otherScholarshipProgram: '',
+  receivedCeapAssistance: '',
+  ceapAssistanceAmount: '',
   academicDistinctionExtracurricular: '',
   lbpAtmAccountNumber: '',
   father: { ...emptyFamilyMember },
@@ -166,7 +172,8 @@ function toFamilyMemberForm(detail?: Applicant['father']): FamilyMemberForm {
     name: detail?.name ?? '',
     occupation: detail?.occupation ?? '',
     monthlyIncome: detail?.monthlyIncome !== undefined ? String(detail.monthlyIncome) : '',
-    educationalAttainment: detail?.educationalAttainment ?? ''
+    educationalAttainment: detail?.educationalAttainment ?? '',
+    relationship: detail?.relationship ?? ''
   };
 }
 
@@ -212,6 +219,8 @@ function applicantToForm(applicant: Applicant): FormState {
     currentAssistanceAmount: applicant.currentAssistanceAmount !== undefined ? String(applicant.currentAssistanceAmount) : '',
     appliedOtherScholarship: toYesNo(applicant.appliedOtherScholarship),
     otherScholarshipProgram: applicant.otherScholarshipProgram ?? '',
+    receivedCeapAssistance: toYesNo(applicant.receivedCeapAssistance),
+    ceapAssistanceAmount: applicant.ceapAssistanceAmount !== undefined ? String(applicant.ceapAssistanceAmount) : '',
     academicDistinctionExtracurricular: applicant.academicDistinctionExtracurricular ?? '',
     lbpAtmAccountNumber: applicant.lbpAtmAccountNumber ?? '',
     father: toFamilyMemberForm(applicant.father),
@@ -223,12 +232,13 @@ function applicantToForm(applicant: Applicant): FormState {
 function formToRequest(form: FormState): UpdateApplicantProfileRequest {
   const num = (v: string) => (v === '' ? undefined : Number(v));
   const familyMember = (m: FamilyMemberForm) =>
-    m.name || m.occupation || m.monthlyIncome || m.educationalAttainment
+    m.name || m.occupation || m.monthlyIncome || m.educationalAttainment || m.relationship
       ? {
           name: m.name || undefined,
           occupation: m.occupation || undefined,
           monthlyIncome: num(m.monthlyIncome),
-          educationalAttainment: m.educationalAttainment || undefined
+          educationalAttainment: m.educationalAttainment || undefined,
+          relationship: m.relationship || undefined
         }
       : undefined;
 
@@ -272,6 +282,8 @@ function formToRequest(form: FormState): UpdateApplicantProfileRequest {
     currentAssistanceAmount: num(form.currentAssistanceAmount),
     appliedOtherScholarship: fromYesNo(form.appliedOtherScholarship),
     otherScholarshipProgram: form.otherScholarshipProgram || undefined,
+    receivedCeapAssistance: fromYesNo(form.receivedCeapAssistance),
+    ceapAssistanceAmount: num(form.ceapAssistanceAmount),
     academicDistinctionExtracurricular: form.academicDistinctionExtracurricular || undefined,
     lbpAtmAccountNumber: form.lbpAtmAccountNumber || undefined,
     father: familyMember(form.father),
@@ -291,6 +303,9 @@ const ProfilePage = () => {
   // in-the-moment attestation that what's about to be saved is accurate.
   const [certified, setCertified] = useState(false);
   const [showSavedModal, setShowSavedModal] = useState(false);
+  // Not part of FormState (not user-editable) — set once from the loaded
+  // profile and used purely to disable the form/Save button.
+  const [profileLocked, setProfileLocked] = useState(false);
   // Tracks an explicit "Other" click on the Special Course sub-dropdown,
   // independent of courseName — courseName is cleared to '' right after
   // choosing "Other" (so the text field starts blank), and deriving the
@@ -317,6 +332,7 @@ const ProfilePage = () => {
     try {
       const [profile] = await Promise.all([apiService.getMyProfile(), loadCompleteness()]);
       setForm(applicantToForm(profile));
+      setProfileLocked(profile.profileLocked);
       setSpecialCourseOtherSelected(false);
     } catch (err: any) {
       setError(err.message || 'Failed to load profile');
@@ -480,7 +496,24 @@ const ProfilePage = () => {
               </div>
             )}
 
+            {profileLocked && (
+              <div
+                style={{
+                  padding: '1rem',
+                  background: 'rgba(251, 191, 36, 0.1)',
+                  border: '1px solid rgba(251, 191, 36, 0.3)',
+                  borderRadius: 'var(--radius-md)',
+                  marginBottom: '1.5rem',
+                  color: '#FBBF24'
+                }}
+              >
+                Your profile is locked because you've submitted an application. Ask an administrator to unlock it
+                before making changes.
+              </div>
+            )}
+
             <form onSubmit={handleSubmit}>
+              <fieldset disabled={profileLocked} style={{ border: 'none', padding: 0, margin: 0 }}>
               <div className="card" style={{ marginBottom: '1.5rem' }}>
                 <div className="card-header">
                   <h3>I. Personal Information</h3>
@@ -601,7 +634,7 @@ const ProfilePage = () => {
                   <h3>III. Contact Details</h3>
                 </div>
                 <div className="form-group">
-                  <label htmlFor="address">Home Address (Street/House No.)</label>
+                  <label htmlFor="address">Home Address (Purok/House No.)</label>
                   <input id="address" value={form.address} onChange={(e) => set('address', e.target.value)} />
                 </div>
                 <div className="form-group">
@@ -672,7 +705,7 @@ const ProfilePage = () => {
 
                 <h4 style={{ marginTop: 0 }}>Father</h4>
                 <div className="form-group">
-                  <label htmlFor="fatherName">Name</label>
+                  <label htmlFor="fatherName">Father's Name</label>
                   <input id="fatherName" value={form.father.name} onChange={(e) => setFamilyField('father', 'name', e.target.value)} />
                   <small style={{ color: '#B9AFDA' }}>Format: First Name, Middle Initial, Last Name</small>
                 </div>
@@ -704,7 +737,7 @@ const ProfilePage = () => {
 
                 <h4>Mother</h4>
                 <div className="form-group">
-                  <label htmlFor="motherName">Name</label>
+                  <label htmlFor="motherName">Mother's Maiden Name</label>
                   <input id="motherName" value={form.mother.name} onChange={(e) => setFamilyField('mother', 'name', e.target.value)} />
                   <small style={{ color: '#B9AFDA' }}>Format: First Name, Middle Initial, Last Name</small>
                 </div>
@@ -750,6 +783,16 @@ const ProfilePage = () => {
                   />
                 </div>
                 <div className="form-group">
+                  <label htmlFor="guardianRelationship">Relationship to Applicant</label>
+                  <input
+                    id="guardianRelationship"
+                    value={form.guardian.relationship}
+                    onChange={(e) => setFamilyField('guardian', 'relationship', e.target.value)}
+                    disabled={hasBothParents}
+                    placeholder="e.g. Grandmother, Aunt, Sibling"
+                  />
+                </div>
+                <div className="form-group">
                   <label htmlFor="guardianOccupation">Occupation</label>
                   <input
                     id="guardianOccupation"
@@ -768,16 +811,6 @@ const ProfilePage = () => {
                     disabled={hasBothParents}
                   />
                 </div>
-                <div className="form-group">
-                  <label htmlFor="guardianEducation">Educational Attainment</label>
-                  <input
-                    id="guardianEducation"
-                    value={form.guardian.educationalAttainment}
-                    onChange={(e) => setFamilyField('guardian', 'educationalAttainment', e.target.value)}
-                    disabled={hasBothParents}
-                  />
-                </div>
-
                 <h4>Household</h4>
                 <div className="form-group">
                   <label htmlFor="householdMonthlyIncome">Total Household Monthly Income</label>
@@ -960,7 +993,9 @@ const ProfilePage = () => {
                   <h3>VII. Other Educational Assistance / Scholarships</h3>
                 </div>
                 <div className="form-group">
-                  <label htmlFor="currentlyReceivingAssistance">Currently receiving any scholarship/assistance?</label>
+                  <label htmlFor="currentlyReceivingAssistance">
+                    Are you currently or have you previously received any scholarship or financial assistance?
+                  </label>
                   <select
                     id="currentlyReceivingAssistance"
                     value={form.currentlyReceivingAssistance}
@@ -991,6 +1026,31 @@ const ProfilePage = () => {
                       />
                     </div>
                   </>
+                )}
+                <div className="form-group">
+                  <label htmlFor="receivedCeapAssistance">
+                    Have you received assistance under the Conner Educational Assistance Program?
+                  </label>
+                  <select
+                    id="receivedCeapAssistance"
+                    value={form.receivedCeapAssistance}
+                    onChange={(e) => set('receivedCeapAssistance', e.target.value)}
+                  >
+                    <option value="">Select...</option>
+                    <option value="yes">Yes</option>
+                    <option value="no">No</option>
+                  </select>
+                </div>
+                {form.receivedCeapAssistance === 'yes' && (
+                  <div className="form-group">
+                    <label htmlFor="ceapAssistanceAmount">Amount</label>
+                    <input
+                      id="ceapAssistanceAmount"
+                      type="number"
+                      value={form.ceapAssistanceAmount}
+                      onChange={(e) => set('ceapAssistanceAmount', e.target.value)}
+                    />
+                  </div>
                 )}
                 <div className="form-group">
                   <label htmlFor="appliedOtherScholarship">Have you applied for other scholarships/financial assistance?</label>
@@ -1088,9 +1148,10 @@ const ProfilePage = () => {
                 </label>
               </div>
 
-              <button className="btn btn-primary" type="submit" disabled={saving || !certified}>
+              <button className="btn btn-primary" type="submit" disabled={saving || !certified || profileLocked}>
                 {saving ? 'Saving...' : 'Save Profile'}
               </button>
+              </fieldset>
             </form>
 
             <div className="card" style={{ marginTop: '1.5rem' }}>

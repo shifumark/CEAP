@@ -427,7 +427,13 @@ const ApplicationReviewPage = () => {
 
             <div style={{ marginBottom: '1.25rem' }}>
               <strong style={{ fontSize: '0.85rem' }}>Applicant Profile</strong>
-              <ApplicantProfileView profile={applicantProfile} loading={profileLoading} email={selected.applicantEmail} />
+              <ApplicantProfileView
+                profile={applicantProfile}
+                loading={profileLoading}
+                email={selected.applicantEmail}
+                userId={applicantProfile?.userId}
+                canManageLock={!isViewer}
+              />
             </div>
 
             <div style={{ marginBottom: '1.25rem' }}>

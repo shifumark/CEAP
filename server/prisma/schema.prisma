@@ -125,7 +125,7 @@ model User {
   isDeletionReviewer Boolean    @default(false) @map("is_deletion_reviewer")
 
   applicant             Applicant?
-  scholar               Scholar?
+  scholars              Scholar[]
   createdPrograms       ScholarshipProgram[]       @relation("ProgramCreator")
   reviewedApplications  Application[]              @relation("ApplicationReviewer")
   statusChanges         ApplicationStatusHistory[] @relation("StatusChanger")
@@ -468,9 +468,15 @@ model UploadedDocument {
 
 // ============== SCHOLARS ==============
 
+// A person can hold at most one Scholar record per program (the
+// composite unique below), but can be a Scholar in more than one
+// program at once — e.g. approved under both an older and a newer
+// program. userId is intentionally no longer unique on its own; see
+// ScholarService.createFromApprovedApplication for the idempotency this
+// replaces.
 model Scholar {
   id               Int           @id @default(autoincrement())
-  userId           Int           @unique @map("user_id")
+  userId           Int           @map("user_id")
   scholarshipId    Int           @map("scholarship_id")
   scholarIdNumber  String?       @unique @map("scholar_id_number")
   approvalDate     DateTime?     @map("approval_date") @db.Date
@@ -486,6 +492,8 @@ model Scholar {
   allowances  Allowance[]
   violations  Violation[]
 
+  @@unique([userId, scholarshipId])
+  @@index([userId])
   @@index([scholarshipId])
   @@index([status])
   @@map("scholars")

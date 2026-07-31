@@ -838,18 +838,16 @@ router.put('/documents/:id/verify', verifyToken, requireAdmin, async (req: Authe
 // ============== SCHOLAR ROUTES ==============
 
 /**
- * Get the requesting user's own scholar record, if any
+ * Get every scholarship program the requesting user is (or was) a
+ * Scholar in — a list, not a single record, since one person can hold a
+ * Scholar record in more than one program at once. Empty array (not a
+ * 404) when they aren't a Scholar anywhere.
  * Protected - any authenticated user
  */
 router.get('/scholars/me', verifyToken, async (req: AuthenticatedRequest, res) => {
   try {
-    const scholar = await scholarService.getMyRecord(req.user!);
-
-    if (!scholar) {
-      return res.status(404).json({ error: 'No scholar record found' });
-    }
-
-    res.json(scholar);
+    const scholars = await scholarService.getMyRecords(req.user!);
+    res.json(scholars);
   } catch (error: any) {
     console.error(error); res.status(500).json({ error: 'Internal server error' });
   }
@@ -1563,7 +1561,7 @@ router.post('/deletion-requests/:id/approve', verifyToken, requireDeletionReview
         return res.status(400).json({ error: 'This account is no longer a Student account and can no longer be deleted this way.' });
       }
       if (target) {
-        const scholar = await prisma.scholar.findUnique({ where: { userId: request.entityId }, select: { id: true } });
+        const scholar = await prisma.scholar.findFirst({ where: { userId: request.entityId }, select: { id: true } });
         if (scholar) {
           return res.status(400).json({ error: 'This user has since become a Scholar — remove them from Scholar Management instead.' });
         }

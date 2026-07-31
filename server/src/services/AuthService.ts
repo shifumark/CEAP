@@ -296,7 +296,10 @@ export class AuthService {
       throw new Error('Only Student accounts can be deleted this way');
     }
 
-    const scholar = await prisma.scholar.findUnique({ where: { userId: targetId } });
+    // findFirst, not findUnique — userId is no longer unique on its own
+    // (one person can be a Scholar in more than one program); any single
+    // Scholar record is enough to block a direct account delete.
+    const scholar = await prisma.scholar.findFirst({ where: { userId: targetId } });
     if (scholar) {
       throw new Error('This user is an active Scholar — remove them from Scholar Management instead');
     }

@@ -139,12 +139,17 @@ function toViolation(record: Prisma.ViolationGetPayload<{}>): Violation {
 
 export class ScholarService {
   /**
-   * Called when an application is approved. Idempotent: a user can only
-   * ever have one Scholar record (matches the DB's unique userId), so a
-   * second approval for the same person just returns the existing one.
+   * Called when an application is approved. Idempotent per (user,
+   * program) pair, not per user — someone can hold a Scholar record in
+   * more than one program at once, so a second approval under a
+   * DIFFERENT program creates its own record; only a second approval
+   * under the SAME program returns the existing one unchanged.
    */
   async createFromApprovedApplication(userId: number, scholarshipId: number): Promise<Scholar> {
-    const existing = await prisma.scholar.findUnique({ where: { userId }, include: scholarInclude });
+    const existing = await prisma.scholar.findUnique({
+      where: { userId_scholarshipId: { userId, scholarshipId } },
+      include: scholarInclude
+    });
     if (existing) return toScholar(existing);
 
     const created = await prisma.scholar.create({
@@ -161,9 +166,14 @@ export class ScholarService {
     return toScholar(updated);
   }
 
-  async getMyRecord(user: JWTPayload): Promise<Scholar | undefined> {
-    const record = await prisma.scholar.findUnique({ where: { userId: user.sub }, include: scholarInclude });
-    return record ? toScholar(record) : undefined;
+  /**
+   * Every scholarship program the requesting user is (or was) a Scholar
+   * in — plural, since one person can hold a Scholar record in more than
+   * one program at once.
+   */
+  async getMyRecords(user: JWTPayload): Promise<Scholar[]> {
+    const records = await prisma.scholar.findMany({ where: { userId: user.sub }, include: scholarInclude });
+    return records.map(toScholar);
   }
 
   async listScholars(user: JWTPayload, filters?: ScholarFilters): Promise<PaginatedResponse<Scholar>> {

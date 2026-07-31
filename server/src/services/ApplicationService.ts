@@ -284,19 +284,24 @@ export class ApplicationService {
       prisma.application.count({ where })
     ]);
 
-    // Scholar has no direct applicationId FK (and is keyed uniquely per
-    // userId, not per program — see ScholarService), so the Scholar ID
-    // for each report row is looked up separately, in one bulk query
-    // rather than N+1. Only applications whose applicant has actually
-    // become a Scholar (i.e. was approved at some point) will have one.
+    // Scholar has no direct applicationId FK, so the Scholar ID for each
+    // report row is looked up separately, in one bulk query rather than
+    // N+1. Only applications whose applicant has actually become a
+    // Scholar (i.e. was approved at some point) will have one. Keyed by
+    // (userId, scholarshipId) together, not userId alone — a person can
+    // hold a Scholar record in more than one program at once, so this
+    // report row needs specifically the one matching ITS program, not
+    // whichever of that person's Scholar records happened to be fetched.
     const userIds = rows.map((r) => r.applicant.user.id);
     const scholars = userIds.length
       ? await prisma.scholar.findMany({
           where: { userId: { in: userIds } },
-          select: { userId: true, scholarIdNumber: true }
+          select: { userId: true, scholarshipId: true, scholarIdNumber: true }
         })
       : [];
-    const scholarIdByUserId = new Map(scholars.map((s) => [s.userId, s.scholarIdNumber ?? undefined]));
+    const scholarIdByUserAndProgram = new Map(
+      scholars.map((s) => [`${s.userId}:${s.scholarshipId}`, s.scholarIdNumber ?? undefined])
+    );
 
     const data = rows.map((r) => {
       const father = r.applicant.familyMembers.find((m) => m.memberType === 'father');
@@ -363,7 +368,7 @@ export class ApplicationService {
         lbpAtmAccountNumber: r.applicant.lbpAtmAccountNumber ?? undefined,
         scholarshipName: r.scholarship?.name,
         status: r.status as unknown as ApplicationStatus,
-        scholarIdNumber: scholarIdByUserId.get(r.applicant.user.id),
+        scholarIdNumber: scholarIdByUserAndProgram.get(`${r.applicant.user.id}:${r.scholarshipId}`),
         submissionDate: r.submissionDate ?? undefined,
         createdAt: r.createdAt
       };

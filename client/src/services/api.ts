@@ -378,11 +378,14 @@ class ApiService {
 
   // ============== SCHOLARS ==============
 
-  async getMyScholarRecord(): Promise<Scholar | null> {
+  // A person can hold a Scholar record in more than one program at
+  // once, so this returns every one they have — empty array, not null,
+  // when they aren't a Scholar anywhere.
+  async getMyScholarRecords(): Promise<Scholar[]> {
     try {
-      return await this.request<Scholar>('GET', '/scholars/me');
+      return await this.request<Scholar[]>('GET', '/scholars/me');
     } catch {
-      return null;
+      return [];
     }
   }
 

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { apiService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { ScholarshipProgram, UserRole } from '../types';
@@ -34,6 +35,7 @@ const ProgramPage = () => {
   const [appliedScholarshipIds, setAppliedScholarshipIds] = useState<Set<number>>(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
@@ -69,6 +71,7 @@ const ProgramPage = () => {
 
   const handleApplySuccess = () => {
     setApplyingTo(null);
+    setNotice('Applied! Please proceed to My Application for submission.');
     load();
   };
 
@@ -236,6 +239,29 @@ const ProgramPage = () => {
         {error && (
           <div className="alert-error" style={{ padding: '1rem', marginBottom: '1.5rem' }}>
             {error}
+          </div>
+        )}
+
+        {notice && (
+          <div
+            style={{
+              padding: '1rem',
+              background: 'rgba(16, 185, 129, 0.1)',
+              border: '1px solid rgba(16, 185, 129, 0.3)',
+              borderRadius: 'var(--radius-md)',
+              marginBottom: '1.5rem',
+              color: '#34D399',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: '0.75rem'
+            }}
+          >
+            <span>{notice}</span>
+            <Link to="/my-application" className="btn btn-primary btn-sm">
+              Go to My Application
+            </Link>
           </div>
         )}
 

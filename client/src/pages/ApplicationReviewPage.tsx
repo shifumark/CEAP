@@ -91,6 +91,7 @@ const ApplicationReviewPage = () => {
   const [deleting, setDeleting] = useState(false);
   const [showDeleteAll, setShowDeleteAll] = useState(false);
   const [deletingAll, setDeletingAll] = useState(false);
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
   const loadApplications = async () => {
     setError('');
@@ -125,10 +126,12 @@ const ApplicationReviewPage = () => {
 
   const selected = applications.find((a) => a.id === selectedId) ?? null;
 
-  // Numbered by submission order (earliest first) — same "who submitted
-  // first" convention used in Scholar Management. Applications with no
-  // submissionDate (drafts can't reach here; only possible for records
-  // an admin fast-tracked without a formal submission) sort last.
+  // Numbered by submission order (earliest first by default) — same "who
+  // submitted first" convention used in Scholar Management, reversible
+  // via the sort-order toggle. Applications with no submissionDate
+  // (drafts can't reach here; only possible for records an admin
+  // fast-tracked without a formal submission) always sort last,
+  // regardless of direction.
   const filteredApplications = applications
     .filter((application) => {
       if (nameSearch && !application.applicantName?.toLowerCase().includes(nameSearch.toLowerCase())) return false;
@@ -148,7 +151,8 @@ const ApplicationReviewPage = () => {
       if (!a.submissionDate && !b.submissionDate) return 0;
       if (!a.submissionDate) return 1;
       if (!b.submissionDate) return -1;
-      return new Date(a.submissionDate).getTime() - new Date(b.submissionDate).getTime();
+      const direction = sortOrder === 'asc' ? 1 : -1;
+      return direction * (new Date(a.submissionDate).getTime() - new Date(b.submissionDate).getTime());
     });
 
   const loadDocuments = async (applicationId: number) => {
@@ -353,6 +357,13 @@ const ApplicationReviewPage = () => {
                     {STATUS_LABEL[status]}
                   </option>
                 ))}
+              </select>
+            </div>
+            <div className="form-group" style={{ margin: 0, minWidth: '200px' }}>
+              <label htmlFor="sortOrder">Sort by Date Submitted</label>
+              <select id="sortOrder" value={sortOrder} onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}>
+                <option value="asc">Ascending (earliest first)</option>
+                <option value="desc">Descending (latest first)</option>
               </select>
             </div>
           </div>

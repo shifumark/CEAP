@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { apiService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { DashboardStats } from '../types';
+import DoughnutChart from '../components/DoughnutChart';
 
 const DashboardPage = () => {
   const { user } = useAuth();
@@ -26,11 +27,11 @@ const DashboardPage = () => {
     { label: 'Renewals Due', value: stats?.renewalsDue ?? 0, icon: '🔄', color: '#F59E0B' }
   ];
 
-  const applicantCategoryCards = [
-    { label: 'Senior High Applicants', value: stats?.seniorHighApplicants ?? 0, icon: '🎒', color: '#3B82F6' },
-    { label: 'College Applicants', value: stats?.collegeApplicants ?? 0, icon: '🎓', color: '#8B5CF6' },
-    { label: 'Special Course Applicants', value: stats?.specialCourseApplicants ?? 0, icon: '📘', color: '#EC4899' },
-    { label: 'ALS Applicants', value: stats?.alsApplicants ?? 0, icon: '📗', color: '#10B981' }
+  const scholarCategoryCards = [
+    { label: 'Senior High Scholars', value: stats?.seniorHighScholars ?? 0, icon: '🎒', color: '#3B82F6' },
+    { label: 'College Scholars', value: stats?.collegeScholars ?? 0, icon: '🎓', color: '#8B5CF6' },
+    { label: 'Special Course Scholars', value: stats?.specialCourseScholars ?? 0, icon: '📘', color: '#EC4899' },
+    { label: 'ALS Scholars', value: stats?.alsScholars ?? 0, icon: '📗', color: '#10B981' }
   ];
 
   return (
@@ -76,13 +77,13 @@ const DashboardPage = () => {
               </div>
             </section>
 
-            {/* Applicants by Category */}
+            {/* Scholar by Category */}
             <section style={{ marginBottom: '3rem' }}>
               <div className="card-header" style={{ marginBottom: '1rem' }}>
-                <h3>Applicants by Category</h3>
+                <h3>Scholar by Category</h3>
               </div>
-              <div className="stats">
-                {applicantCategoryCards.map((item) => (
+              <div className="stats" style={{ marginBottom: '1.5rem' }}>
+                {scholarCategoryCards.map((item) => (
                   <div className="stat" key={item.label}>
                     <div className="stat-icon" style={{ background: `linear-gradient(135deg, ${item.color}, ${item.color}BB)` }}>
                       {item.icon}
@@ -91,6 +92,11 @@ const DashboardPage = () => {
                     <p>{item.label}</p>
                   </div>
                 ))}
+              </div>
+              <div className="card">
+                <DoughnutChart
+                  data={scholarCategoryCards.map((item) => ({ label: item.label, value: item.value, color: item.color }))}
+                />
               </div>
             </section>
           </>

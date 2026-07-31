@@ -1,8 +1,14 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { apiService } from '../services/api';
 import { UserRole } from '../types';
 import connerSeal from '../assets/images/conner-seal.jpg';
+
+// How often the sidebar re-checks the unread count while mounted (i.e.
+// on every authenticated page) — frequent enough to notice a new
+// notification within a minute without polling on every render.
+const NOTIFICATION_POLL_MS = 60_000;
 
 const NAV_ITEMS_BY_ROLE: Record<UserRole, Array<{ path: string; label: string; icon: string }>> = {
   [UserRole.SUPER_ADMIN]: [
@@ -54,6 +60,30 @@ function Sidebar() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+
+    const loadUnreadCount = () => {
+      apiService
+        .getNotifications()
+        .then((notifications) => {
+          if (!cancelled) setUnreadCount(notifications.filter((n) => !n.isRead).length);
+        })
+        .catch(() => {
+          // Non-fatal — the badge just stays at its last known count.
+        });
+    };
+
+    loadUnreadCount();
+    const interval = setInterval(loadUnreadCount, NOTIFICATION_POLL_MS);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [user]);
 
   // Only a Super Admin or an Admin the Super Admin flagged isDeletionReviewer
   // sees the Deletion Requests link — everyone else would just hit a 403.
@@ -96,9 +126,27 @@ function Sidebar() {
                 to={item.path}
                 className={`nav-link ${location.pathname === item.path ? 'active' : ''}`}
                 onClick={closeMenu}
+                style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}
               >
                 <span>{item.icon}</span>
-                <span>{item.label}</span>
+                <span style={{ flex: 1 }}>{item.label}</span>
+                {item.path === '/notifications' && unreadCount > 0 && (
+                  <span
+                    style={{
+                      background: 'var(--secondary)',
+                      color: 'white',
+                      borderRadius: '999px',
+                      fontSize: '0.7rem',
+                      fontWeight: 700,
+                      padding: '0.1rem 0.45rem',
+                      minWidth: '1.2rem',
+                      textAlign: 'center',
+                      lineHeight: 1.4
+                    }}
+                  >
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
               </Link>
             </li>
           ))}

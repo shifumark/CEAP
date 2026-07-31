@@ -1219,10 +1219,10 @@ router.get('/dashboard/stats', verifyToken, async (req: AuthenticatedRequest, re
         activeScholars,
         graduatedScholars,
         renewalsDue,
-        seniorHighApplicants,
-        collegeApplicants,
-        specialCourseApplicants,
-        alsApplicants
+        seniorHighScholars,
+        collegeScholars,
+        specialCourseScholars,
+        alsScholars
       ] = await Promise.all([
         prisma.application.count({
           where: { status: { in: ['submitted', 'under_review', 'document_verification', 'interview'] } }
@@ -1233,10 +1233,13 @@ router.get('/dashboard/stats', verifyToken, async (req: AuthenticatedRequest, re
         prisma.scholar.count({ where: { status: 'active' } }),
         prisma.scholar.count({ where: { status: 'graduated' } }),
         prisma.renewal.count({ where: { status: 'pending' } }),
-        prisma.applicant.count({ where: { yearLevel: { in: ['Grade 11', 'Grade 12'] } } }),
-        prisma.applicant.count({ where: { yearLevel: { in: COLLEGE_YEAR_LEVELS } } }),
-        prisma.applicant.count({ where: { yearLevel: { in: PROFESSIONAL_YEAR_LEVELS } } }),
-        prisma.applicant.count({ where: { yearLevel: 'Alternative Learning System' } })
+        // Scholars only, by year-level category — not bare Applicant
+        // profiles, which would count anyone who ever picked a year level
+        // regardless of whether they were ever approved.
+        prisma.scholar.count({ where: { user: { applicant: { yearLevel: { in: ['Grade 11', 'Grade 12'] } } } } }),
+        prisma.scholar.count({ where: { user: { applicant: { yearLevel: { in: COLLEGE_YEAR_LEVELS } } } } }),
+        prisma.scholar.count({ where: { user: { applicant: { yearLevel: { in: PROFESSIONAL_YEAR_LEVELS } } } } }),
+        prisma.scholar.count({ where: { user: { applicant: { yearLevel: 'Alternative Learning System' } } } })
       ]);
 
       stats = {
@@ -1250,10 +1253,10 @@ router.get('/dashboard/stats', verifyToken, async (req: AuthenticatedRequest, re
         // meaningful utilization percentage against.
         scholarshipUtilization: 0,
         renewalsDue,
-        seniorHighApplicants,
-        collegeApplicants,
-        specialCourseApplicants,
-        alsApplicants
+        seniorHighScholars,
+        collegeScholars,
+        specialCourseScholars,
+        alsScholars
       };
     } else {
       // Student view — most recently created application, if any.

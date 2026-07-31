@@ -824,10 +824,13 @@ export interface DashboardStats {
   rejectedApplications: number;
   scholarshipUtilization: number;
   renewalsDue: number;
-  seniorHighApplicants: number;
-  collegeApplicants: number;
-  specialCourseApplicants: number;
-  alsApplicants: number;
+  // Scholars only (i.e. approved applications that became a Scholar
+  // record), broken down by year-level category — not every applicant
+  // profile matching that yearLevel regardless of application status.
+  seniorHighScholars: number;
+  collegeScholars: number;
+  specialCourseScholars: number;
+  alsScholars: number;
 }
 
 // API RESPONSE WRAPPERS

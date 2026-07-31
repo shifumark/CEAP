@@ -287,6 +287,14 @@ const UserManagementPage = () => {
           </div>
         </div>
 
+        {!loading && (
+          <p style={{ fontSize: '0.9rem', color: '#B9AFDA', marginBottom: '0.75rem' }}>
+            <strong style={{ color: 'var(--text-primary)' }}>{filtered.length.toLocaleString()}</strong>{' '}
+            user{filtered.length === 1 ? '' : 's'}
+            {filtered.length !== users.length ? ` (of ${users.length.toLocaleString()} total)` : ''}
+          </p>
+        )}
+
         {loading ? (
           <p>Loading...</p>
         ) : filtered.length === 0 ? (
@@ -298,6 +306,7 @@ const UserManagementPage = () => {
             <table>
               <thead>
                 <tr>
+                  <th>#</th>
                   <th>Name</th>
                   <th>Email</th>
                   <th>Role</th>
@@ -308,12 +317,13 @@ const UserManagementPage = () => {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((u) => {
+                {filtered.map((u, index) => {
                   const isSelf = currentUser?.id === u.id;
                   const isSuperAdminRow = u.role === UserRole.SUPER_ADMIN;
                   const busy = busyUserId === u.id;
                   return (
                     <tr key={u.id}>
+                      <td>{index + 1}</td>
                       <td>
                         {u.firstName} {u.lastName}
                         {isSelf && <span style={{ fontSize: '0.75rem', color: '#B9AFDA' }}> (you)</span>}

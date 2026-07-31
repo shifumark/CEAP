@@ -1340,24 +1340,33 @@ router.patch('/users/:id', verifyToken, requireAdmin, async (req: AuthenticatedR
       return res.status(400).json({ error: 'You cannot change your own role or account status' });
     }
 
-    const { role, status } = req.body;
+    const { role, status, isDeletionReviewer } = req.body;
     if (role !== undefined && !Object.values(UserRole).includes(role)) {
       return res.status(400).json({ error: 'Invalid role' });
     }
     if (status !== undefined && !Object.values(UserStatus).includes(status)) {
       return res.status(400).json({ error: 'Invalid status' });
     }
+    if (isDeletionReviewer !== undefined && typeof isDeletionReviewer !== 'boolean') {
+      return res.status(400).json({ error: 'Invalid isDeletionReviewer' });
+    }
 
     if (req.user!.role !== UserRole.SUPER_ADMIN) {
       if (role === UserRole.SUPER_ADMIN) {
         return res.status(400).json({ error: 'Invalid role' });
+      }
+      // Only a Super Admin may grant/revoke Deletion Reviewer — it's an
+      // oversight power over other Admins' deletes, not something an
+      // Admin should be able to hand to themselves or a peer.
+      if (isDeletionReviewer !== undefined) {
+        return res.status(403).json({ error: 'Only a Super Admin can change Deletion Reviewer status' });
       }
       if (!(await targetVisibleToCaller(req, userId))) {
         return res.status(404).json({ error: 'User not found' });
       }
     }
 
-    const updated = await authService.updateUserAccount(userId, { role, status });
+    const updated = await authService.updateUserAccount(userId, { role, status, isDeletionReviewer });
     res.json(updated);
   } catch (error: any) {
     res.status(400).json({ error: error.message });

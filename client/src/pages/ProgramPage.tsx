@@ -71,7 +71,7 @@ const ProgramPage = () => {
 
   const handleApplySuccess = () => {
     setApplyingTo(null);
-    setNotice('Applied! Please proceed to My Application for submission.');
+    setNotice('Go to My Application then click Submit for final submission of your application.');
     load();
   };
 
@@ -243,25 +243,26 @@ const ProgramPage = () => {
         )}
 
         {notice && (
-          <div
-            style={{
-              padding: '1rem',
-              background: 'rgba(16, 185, 129, 0.1)',
-              border: '1px solid rgba(16, 185, 129, 0.3)',
-              borderRadius: 'var(--radius-md)',
-              marginBottom: '1.5rem',
-              color: '#34D399',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              flexWrap: 'wrap',
-              gap: '0.75rem'
-            }}
-          >
-            <span>{notice}</span>
-            <Link to="/my-application" className="btn btn-primary btn-sm">
-              Go to My Application
-            </Link>
+          // A plain overlay/card, not the shared <Modal> — deliberately has
+          // no overlay-click-to-close and no header "✕" button, since this
+          // must only be dismissible via the explicit "Okay" button below,
+          // so the applicant can't accidentally miss the follow-up-submit
+          // instruction.
+          <div className="modal-overlay">
+            <div className="modal-card">
+              <div className="modal-header">
+                <h3>Applied!</h3>
+              </div>
+              <p style={{ marginBottom: '1.5rem' }}>{notice}</p>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+                <Link to="/my-application" className="btn btn-secondary btn-sm" onClick={() => setNotice('')}>
+                  Go to My Application
+                </Link>
+                <button type="button" className="btn btn-primary btn-sm" onClick={() => setNotice('')}>
+                  Okay
+                </button>
+              </div>
+            </div>
           </div>
         )}
 

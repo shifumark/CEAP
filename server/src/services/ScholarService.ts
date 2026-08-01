@@ -173,7 +173,7 @@ export class ScholarService {
    */
   async getMyRecords(user: JWTPayload): Promise<Scholar[]> {
     const records = await prisma.scholar.findMany({ where: { userId: user.sub }, include: scholarInclude });
-    return records.map(toScholar);
+    return records.map((record) => toScholar(record));
   }
 
   async listScholars(user: JWTPayload, filters?: ScholarFilters): Promise<PaginatedResponse<Scholar>> {

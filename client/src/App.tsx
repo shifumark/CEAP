@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
@@ -20,6 +21,7 @@ import NotificationsPage from './pages/NotificationsPage';
 import ReportsPage from './pages/ReportsPage';
 import UserManagementPage from './pages/UserManagementPage';
 import DeletionReportPage from './pages/DeletionReportPage';
+import SettingsPage from './pages/SettingsPage';
 import Sidebar from './components/Sidebar';
 import { UserRole } from './types';
 import './styles.css';
@@ -36,7 +38,8 @@ const SIDEBAR_PATHS = [
   '/notifications',
   '/reports',
   '/users',
-  '/deletion-requests'
+  '/deletion-requests',
+  '/settings'
 ];
 
 function AppLayout() {
@@ -161,6 +164,14 @@ function AppLayout() {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/settings"
+            element={
+              <ProtectedRoute>
+                <SettingsPage />
+              </ProtectedRoute>
+            }
+          />
 
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
@@ -175,9 +186,11 @@ function App() {
     // resolve correctly under GitHub Pages' /scholarship-management-system/
     // subpath instead of assuming the app is served from the domain root.
     <BrowserRouter basename={import.meta.env.BASE_URL}>
-      <AuthProvider>
-        <AppLayout />
-      </AuthProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <AppLayout />
+        </AuthProvider>
+      </ThemeProvider>
     </BrowserRouter>
   );
 }

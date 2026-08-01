@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { apiService } from '../services/api';
 import { DocumentRequirement, User, UserRole, UploadedDocument } from '../types';
 import Modal from '../components/Modal';
@@ -195,7 +195,7 @@ const DocumentRequirementsPage = () => {
           <p>Loading...</p>
         ) : requirements.length === 0 ? (
           <div className="card">
-            <p style={{ color: '#B9AFDA' }}>No document requirements yet — add one above.</p>
+            <p style={{ color: 'var(--text-secondary)' }}>No document requirements yet — add one above.</p>
           </div>
         ) : (
           <div className="card" style={{ overflowX: 'auto' }}>
@@ -218,7 +218,7 @@ const DocumentRequirementsPage = () => {
                       {!isViewer && (
                         <button
                           className="btn btn-outline btn-sm"
-                          style={{ color: '#F87171', borderColor: '#F87171' }}
+                          style={{ color: 'var(--error-text)', borderColor: 'var(--error-text)' }}
                           onClick={() => setDeletingRequirement(requirement)}
                         >
                           Delete
@@ -255,7 +255,7 @@ const DocumentRequirementsPage = () => {
               {userSearch && (
                 <div style={{ marginTop: '0.75rem' }}>
                   {filteredApplicants.length === 0 ? (
-                    <p style={{ color: '#B9AFDA', fontSize: '0.85rem' }}>No matching students.</p>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>No matching students.</p>
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                       {filteredApplicants.map((u) => (
@@ -270,7 +270,7 @@ const DocumentRequirementsPage = () => {
                           }}
                           onClick={() => openUser(u)}
                         >
-                          {u.firstName} {u.lastName} <span style={{ color: '#B9AFDA', marginLeft: '0.5rem' }}>{u.email}</span>
+                          {u.firstName} {u.lastName} <span style={{ color: 'var(--text-secondary)', marginLeft: '0.5rem' }}>{u.email}</span>
                         </button>
                       ))}
                     </div>
@@ -300,13 +300,13 @@ const DocumentRequirementsPage = () => {
             </div>
 
             {documentsError && (
-              <p style={{ color: '#F87171', fontSize: '0.85rem', marginBottom: '0.75rem' }}>{documentsError}</p>
+              <p style={{ color: 'var(--error-text)', fontSize: '0.85rem', marginBottom: '0.75rem' }}>{documentsError}</p>
             )}
 
             {documentsLoading ? (
-              <p style={{ color: '#B9AFDA' }}>Loading...</p>
+              <p style={{ color: 'var(--text-secondary)' }}>Loading...</p>
             ) : userDocuments.length === 0 ? (
-              <p style={{ color: '#B9AFDA' }}>This student hasn't uploaded any documents yet.</p>
+              <p style={{ color: 'var(--text-secondary)' }}>This student hasn't uploaded any documents yet.</p>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
                 {userDocuments.map((doc) => (
@@ -323,7 +323,7 @@ const DocumentRequirementsPage = () => {
                   >
                     <div>
                       <div>{doc.documentType}</div>
-                      <div style={{ fontSize: '0.75rem', color: '#B9AFDA' }}>{doc.fileName}</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{doc.fileName}</div>
                     </div>
                     <button
                       className="btn btn-outline btn-sm"
@@ -352,7 +352,7 @@ const DocumentRequirementsPage = () => {
             <button
               className="btn btn-primary"
               type="button"
-              style={{ background: '#F87171' }}
+              style={{ background: 'var(--error-text)' }}
               disabled={deleting}
               onClick={handleConfirmDelete}
             >

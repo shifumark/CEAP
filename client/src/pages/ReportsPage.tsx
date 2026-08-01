@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { apiService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { ApplicationReportRow, ApplicationStatus, UserRole } from '../types';
@@ -247,11 +247,11 @@ const ReportsPage = () => {
           {loading ? (
             <p>Loading...</p>
           ) : rows.length === 0 ? (
-            <p style={{ color: '#B9AFDA' }}>No applicants match this filter.</p>
+            <p style={{ color: 'var(--text-secondary)' }}>No applicants match this filter.</p>
           ) : (
             <>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                <p style={{ fontSize: '0.85rem', color: '#B9AFDA', margin: 0 }}>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: 0 }}>
                   <strong>{totalCount.toLocaleString()}</strong> row{totalCount === 1 ? '' : 's'} total — showing page {page} of{' '}
                   {totalPages}
                 </p>

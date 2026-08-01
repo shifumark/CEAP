@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { apiService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { DeletionRequest, UserRole } from '../types';
@@ -125,7 +125,7 @@ const DeletionReportPage = () => {
             <h1>Deletion Requests</h1>
           </div>
           <div className="card">
-            <p style={{ color: '#B9AFDA' }}>
+            <p style={{ color: 'var(--text-secondary)' }}>
               This page is only visible to the Super Admin and Admins assigned as Deletion Reviewers.
             </p>
           </div>
@@ -165,7 +165,7 @@ const DeletionReportPage = () => {
           {pendingLoading ? (
             <p>Loading...</p>
           ) : pending.length === 0 ? (
-            <p style={{ color: '#B9AFDA' }}>No deletion requests waiting on you right now.</p>
+            <p style={{ color: 'var(--text-secondary)' }}>No deletion requests waiting on you right now.</p>
           ) : (
             <table style={{ borderCollapse: 'collapse', width: '100%' }}>
               <thead>
@@ -208,7 +208,7 @@ const DeletionReportPage = () => {
                         </button>
                         <button
                           className="btn btn-outline btn-sm"
-                          style={{ color: '#F87171', borderColor: '#F87171' }}
+                          style={{ color: 'var(--error-text)', borderColor: 'var(--error-text)' }}
                           onClick={() => setRejectingRequest(request)}
                         >
                           Reject
@@ -238,7 +238,7 @@ const DeletionReportPage = () => {
           {loading ? (
             <p>Loading...</p>
           ) : rows.length === 0 ? (
-            <p style={{ color: '#B9AFDA' }}>No deletions recorded yet.</p>
+            <p style={{ color: 'var(--text-secondary)' }}>No deletions recorded yet.</p>
           ) : (
             <>
               <div
@@ -251,7 +251,7 @@ const DeletionReportPage = () => {
                   marginBottom: '0.5rem'
                 }}
               >
-                <p style={{ fontSize: '0.85rem', color: '#B9AFDA', margin: 0 }}>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: 0 }}>
                   <strong>{totalCount.toLocaleString()}</strong> deletion{totalCount === 1 ? '' : 's'} total — showing page {page}{' '}
                   of {totalPages}
                 </p>
@@ -317,7 +317,7 @@ const DeletionReportPage = () => {
             Approve deleting {approvingRequest.entityLabel}? This permanently deletes the record. This cannot be undone.
           </p>
           <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem' }}>
-            <button className="btn btn-primary" type="button" style={{ background: '#F87171' }} disabled={acting} onClick={handleApprove}>
+            <button className="btn btn-primary" type="button" style={{ background: 'var(--error-text)' }} disabled={acting} onClick={handleApprove}>
               {acting ? 'Approving...' : 'Approve & Delete'}
             </button>
             <button className="btn btn-outline" type="button" onClick={() => setApprovingRequest(null)} disabled={acting}>

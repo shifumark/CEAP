@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+﻿import { Link } from 'react-router-dom';
 
 const HomePage = () => {
   return (
@@ -98,7 +98,7 @@ const HomePage = () => {
           marginBottom: '2rem'
         }}>
           <h2 style={{ fontSize: '1.75rem', marginBottom: '1rem', color: '#F5F3FF' }}>Ready to transform scholarship management?</h2>
-          <p style={{ color: '#B9AFDA', marginBottom: '2rem', fontSize: '1.1rem' }}>
+          <p style={{ color: 'var(--text-secondary)', marginBottom: '2rem', fontSize: '1.1rem' }}>
             Join thousands of institutions using ScholarshipHub to streamline their scholarship operations.
           </p>
           <Link className="btn btn-primary btn-lg" to="/register">Get Started</Link>

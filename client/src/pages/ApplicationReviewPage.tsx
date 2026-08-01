@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { apiService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { Application, ApplicationStatus, UploadedDocument, DocumentVerificationStatus, Applicant, ScholarshipProgram, UserRole } from '../types';
@@ -287,7 +287,7 @@ const ApplicationReviewPage = () => {
             <button
               className="btn btn-outline btn-sm"
               type="button"
-              style={{ color: '#F87171', borderColor: '#F87171' }}
+              style={{ color: 'var(--error-text)', borderColor: 'var(--error-text)' }}
               disabled={deletableFilteredIds.length === 0}
               onClick={() => setShowDeleteAll(true)}
             >
@@ -373,7 +373,7 @@ const ApplicationReviewPage = () => {
           <p>Loading...</p>
         ) : filteredApplications.length === 0 ? (
           <div className="card">
-            <p style={{ color: '#B9AFDA' }}>No applications match this filter.</p>
+            <p style={{ color: 'var(--text-secondary)' }}>No applications match this filter.</p>
           </div>
         ) : (
           <div className="card" style={{ overflowX: 'auto' }}>
@@ -395,7 +395,7 @@ const ApplicationReviewPage = () => {
                     <td>{index + 1}</td>
                     <td>
                       <div>{application.applicantName ?? `Applicant #${application.applicantId}`}</div>
-                      <div style={{ fontSize: '0.8rem', color: '#B9AFDA' }}>{application.applicantEmail}</div>
+                      <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{application.applicantEmail}</div>
                     </td>
                     <td>{application.scholarshipName ?? `#${application.scholarshipId}`}</td>
                     <td>
@@ -413,7 +413,7 @@ const ApplicationReviewPage = () => {
                         {!isViewer && DELETABLE_STATUSES.has(application.status) && (
                           <button
                             className="btn btn-outline btn-sm"
-                            style={{ color: '#F87171', borderColor: '#F87171' }}
+                            style={{ color: 'var(--error-text)', borderColor: 'var(--error-text)' }}
                             onClick={() => setDeletingApplication(application)}
                           >
                             Delete
@@ -430,7 +430,7 @@ const ApplicationReviewPage = () => {
 
         {selected && (
           <Modal title={`Review: ${selected.applicantName} — ${selected.scholarshipName}`} onClose={() => setSelectedId(null)}>
-            <p style={{ fontSize: '0.85rem', color: '#B9AFDA', marginTop: 0 }}>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: 0 }}>
               <strong>Date Submitted:</strong> {formatDate(selected.submissionDate)}
               {' · '}
               <strong>Date Received:</strong> {formatDate(selected.receivedDate)}
@@ -450,9 +450,9 @@ const ApplicationReviewPage = () => {
             <div style={{ marginBottom: '1.25rem' }}>
               <strong style={{ fontSize: '0.85rem' }}>Uploaded Documents</strong>
               {documentsLoading ? (
-                <p style={{ fontSize: '0.85rem', color: '#B9AFDA', marginTop: '0.5rem' }}>Loading...</p>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>Loading...</p>
               ) : documents.length === 0 ? (
-                <p style={{ fontSize: '0.85rem', color: '#B9AFDA', marginTop: '0.5rem' }}>No documents uploaded yet.</p>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>No documents uploaded yet.</p>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', marginTop: '0.6rem' }}>
                   {documents.map((doc) => (
@@ -572,7 +572,7 @@ const ApplicationReviewPage = () => {
               <button
                 className="btn btn-primary"
                 type="button"
-                style={{ background: '#F87171' }}
+                style={{ background: 'var(--error-text)' }}
                 disabled={deleting}
                 onClick={handleConfirmDelete}
               >
@@ -596,7 +596,7 @@ const ApplicationReviewPage = () => {
               <button
                 className="btn btn-primary"
                 type="button"
-                style={{ background: '#F87171' }}
+                style={{ background: 'var(--error-text)' }}
                 disabled={deletingAll}
                 onClick={handleConfirmDeleteAll}
               >

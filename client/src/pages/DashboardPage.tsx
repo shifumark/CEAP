@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -127,7 +127,7 @@ const DashboardPage = () => {
                   <span style={{ fontSize: '1.25rem' }}>📝</span>
                   <span>Review Applications</span>
                 </div>
-                <p style={{ fontSize: '0.85rem', color: '#B9AFDA', margin: '0.5rem 0 0 0' }}>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: '0.5rem 0 0 0' }}>
                   Applications awaiting a decision
                 </p>
               </button>
@@ -149,7 +149,7 @@ const DashboardPage = () => {
                   <span style={{ fontSize: '1.25rem' }}>👥</span>
                   <span>Manage Scholars & Renewals</span>
                 </div>
-                <p style={{ fontSize: '0.85rem', color: '#B9AFDA', margin: '0.5rem 0 0 0' }}>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: '0.5rem 0 0 0' }}>
                   Grades, allowances, and pending renewal requests
                 </p>
               </button>

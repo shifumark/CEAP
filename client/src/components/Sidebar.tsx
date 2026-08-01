@@ -21,7 +21,8 @@ const NAV_ITEMS_BY_ROLE: Record<UserRole, Array<{ path: string; label: string; i
     { path: '/users', label: 'Users', icon: '🔐' },
     { path: '/deletion-requests', label: 'Deletion Requests', icon: '🗑️' },
     { path: '/announcements', label: 'Announcements', icon: '📢' },
-    { path: '/notifications', label: 'Notifications', icon: '🔔' }
+    { path: '/notifications', label: 'Notifications', icon: '🔔' },
+    { path: '/settings', label: 'Theme Settings', icon: '🎨' }
   ],
   [UserRole.ADMIN]: [
     { path: '/dashboard', label: 'Dashboard', icon: '📊' },
@@ -33,7 +34,8 @@ const NAV_ITEMS_BY_ROLE: Record<UserRole, Array<{ path: string; label: string; i
     { path: '/users', label: 'Users', icon: '🔐' },
     { path: '/deletion-requests', label: 'Deletion Requests', icon: '🗑️' },
     { path: '/announcements', label: 'Announcements', icon: '📢' },
-    { path: '/notifications', label: 'Notifications', icon: '🔔' }
+    { path: '/notifications', label: 'Notifications', icon: '🔔' },
+    { path: '/settings', label: 'Theme Settings', icon: '🎨' }
   ],
   [UserRole.VIEWER]: [
     { path: '/dashboard', label: 'Dashboard', icon: '📊' },
@@ -43,14 +45,16 @@ const NAV_ITEMS_BY_ROLE: Record<UserRole, Array<{ path: string; label: string; i
     { path: '/document-requirements', label: 'Documents', icon: '📄' },
     { path: '/reports', label: 'Reports', icon: '📋' },
     { path: '/announcements', label: 'Announcements', icon: '📢' },
-    { path: '/notifications', label: 'Notifications', icon: '🔔' }
+    { path: '/notifications', label: 'Notifications', icon: '🔔' },
+    { path: '/settings', label: 'Theme Settings', icon: '🎨' }
   ],
   [UserRole.APPLICANT]: [
     { path: '/profile', label: 'My Profile', icon: '🧾' },
     { path: '/my-application', label: 'My Application', icon: '📝' },
     { path: '/programs', label: 'Programs', icon: '🎓' },
     { path: '/announcements', label: 'Announcements', icon: '📢' },
-    { path: '/notifications', label: 'Notifications', icon: '🔔' }
+    { path: '/notifications', label: 'Notifications', icon: '🔔' },
+    { path: '/settings', label: 'Theme Settings', icon: '🎨' }
   ],
   [UserRole.GUEST]: []
 };
@@ -133,7 +137,7 @@ function Sidebar() {
                 {item.path === '/notifications' && unreadCount > 0 && (
                   <span
                     style={{
-                      background: 'var(--secondary)',
+                      background: 'var(--notify-badge)',
                       color: 'white',
                       borderRadius: '999px',
                       fontSize: '0.7rem',

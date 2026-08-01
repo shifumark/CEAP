@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { Applicant } from '../types';
 import { apiService } from '../services/api';
 
@@ -19,14 +19,14 @@ function yesNo(value?: boolean) {
 
 const Field = ({ label, value }: { label: string; value?: string | number | null }) => (
   <div style={{ minWidth: '180px', flex: '1 1 220px' }}>
-    <div style={{ fontSize: '0.75rem', color: '#B9AFDA' }}>{label}</div>
+    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{label}</div>
     <div style={{ fontSize: '0.9rem' }}>{value === undefined || value === null || value === '' ? '—' : value}</div>
   </div>
 );
 
 const ProfileSection = ({ title, children }: { title: string; children: React.ReactNode }) => (
   <div style={{ marginBottom: '1rem' }}>
-    <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#B9AFDA', marginBottom: '0.4rem' }}>{title}</div>
+    <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.4rem' }}>{title}</div>
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>{children}</div>
   </div>
 );
@@ -52,10 +52,10 @@ const ApplicantProfileView = ({ profile, loading, email, userId, canManageLock }
   const [lockError, setLockError] = useState('');
 
   if (loading) {
-    return <p style={{ fontSize: '0.85rem', color: '#B9AFDA', marginTop: '0.5rem' }}>Loading...</p>;
+    return <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>Loading...</p>;
   }
   if (!profile) {
-    return <p style={{ fontSize: '0.85rem', color: '#B9AFDA', marginTop: '0.5rem' }}>Profile not available.</p>;
+    return <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>Profile not available.</p>;
   }
 
   const handleToggleLock = async () => {
@@ -90,7 +90,7 @@ const ApplicantProfileView = ({ profile, loading, email, userId, canManageLock }
           <span className={`badge ${locked ? 'badge-warning' : 'badge-success'}`}>
             Profile {locked ? 'Locked' : 'Unlocked'}
           </span>
-          <span style={{ fontSize: '0.8rem', color: '#B9AFDA' }}>
+          <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
             {locked
               ? "Student can't edit their profile or request a renewal until you unlock it."
               : 'Student can currently edit their own profile.'}
@@ -98,7 +98,7 @@ const ApplicantProfileView = ({ profile, loading, email, userId, canManageLock }
           <button className="btn btn-outline btn-sm" type="button" disabled={togglingLock} onClick={handleToggleLock}>
             {togglingLock ? 'Updating...' : locked ? 'Unlock Profile' : 'Lock Profile'}
           </button>
-          {lockError && <span style={{ color: '#F87171', fontSize: '0.8rem' }}>{lockError}</span>}
+          {lockError && <span style={{ color: 'var(--error-text)', fontSize: '0.8rem' }}>{lockError}</span>}
         </div>
       )}
 

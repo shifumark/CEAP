@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { apiService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -166,7 +166,7 @@ const MyApplicationPage = () => {
                 </div>
 
                 {applications.length === 0 ? (
-                  <p style={{ color: '#B9AFDA' }}>
+                  <p style={{ color: 'var(--text-secondary)' }}>
                     You haven't applied to any scholarship yet. Browse open programs on the{' '}
                     <Link to="/programs">Programs</Link> page.
                   </p>
@@ -191,14 +191,14 @@ const MyApplicationPage = () => {
                               </span>
                             </div>
                           </div>
-                          <div style={{ textAlign: 'right', fontSize: '0.85rem', color: '#B9AFDA' }}>
+                          <div style={{ textAlign: 'right', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
                             <div>Applied: {formatDate(application.createdAt)}</div>
                             {application.submissionDate && <div>Submitted: {formatDate(application.submissionDate)}</div>}
                           </div>
                         </div>
 
                         {application.comments && (
-                          <p style={{ marginTop: '0.75rem', fontSize: '0.9rem', color: '#B9AFDA' }}>
+                          <p style={{ marginTop: '0.75rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
                             <strong>Reviewer note:</strong> {application.comments}
                           </p>
                         )}
@@ -218,7 +218,7 @@ const MyApplicationPage = () => {
                           {DELETABLE_STATUSES.has(application.status) && (
                             <button
                               className="btn btn-outline btn-sm"
-                              style={{ color: '#F87171', borderColor: '#F87171' }}
+                              style={{ color: 'var(--error-text)', borderColor: 'var(--error-text)' }}
                               disabled={busyId === application.id}
                               onClick={() => setDeletingApplication(application)}
                             >
@@ -247,7 +247,7 @@ const MyApplicationPage = () => {
             <button
               className="btn btn-primary"
               type="button"
-              style={{ background: '#F87171' }}
+              style={{ background: 'var(--error-text)' }}
               disabled={deleting}
               onClick={handleConfirmDelete}
             >

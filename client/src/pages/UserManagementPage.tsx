@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { apiService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { User, UserRole, UserStatus } from '../types';
@@ -211,7 +211,7 @@ const UserManagementPage = () => {
             <button
               className="btn btn-outline btn-sm"
               type="button"
-              style={{ color: '#F87171', borderColor: '#F87171' }}
+              style={{ color: 'var(--error-text)', borderColor: 'var(--error-text)' }}
               disabled={deletableFilteredIds.length === 0}
               onClick={() => setShowDeleteAll(true)}
             >
@@ -288,7 +288,7 @@ const UserManagementPage = () => {
         </div>
 
         {!loading && (
-          <p style={{ fontSize: '0.9rem', color: '#B9AFDA', marginBottom: '0.75rem' }}>
+          <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '0.75rem' }}>
             <strong style={{ color: 'var(--text-primary)' }}>{filtered.length.toLocaleString()}</strong>{' '}
             user{filtered.length === 1 ? '' : 's'}
             {filtered.length !== users.length ? ` (of ${users.length.toLocaleString()} total)` : ''}
@@ -299,7 +299,7 @@ const UserManagementPage = () => {
           <p>Loading...</p>
         ) : filtered.length === 0 ? (
           <div className="card">
-            <p style={{ color: '#B9AFDA' }}>No users match this filter.</p>
+            <p style={{ color: 'var(--text-secondary)' }}>No users match this filter.</p>
           </div>
         ) : (
           <div className="card" style={{ overflowX: 'auto' }}>
@@ -326,7 +326,7 @@ const UserManagementPage = () => {
                       <td>{index + 1}</td>
                       <td>
                         {u.firstName} {u.lastName}
-                        {isSelf && <span style={{ fontSize: '0.75rem', color: '#B9AFDA' }}> (you)</span>}
+                        {isSelf && <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}> (you)</span>}
                       </td>
                       <td>{u.email}</td>
                       <td>
@@ -380,7 +380,7 @@ const UserManagementPage = () => {
                             {u.role === UserRole.APPLICANT && (
                               <button
                                 className="btn btn-outline btn-sm"
-                                style={{ color: '#F87171', borderColor: '#F87171' }}
+                                style={{ color: 'var(--error-text)', borderColor: 'var(--error-text)' }}
                                 disabled={busy}
                                 onClick={() => setDeletingUser(u)}
                               >
@@ -492,7 +492,7 @@ const UserManagementPage = () => {
                 minLength={8}
                 required
               />
-              <small style={{ color: '#B9AFDA' }}>At least 8 characters. Share this with them directly.</small>
+              <small style={{ color: 'var(--text-secondary)' }}>At least 8 characters. Share this with them directly.</small>
             </div>
             <div className="form-group">
               <label htmlFor="createRole">Role</label>
@@ -530,7 +530,7 @@ const UserManagementPage = () => {
             <button
               className="btn btn-primary"
               type="button"
-              style={{ background: '#F87171' }}
+              style={{ background: 'var(--error-text)' }}
               disabled={deleting}
               onClick={handleConfirmDeleteUser}
             >
@@ -554,7 +554,7 @@ const UserManagementPage = () => {
             <button
               className="btn btn-primary"
               type="button"
-              style={{ background: '#F87171' }}
+              style={{ background: 'var(--error-text)' }}
               disabled={deletingAll}
               onClick={handleConfirmDeleteAll}
             >

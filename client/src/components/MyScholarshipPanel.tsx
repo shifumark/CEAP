@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { apiService } from '../services/api';
 import { Scholar, Grade, Renewal, Allowance, Violation } from '../types';
 
@@ -102,21 +102,21 @@ const SingleScholarshipPanel = ({ scholar, profileLocked }: PanelProps) => {
         <span className={`badge ${SCHOLAR_STATUS_BADGE[scholar.status] ?? 'badge-secondary'}`}>{scholar.status}</span>
       </div>
 
-      {error && <p style={{ color: '#F87171', fontSize: '0.85rem', marginBottom: '1rem' }}>{error}</p>}
+      {error && <p style={{ color: 'var(--error-text)', fontSize: '0.85rem', marginBottom: '1rem' }}>{error}</p>}
 
       {scholar.scholarIdNumber && (
-        <p style={{ marginBottom: '1.5rem', color: '#B9AFDA' }}>Scholar ID: {scholar.scholarIdNumber}</p>
+        <p style={{ marginBottom: '1.5rem', color: 'var(--text-secondary)' }}>Scholar ID: {scholar.scholarIdNumber}</p>
       )}
 
       {loading ? (
-        <p style={{ fontSize: '0.85rem', color: '#B9AFDA' }}>Loading...</p>
+        <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Loading...</p>
       ) : (
         <>
           <div className="grid grid-2">
             <div>
               <strong style={{ fontSize: '0.9rem' }}>Grades</strong>
               {grades.length === 0 ? (
-                <p style={{ fontSize: '0.85rem', color: '#B9AFDA', marginTop: '0.5rem' }}>No grades recorded yet.</p>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>No grades recorded yet.</p>
               ) : (
                 <ul style={{ marginTop: '0.5rem', paddingLeft: '1.1rem', fontSize: '0.85rem' }}>
                   {grades.map((grade) => (
@@ -131,7 +131,7 @@ const SingleScholarshipPanel = ({ scholar, profileLocked }: PanelProps) => {
             <div>
               <strong style={{ fontSize: '0.9rem' }}>Allowances</strong>
               {allowances.length === 0 ? (
-                <p style={{ fontSize: '0.85rem', color: '#B9AFDA', marginTop: '0.5rem' }}>No allowances recorded yet.</p>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.5rem' }}>No allowances recorded yet.</p>
               ) : (
                 <ul style={{ marginTop: '0.5rem', paddingLeft: '1.1rem', fontSize: '0.85rem' }}>
                   {allowances.map((allowance) => (
@@ -170,7 +170,7 @@ const SingleScholarshipPanel = ({ scholar, profileLocked }: PanelProps) => {
                     <span className={`badge ${RENEWAL_STATUS_BADGE[renewal.status] ?? 'badge-secondary'}`}>
                       {renewal.status}
                     </span>
-                    {renewal.notes && <div style={{ color: '#B9AFDA' }}>{renewal.notes}</div>}
+                    {renewal.notes && <div style={{ color: 'var(--text-secondary)' }}>{renewal.notes}</div>}
                   </li>
                 ))}
               </ul>
@@ -206,7 +206,7 @@ const SingleScholarshipPanel = ({ scholar, profileLocked }: PanelProps) => {
                 </button>
               </form>
             ) : (
-              <p style={{ fontSize: '0.85rem', color: '#B9AFDA', marginTop: '0.75rem' }}>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '0.75rem' }}>
                 {profileLocked
                   ? 'Renewal requests are unavailable while your profile is locked. Ask an administrator to unlock it.'
                   : 'Renewal requests are only open while this scholarship program is accepting them.'}

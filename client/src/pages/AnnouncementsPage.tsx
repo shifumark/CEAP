@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { apiService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { Announcement, AnnouncementType, UserRole } from '../types';
@@ -127,7 +127,7 @@ const AnnouncementsPage = () => {
           <p>Loading...</p>
         ) : announcements.length === 0 ? (
           <div className="card">
-            <p style={{ color: '#B9AFDA' }}>No announcements yet.</p>
+            <p style={{ color: 'var(--text-secondary)' }}>No announcements yet.</p>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -140,7 +140,7 @@ const AnnouncementsPage = () => {
                       {announcement.announcementType && (
                         <span className="badge badge-secondary">{TYPE_LABEL[announcement.announcementType]}</span>
                       )}
-                      <span style={{ fontSize: '0.8rem', color: '#B9AFDA' }}>{formatDate(announcement.publishedAt)}</span>
+                      <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{formatDate(announcement.publishedAt)}</span>
                     </div>
                     <h3 style={{ marginBottom: '0.5rem' }}>{announcement.title}</h3>
                     <p style={{ color: '#D8D0EF', whiteSpace: 'pre-wrap' }}>{announcement.content}</p>

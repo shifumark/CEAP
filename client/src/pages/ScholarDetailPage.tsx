@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { apiService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -344,7 +344,7 @@ const ScholarDetailPage = () => {
               <h3>Renewals</h3>
             </div>
             {renewals.length === 0 ? (
-              <p style={{ color: '#B9AFDA', fontSize: '0.9rem' }}>No renewal requests yet.</p>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>No renewal requests yet.</p>
             ) : (
               renewals.map((renewal) => (
                 <div key={renewal.id} style={{ marginBottom: '0.75rem', fontSize: '0.9rem' }}>
@@ -427,7 +427,7 @@ const ScholarDetailPage = () => {
               <div className="card-header">
                 <h3>Account</h3>
               </div>
-              <p style={{ fontSize: '0.9rem', color: '#B9AFDA', margin: '0 0 1rem' }}>{account.email}</p>
+              <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', margin: '0 0 1rem' }}>{account.email}</p>
 
               <div className="form-group">
                 <label htmlFor="accountRole">Role</label>

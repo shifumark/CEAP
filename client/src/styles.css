@@ -42,13 +42,181 @@
     radial-gradient(750px circle at 88% 8%, rgba(167, 139, 250, 0.24), transparent 60%),
     radial-gradient(700px circle at 80% 90%, rgba(244, 114, 182, 0.18), transparent 60%),
     radial-gradient(600px circle at 6% 92%, rgba(167, 139, 250, 0.18), transparent 60%);
+  /* Text/border-safe red used for form and API error messages — kept as
+     a variable (rather than hardcoded per call site) so a theme can pick
+     a shade with enough contrast against its own background. */
+  --error-text: #F87171;
+  /* Constant "brand purple" used for a handful of accents (unread
+     indicators, primary CTA fill) that should read the same regardless
+     of which theme's dominant hue is active. */
+  --accent-purple: #8B5CF6;
+  /* Solid, readable color for small filled badges (e.g. the sidebar's
+     unread-notification counter) — needs to stay legible with white text
+     on top, which the dominant brand color alone isn't guaranteed to be. */
+  --notify-badge: #F472B6;
+}
+
+/* ===========================
+   AVOCADO GREEN SERENITY THEME
+   Premium pastel light theme — soft glassmorphism, avocado green
+   dominant with lavender/periwinkle/pink accents. Selected via Theme
+   Settings and persisted to localStorage; activated by a data-theme
+   attribute on <html> (see ThemeContext).
+   =========================== */
+:root[data-theme='avocado'] {
+  --primary: #C7EEB9;
+  --primary-dark: #A8DB93;
+  --secondary: #D8C4F8;
+  --accent: #C7D5F7;
+  --highlight: #F8D3DE;
+  --sidebar-dark: #FFFFFF;
+  --bg-gradient-start: #FAFCF8;
+  --bg-gradient-end: #EAF8E4;
+  --card-bg: #FFFFFF;
+  --text-primary: #374151;
+  --text-secondary: #6B7280;
+  --text-disabled: #9CA3AF;
+  --border: #E3ECE0;
+  --border-light: #D9E7D5;
+  --shadow-sm: 0 1px 2px 0 rgba(55, 65, 81, 0.06);
+  --shadow-md: 0 4px 12px -2px rgba(55, 65, 81, 0.08), 0 2px 4px -1px rgba(55, 65, 81, 0.05);
+  --shadow-lg: 0 12px 28px -6px rgba(55, 65, 81, 0.12), 0 4px 10px -4px rgba(55, 65, 81, 0.08);
+  --shadow-glass: 0 8px 32px rgba(139, 92, 246, 0.12);
+  --glass-blobs:
+    radial-gradient(650px circle at 12% 12%, rgba(199, 238, 185, 0.4), transparent 60%),
+    radial-gradient(750px circle at 88% 8%, rgba(216, 196, 248, 0.35), transparent 60%),
+    radial-gradient(700px circle at 80% 90%, rgba(199, 213, 247, 0.3), transparent 60%),
+    radial-gradient(600px circle at 6% 92%, rgba(248, 211, 222, 0.28), transparent 60%);
+  --error-text: #DC2626;
+  --notify-badge: #8B5CF6;
+}
+
+:root[data-theme='avocado'] {
+  color-scheme: light;
+}
+
+/* Deeper, readable tones for gradient TEXT specifically — the pale
+   --primary/--secondary pair reads fine as decorative fills (icon
+   tiles, blobs, thin progress strips) but is too low-contrast for large
+   gradient-clipped headings against this theme's near-white background. */
+:root[data-theme='avocado'] .navbar-brand,
+:root[data-theme='avocado'] .stat h3 {
+  background: linear-gradient(135deg, #5FA85A, #8B5CF6);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+:root[data-theme='avocado'] .app-sidebar {
+  background: linear-gradient(180deg, #FFFFFF 0%, #F3FAF0 100%);
+  border-right: 1px solid var(--border);
+}
+
+:root[data-theme='avocado'] .sidebar-logo {
+  color: var(--text-primary);
+  border-bottom: 1px solid var(--border);
+}
+
+:root[data-theme='avocado'] .nav-link {
+  color: var(--text-secondary);
+}
+
+:root[data-theme='avocado'] .nav-link:hover {
+  color: var(--text-primary);
+  background: rgba(199, 238, 185, 0.35);
+}
+
+:root[data-theme='avocado'] .nav-link.active {
+  color: #374151;
+  background: rgba(199, 238, 185, 0.45);
+  border-right: 3px solid var(--accent-purple);
+}
+
+:root[data-theme='avocado'] .sidebar-footer {
+  color: var(--text-secondary);
+  border-top: 1px solid var(--border);
+}
+
+:root[data-theme='avocado'] .sidebar-toggle {
+  background: var(--accent-purple);
+  color: white;
+}
+
+:root[data-theme='avocado'] .card,
+:root[data-theme='avocado'] .stat {
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-md);
+}
+
+:root[data-theme='avocado'] .card:hover,
+:root[data-theme='avocado'] .stat:hover {
+  background: rgba(255, 255, 255, 0.92);
+}
+
+:root[data-theme='avocado'] .form-group input,
+:root[data-theme='avocado'] .form-group textarea,
+:root[data-theme='avocado'] .form-group select {
+  background: #FFFFFF;
+  border: 2px solid var(--border);
+}
+
+:root[data-theme='avocado'] .form-group input:focus,
+:root[data-theme='avocado'] .form-group textarea:focus,
+:root[data-theme='avocado'] .form-group select:focus {
+  border-color: var(--accent-purple);
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.12);
+  background: #FFFFFF;
+}
+
+/* Primary CTA is a solid purple fill per the theme spec, not the two-tone
+   gradient the default theme uses — the dominant avocado/lavender pair is
+   too pale together for white button text to stay readable. */
+:root[data-theme='avocado'] .btn-primary {
+  background: var(--accent-purple);
+  box-shadow: 0 4px 15px rgba(139, 92, 246, 0.25);
+}
+
+:root[data-theme='avocado'] .btn-primary:hover {
+  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.35);
+}
+
+:root[data-theme='avocado'] .btn-secondary {
+  background: #FFFFFF;
+  color: #4F9B4A;
+  border: 1px solid #A8DB93;
+}
+
+:root[data-theme='avocado'] .btn-secondary:hover {
+  background: #F3FAF0;
+  color: #3F7A3B;
+}
+
+:root[data-theme='avocado'] .btn-outline {
+  color: var(--accent-purple);
+  border-color: var(--accent-purple);
+}
+
+:root[data-theme='avocado'] .btn-outline:hover {
+  background: var(--accent-purple);
+  color: white;
+}
+
+:root[data-theme='avocado'] .badge-primary {
+  background: rgba(139, 92, 246, 0.12);
+  color: #7C3AED;
+}
+
+:root[data-theme='avocado'] .badge-secondary {
+  background: rgba(168, 133, 227, 0.15);
+  color: #7C5CBF;
 }
 
 html, body {
   height: 100%;
-  /* This theme is dark-only (no light variant) — without this, native
+  /* Default theme is dark-only (no light variant) — without this, native
      controls (date-picker popups/icons, scrollbars, checkboxes) render
-     with the OS's light defaults and visibly clash with the dark UI. */
+     with the OS's light defaults and visibly clash with the dark UI.
+     The avocado theme overrides this back to `light` above. */
   color-scheme: dark;
 }
 

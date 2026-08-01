@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { apiService } from '../services/api';
 import { UploadedDocument } from '../types';
 
@@ -118,17 +118,17 @@ const ProfileDocuments = ({ onChange }: Props) => {
   };
 
   if (loading) {
-    return <p style={{ fontSize: '0.85rem', color: '#B9AFDA' }}>Loading documents...</p>;
+    return <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Loading documents...</p>;
   }
 
   const otherRequiredTypes = requiredTypes.filter((t) => t !== VALID_ID_TYPE);
 
   return (
     <div>
-      <p style={{ fontSize: '0.75rem', color: '#B9AFDA', marginTop: 0, marginBottom: '0.6rem' }}>
+      <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: 0, marginBottom: '0.6rem' }}>
         PDF, JPG, or PNG only, max 5MB per file. Images are automatically resized and compressed.
       </p>
-      {error && <p style={{ color: '#F87171', fontSize: '0.8rem', marginBottom: '0.75rem' }}>{error}</p>}
+      {error && <p style={{ color: 'var(--error-text)', fontSize: '0.8rem', marginBottom: '0.75rem' }}>{error}</p>}
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
         {otherRequiredTypes.map((documentType) => {
@@ -140,7 +140,7 @@ const ProfileDocuments = ({ onChange }: Props) => {
             >
               <div>
                 <div>{documentType}</div>
-                {existing && <div style={{ fontSize: '0.75rem', color: '#B9AFDA', marginTop: '0.15rem' }}>{existing.fileName}</div>}
+                {existing && <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.15rem' }}>{existing.fileName}</div>}
               </div>
               {existing ? (
                 <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>

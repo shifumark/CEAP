@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { apiService } from '../services/api';
 import { UploadedDocument } from '../types';
 
@@ -88,13 +88,13 @@ const ValidIdUpload = ({ onChange }: Props) => {
   };
 
   if (loading) {
-    return <p style={{ fontSize: '0.85rem', color: '#B9AFDA' }}>Loading...</p>;
+    return <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Loading...</p>;
   }
 
   return (
     <div className="form-group">
-      {error && <p style={{ color: '#F87171', fontSize: '0.8rem', marginBottom: '0.5rem' }}>{error}</p>}
-      <p style={{ fontSize: '0.75rem', color: '#B9AFDA', marginTop: 0, marginBottom: '0.4rem' }}>
+      {error && <p style={{ color: 'var(--error-text)', fontSize: '0.8rem', marginBottom: '0.5rem' }}>{error}</p>}
+      <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: 0, marginBottom: '0.4rem' }}>
         PDF, JPG, or PNG only, max 5MB per file.
       </p>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
@@ -124,7 +124,7 @@ const ValidIdUpload = ({ onChange }: Props) => {
           key={doc.id}
           style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.8rem', marginTop: '0.4rem', flexWrap: 'wrap', gap: '0.5rem' }}
         >
-          <span style={{ color: '#B9AFDA' }}>{doc.fileName}</span>
+          <span style={{ color: 'var(--text-secondary)' }}>{doc.fileName}</span>
           <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <button className="btn btn-outline btn-sm" type="button" onClick={() => handleView(doc.id)}>
               View File

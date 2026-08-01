@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { apiService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -293,11 +293,11 @@ const ProgramPage = () => {
           <p>Loading...</p>
         ) : programs.length === 0 ? (
           <div className="card">
-            <p style={{ color: '#B9AFDA' }}>No scholarship programs yet.</p>
+            <p style={{ color: 'var(--text-secondary)' }}>No scholarship programs yet.</p>
           </div>
         ) : filteredPrograms.length === 0 ? (
           <div className="card">
-            <p style={{ color: '#B9AFDA' }}>No programs match this filter.</p>
+            <p style={{ color: 'var(--text-secondary)' }}>No programs match this filter.</p>
           </div>
         ) : (
           <div className="grid grid-2">
@@ -309,7 +309,7 @@ const ProgramPage = () => {
                     {program.status}
                   </span>
                 </div>
-                <p style={{ color: '#B9AFDA', margin: '0.5rem 0' }}>{program.description}</p>
+                <p style={{ color: 'var(--text-secondary)', margin: '0.5rem 0' }}>{program.description}</p>
                 <p style={{ fontSize: '0.9rem' }}>
                   <strong>Sponsor:</strong> {program.sponsor}
                 </p>
@@ -319,10 +319,10 @@ const ProgramPage = () => {
                 <p style={{ fontSize: '0.9rem' }}>
                   <strong>Eligibility:</strong> {program.eligibilityRequirements}
                 </p>
-                <p style={{ fontSize: '0.9rem', color: '#B9AFDA' }}>
+                <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
                   {program.numberOfSlots} slots · {formatDate(program.openingDate)} – {formatDate(program.closingDate)}
                 </p>
-                <p style={{ fontSize: '0.8rem', color: '#B9AFDA' }}>Created: {formatDate(program.createdAt)}</p>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Created: {formatDate(program.createdAt)}</p>
 
                 {isAdmin && (
                   <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
@@ -361,7 +361,7 @@ const ProgramPage = () => {
                     {isSuperAdmin && (
                       <button
                         className="btn btn-outline btn-sm"
-                        style={{ color: '#F87171', borderColor: '#F87171' }}
+                        style={{ color: 'var(--error-text)', borderColor: 'var(--error-text)' }}
                         disabled={busyId === program.id}
                         onClick={() => setDeletingProgram(program)}
                       >
@@ -643,7 +643,7 @@ const ProgramPage = () => {
             <button
               className="btn btn-primary"
               type="button"
-              style={{ background: '#F87171' }}
+              style={{ background: 'var(--error-text)' }}
               disabled={deleting}
               onClick={handleConfirmDelete}
             >

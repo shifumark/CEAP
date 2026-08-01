@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { apiService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -99,7 +99,7 @@ const NotificationsPage = () => {
             )}
             <button
               className="btn btn-outline btn-sm"
-              style={{ color: '#F87171', borderColor: '#F87171' }}
+              style={{ color: 'var(--error-text)', borderColor: 'var(--error-text)' }}
               disabled={deletingAll}
               onClick={handleDeleteAll}
             >
@@ -141,7 +141,7 @@ const NotificationsPage = () => {
           <p>Loading...</p>
         ) : notifications.length === 0 ? (
           <div className="card">
-            <p style={{ color: '#B9AFDA' }}>No notifications yet.</p>
+            <p style={{ color: 'var(--text-secondary)' }}>No notifications yet.</p>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
@@ -158,7 +158,7 @@ const NotificationsPage = () => {
                   <div>
                     <strong>{notification.title}</strong>
                     <p style={{ margin: '0.35rem 0', color: '#D8D0EF' }}>{notification.message}</p>
-                    <span style={{ fontSize: '0.8rem', color: '#B9AFDA' }}>{formatDateTime(notification.createdAt)}</span>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{formatDateTime(notification.createdAt)}</span>
                     {notification.actionUrl && (
                       <>
                         {' · '}
@@ -176,7 +176,7 @@ const NotificationsPage = () => {
                     )}
                     <button
                       className="btn btn-outline btn-sm"
-                      style={{ color: '#F87171', borderColor: '#F87171' }}
+                      style={{ color: 'var(--error-text)', borderColor: 'var(--error-text)' }}
                       disabled={deletingId === notification.id}
                       onClick={() => handleDelete(notification.id)}
                     >

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+﻿import { useState } from 'react';
 import { apiService } from '../services/api';
 import { ScholarshipProgram } from '../types';
 import Modal from './Modal';
@@ -42,14 +42,14 @@ const ApplyModal = ({ scholarship, onClose, onSuccess }: Props) => {
         </div>
       )}
 
-      <p style={{ color: '#B9AFDA' }}>
+      <p style={{ color: 'var(--text-secondary)' }}>
         This creates a draft application for <strong>{scholarship.name}</strong>. Complete your profile and upload
         the required documents before submitting it for review.
       </p>
 
       <div style={{ marginBottom: '1.25rem' }}>
         <strong style={{ fontSize: '0.85rem' }}>Documents</strong>
-        <p style={{ fontSize: '0.8rem', color: '#B9AFDA', margin: '0.25rem 0 0.6rem' }}>
+        <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: '0.25rem 0 0.6rem' }}>
           Upload any missing document here — it's saved to your profile, so it's reused for every application and
           also appears under "VIII. Documentary Requirements" on your Profile page.
         </p>

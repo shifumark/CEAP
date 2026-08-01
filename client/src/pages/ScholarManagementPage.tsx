@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { apiService } from '../services/api';
 import { Scholar, ScholarshipProgram, UserRole } from '../types';
@@ -160,7 +160,7 @@ const ScholarManagementPage = () => {
             <button
               className="btn btn-outline btn-sm"
               type="button"
-              style={{ color: '#F87171', borderColor: '#F87171' }}
+              style={{ color: 'var(--error-text)', borderColor: 'var(--error-text)' }}
               disabled={filtered.length === 0}
               onClick={() => setShowDeleteAll(true)}
             >
@@ -204,7 +204,7 @@ const ScholarManagementPage = () => {
           <p>Loading...</p>
         ) : scholars.length === 0 ? (
           <div className="card">
-            <p style={{ color: '#B9AFDA' }}>
+            <p style={{ color: 'var(--text-secondary)' }}>
               No scholars yet — scholars are created automatically when an application is approved.
             </p>
           </div>
@@ -256,14 +256,14 @@ const ScholarManagementPage = () => {
 
             {displayGroups.length === 0 ? (
               <div className="card">
-                <p style={{ color: '#B9AFDA' }}>No scholars match this filter.</p>
+                <p style={{ color: 'var(--text-secondary)' }}>No scholars match this filter.</p>
               </div>
             ) : (
               displayGroups.map((group) => (
                 <section key={group.scholarshipName} style={{ marginBottom: '2rem' }}>
                   <h3 style={{ marginBottom: '0.75rem' }}>
                     {group.scholarshipName}{' '}
-                    <span style={{ fontSize: '0.85rem', fontWeight: 400, color: '#B9AFDA' }}>
+                    <span style={{ fontSize: '0.85rem', fontWeight: 400, color: 'var(--text-secondary)' }}>
                       ({group.scholars.length} scholar{group.scholars.length === 1 ? '' : 's'})
                     </span>
                   </h3>
@@ -287,7 +287,7 @@ const ScholarManagementPage = () => {
                             <td>{scholar.scholarIdNumber ?? '—'}</td>
                             <td>
                               <div>{scholar.studentName}</div>
-                              <div style={{ fontSize: '0.8rem', color: '#B9AFDA' }}>{scholar.studentEmail}</div>
+                              <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{scholar.studentEmail}</div>
                             </td>
                             <td>
                               <span className={`badge ${STATUS_BADGE[scholar.status] ?? 'badge-secondary'}`}>
@@ -304,7 +304,7 @@ const ScholarManagementPage = () => {
                                 {!isViewer && (
                                   <button
                                     className="btn btn-outline btn-sm"
-                                    style={{ color: '#F87171', borderColor: '#F87171' }}
+                                    style={{ color: 'var(--error-text)', borderColor: 'var(--error-text)' }}
                                     onClick={() => setDeletingScholar(scholar)}
                                   >
                                     Delete
@@ -335,7 +335,7 @@ const ScholarManagementPage = () => {
             <button
               className="btn btn-primary"
               type="button"
-              style={{ background: '#F87171' }}
+              style={{ background: 'var(--error-text)' }}
               disabled={deleting}
               onClick={handleConfirmDelete}
             >
@@ -359,7 +359,7 @@ const ScholarManagementPage = () => {
             <button
               className="btn btn-primary"
               type="button"
-              style={{ background: '#F87171' }}
+              style={{ background: 'var(--error-text)' }}
               disabled={deletingAll}
               onClick={handleConfirmDeleteAll}
             >

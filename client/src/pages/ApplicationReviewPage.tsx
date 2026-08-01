@@ -46,6 +46,17 @@ const STATUS_BADGE: Record<ApplicationStatus, string> = {
 // the decision dropdown.
 const REVIEWABLE_STATUSES = Object.values(ApplicationStatus).filter((status) => status !== ApplicationStatus.DRAFT);
 
+// Standard notice shown to the student when an application is approved —
+// reviewers can use this as-is or switch to a custom message instead.
+const DEFAULT_APPROVAL_MESSAGE = `Congratulations! Your application has been approved for preliminary evaluation. Kindly submit the original, authenticated hard copies of the documents you uploaded to the Office of the Municipal Planning and Development Coordinator (MPDC). You may also coordinate with the ECEAP Focal Persons:
+- Mrs. Luzviminda T. Culili
+- Mary Cris Aquino
+- Daniel Urbano
+
+The submitted documents will undergo further evaluation and validation by the Screening Committee.
+
+Please note: This preliminary approval does not guarantee final acceptance. Your application may still be disapproved if the Screening Committee finds that the information or supporting documents submitted was false, incomplete, inconsistent, ineligible, or do not comply with the program's requirements and guidelines.`;
+
 // Once a decision is finalized, the server rejects deletion — approved
 // applications have already become a Scholar record (delete that from
 // Scholar Management instead), and rejected ones are kept as an audit
@@ -76,6 +87,7 @@ const ApplicationReviewPage = () => {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [draftStatus, setDraftStatus] = useState<ApplicationStatus | ''>('');
   const [draftComments, setDraftComments] = useState('');
+  const [approvalTextMode, setApprovalTextMode] = useState<'default' | 'custom'>('default');
   const [saving, setSaving] = useState(false);
   const [documents, setDocuments] = useState<UploadedDocument[]>([]);
   const [documentsLoading, setDocumentsLoading] = useState(false);
@@ -183,9 +195,18 @@ const ApplicationReviewPage = () => {
     setSelectedId(application.id);
     setDraftStatus(application.status);
     setDraftComments(application.comments ?? '');
+    setApprovalTextMode(application.comments === DEFAULT_APPROVAL_MESSAGE ? 'default' : 'custom');
     setApplicantProfile(null);
     loadDocuments(application.id);
     loadApplicantProfile(application.applicantId);
+  };
+
+  const handleDecisionStatusChange = (status: ApplicationStatus) => {
+    setDraftStatus(status);
+    if (status === ApplicationStatus.APPROVED) {
+      setApprovalTextMode('default');
+      setDraftComments(DEFAULT_APPROVAL_MESSAGE);
+    }
   };
 
   const handleSave = async () => {
@@ -527,7 +548,7 @@ const ApplicationReviewPage = () => {
                   <select
                     id="decisionStatus"
                     value={draftStatus}
-                    onChange={(e) => setDraftStatus(e.target.value as ApplicationStatus)}
+                    onChange={(e) => handleDecisionStatusChange(e.target.value as ApplicationStatus)}
                     autoFocus
                   >
                     {REVIEWABLE_STATUSES.map((status) => (
@@ -540,11 +561,42 @@ const ApplicationReviewPage = () => {
 
                 <div className="form-group">
                   <label htmlFor="decisionComments">Comments (visible to the student)</label>
+                  {draftStatus === ApplicationStatus.APPROVED && (
+                    <div style={{ display: 'flex', gap: '1.25rem', marginBottom: '0.25rem' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 400, fontSize: '0.9rem' }}>
+                        <input
+                          type="radio"
+                          name="approvalTextMode"
+                          checked={approvalTextMode === 'default'}
+                          onChange={() => {
+                            setApprovalTextMode('default');
+                            setDraftComments(DEFAULT_APPROVAL_MESSAGE);
+                          }}
+                        />
+                        Default text
+                      </label>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 400, fontSize: '0.9rem' }}>
+                        <input
+                          type="radio"
+                          name="approvalTextMode"
+                          checked={approvalTextMode === 'custom'}
+                          onChange={() => {
+                            setApprovalTextMode('custom');
+                            setDraftComments('');
+                          }}
+                        />
+                        Type text
+                      </label>
+                    </div>
+                  )}
                   <textarea
                     id="decisionComments"
-                    rows={3}
+                    rows={draftStatus === ApplicationStatus.APPROVED && approvalTextMode === 'default' ? 10 : 3}
                     value={draftComments}
-                    onChange={(e) => setDraftComments(e.target.value)}
+                    onChange={(e) => {
+                      setDraftComments(e.target.value);
+                      if (draftStatus === ApplicationStatus.APPROVED) setApprovalTextMode('custom');
+                    }}
                   />
                 </div>
 

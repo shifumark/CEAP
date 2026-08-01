@@ -427,7 +427,12 @@ export class ApplicationService {
           // Refreshed every time an admin moves the application into
           // "under_review" — including after a needs_revision resubmit
           // loop — so it always reflects the most recent pickup.
-          ...(request.status === 'under_review' ? { receivedDate: new Date() } : {})
+          ...(request.status === 'under_review' ? { receivedDate: new Date() } : {}),
+          // Auto-stamped the first time an Admin/Super Admin opens the
+          // Review modal (client sends receivedDate only when its own
+          // copy is unset) — re-checked against the DB value here too so
+          // a second reviewer opening it later can't clobber the original.
+          ...(request.receivedDate && !application.receivedDate ? { receivedDate: new Date(request.receivedDate) } : {})
         },
         include: applicationInclude
       });

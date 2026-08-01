@@ -199,6 +199,21 @@ const ApplicationReviewPage = () => {
     setApplicantProfile(null);
     loadDocuments(application.id);
     loadApplicantProfile(application.applicantId);
+
+    // Auto-stamp "Date Received" the first time an Admin/Super Admin opens
+    // this application for review — never overwrites an existing value
+    // (server re-checks this too, so a second reviewer opening it later
+    // can't clobber the original date).
+    if (!isViewer && !application.receivedDate) {
+      apiService
+        .updateApplication(application.id, { receivedDate: new Date().toISOString() })
+        .then((updated) => {
+          setApplications((prev) => prev.map((a) => (a.id === updated.id ? updated : a)));
+        })
+        .catch(() => {
+          // Non-fatal — the field just stays empty until the next review open.
+        });
+    }
   };
 
   const handleDecisionStatusChange = (status: ApplicationStatus) => {

@@ -560,6 +560,7 @@ export interface CreateApplicationRequest {
 export interface UpdateApplicationRequest {
   status?: ApplicationStatus;
   comments?: string;
+  receivedDate?: string;
 }
 
 export interface SubmitApplicationRequest {

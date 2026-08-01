@@ -266,7 +266,7 @@ class ApiService {
     return this.request('POST', `/applications/${applicationId}/submit`, {});
   }
 
-  async updateApplication(id: number, data: { status?: string; comments?: string }): Promise<Application> {
+  async updateApplication(id: number, data: { status?: string; comments?: string; receivedDate?: string }): Promise<Application> {
     return this.request('PUT', `/applications/${id}`, data);
   }
 

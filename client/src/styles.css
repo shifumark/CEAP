@@ -1020,17 +1020,11 @@ tr:hover {
   box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
 }
 
-/* Avocado theme override — same photo backdrop, but a light avocado
-   green overlay + a white glass card with dark text instead of the
-   default's dark purple overlay + translucent-white-on-dark card. This
+/* Avocado theme override — the container keeps the default's dark photo
+   backdrop unchanged (no green tint) for every theme; only the card
+   floating on top switches to a white glass card with dark text. This
    also covers Register/Forgot-Password/Reset-Password/Verify-Email,
    which share these same classes. */
-:root[data-theme='avocado'] .login-container {
-  background:
-    linear-gradient(160deg, rgba(199, 238, 185, 0.88) 0%, rgba(216, 196, 248, 0.68) 55%, rgba(250, 252, 248, 0.92) 100%),
-    url('./assets/images/municipal-hall.jpg') center/cover no-repeat;
-}
-
 :root[data-theme='avocado'] .login-card {
   background: rgba(255, 255, 255, 0.82);
   border: 1px solid var(--border);

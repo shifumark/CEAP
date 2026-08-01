@@ -92,7 +92,7 @@ const LoginPage = () => {
                   transform: 'translateY(-50%)',
                   background: 'none',
                   border: 'none',
-                  color: 'rgba(255, 255, 255, 0.75)',
+                  color: 'var(--login-toggle-color)',
                   fontSize: '0.8rem',
                   cursor: 'pointer',
                   padding: '0.25rem'

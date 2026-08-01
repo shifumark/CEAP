@@ -54,6 +54,7 @@
      unread-notification counter) — needs to stay legible with white text
      on top, which the dominant brand color alone isn't guaranteed to be. */
   --notify-badge: #F472B6;
+  --login-toggle-color: rgba(255, 255, 255, 0.75);
 }
 
 /* ===========================
@@ -92,6 +93,7 @@
     radial-gradient(600px circle at 6% 92%, rgba(255, 255, 255, 0.3), transparent 60%);
   --error-text: #DC2626;
   --notify-badge: #8B5CF6;
+  --login-toggle-color: var(--text-secondary);
 }
 
 :root[data-theme='avocado'] {
@@ -110,33 +112,36 @@
 }
 
 :root[data-theme='avocado'] .app-sidebar {
-  background: linear-gradient(180deg, #FFFFFF 0%, #F3FAF0 100%);
-  border-right: 1px solid var(--border);
+  /* Side menu matches the avocado-green main background, not the white
+     card surfaces — nav text/hover states below are tuned for
+     legibility against this green, not against white. */
+  background: linear-gradient(180deg, #C7EEB9 0%, #AEE092 100%);
+  border-right: 1px solid rgba(55, 65, 81, 0.12);
 }
 
 :root[data-theme='avocado'] .sidebar-logo {
   color: var(--text-primary);
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid rgba(55, 65, 81, 0.12);
 }
 
 :root[data-theme='avocado'] .nav-link {
-  color: var(--text-secondary);
+  color: var(--text-primary);
 }
 
 :root[data-theme='avocado'] .nav-link:hover {
   color: var(--text-primary);
-  background: rgba(199, 238, 185, 0.35);
+  background: rgba(255, 255, 255, 0.4);
 }
 
 :root[data-theme='avocado'] .nav-link.active {
-  color: #374151;
-  background: rgba(199, 238, 185, 0.45);
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.55);
   border-right: 3px solid var(--accent-purple);
 }
 
 :root[data-theme='avocado'] .sidebar-footer {
-  color: var(--text-secondary);
-  border-top: 1px solid var(--border);
+  color: var(--text-primary);
+  border-top: 1px solid rgba(55, 65, 81, 0.12);
 }
 
 :root[data-theme='avocado'] .sidebar-toggle {
@@ -1013,6 +1018,55 @@ tr:hover {
   border-color: rgba(255, 255, 255, 0.7);
   background: rgba(255, 255, 255, 0.14);
   box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
+}
+
+/* Avocado theme override — same photo backdrop, but a light avocado
+   green overlay + a white glass card with dark text instead of the
+   default's dark purple overlay + translucent-white-on-dark card. This
+   also covers Register/Forgot-Password/Reset-Password/Verify-Email,
+   which share these same classes. */
+:root[data-theme='avocado'] .login-container {
+  background:
+    linear-gradient(160deg, rgba(199, 238, 185, 0.88) 0%, rgba(216, 196, 248, 0.68) 55%, rgba(250, 252, 248, 0.92) 100%),
+    url('./assets/images/municipal-hall.jpg') center/cover no-repeat;
+}
+
+:root[data-theme='avocado'] .login-card {
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-glass);
+}
+
+:root[data-theme='avocado'] .login-card h2 {
+  color: var(--text-primary);
+}
+
+:root[data-theme='avocado'] .login-card > p {
+  color: var(--text-secondary);
+}
+
+:root[data-theme='avocado'] .login-card a {
+  color: var(--accent-purple);
+}
+
+:root[data-theme='avocado'] .login-card .form-group label {
+  color: var(--text-primary);
+}
+
+:root[data-theme='avocado'] .login-card .form-group input {
+  background: #FFFFFF;
+  border: 1.5px solid var(--border);
+  color: var(--text-primary);
+}
+
+:root[data-theme='avocado'] .login-card .form-group input::placeholder {
+  color: var(--text-disabled);
+}
+
+:root[data-theme='avocado'] .login-card .form-group input:focus {
+  border-color: var(--accent-purple);
+  background: #FFFFFF;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.12);
 }
 
 /* ===========================

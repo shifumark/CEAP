@@ -459,11 +459,11 @@ const ProfilePage = () => {
               <div
                 style={{
                   padding: '1rem',
-                  background: 'rgba(245, 158, 11, 0.1)',
-                  border: '1px solid rgba(245, 158, 11, 0.3)',
+                  background: 'var(--warning-bg)',
+                  border: '1px solid var(--warning-border)',
                   borderRadius: 'var(--radius-md)',
                   marginBottom: '1.5rem',
-                  color: '#FBBF24'
+                  color: 'var(--warning-text)'
                 }}
               >
                 <strong>Your profile is incomplete.</strong> The following are still missing:
@@ -500,11 +500,11 @@ const ProfilePage = () => {
               <div
                 style={{
                   padding: '1rem',
-                  background: 'rgba(251, 191, 36, 0.1)',
-                  border: '1px solid rgba(251, 191, 36, 0.3)',
+                  background: 'var(--warning-bg)',
+                  border: '1px solid var(--warning-border)',
                   borderRadius: 'var(--radius-md)',
                   marginBottom: '1.5rem',
-                  color: '#FBBF24'
+                  color: 'var(--warning-text)'
                 }}
               >
                 Your profile is locked because you've submitted an application. Ask an administrator to unlock it

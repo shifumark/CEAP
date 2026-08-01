@@ -55,6 +55,9 @@
      on top, which the dominant brand color alone isn't guaranteed to be. */
   --notify-badge: #F472B6;
   --login-toggle-color: rgba(255, 255, 255, 0.75);
+  --warning-bg: rgba(245, 158, 11, 0.1);
+  --warning-border: rgba(245, 158, 11, 0.3);
+  --warning-text: #FBBF24;
 }
 
 /* ===========================
@@ -94,6 +97,11 @@
   --error-text: #DC2626;
   --notify-badge: #8B5CF6;
   --login-toggle-color: var(--text-secondary);
+  /* Profile warnings (incomplete/locked banners) read as dark red here
+     instead of the default theme's amber. */
+  --warning-bg: rgba(153, 27, 27, 0.12);
+  --warning-border: rgba(153, 27, 27, 0.35);
+  --warning-text: #991B1B;
 }
 
 :root[data-theme='avocado'] {

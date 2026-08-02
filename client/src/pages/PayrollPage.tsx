@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
+import * as XLSX from 'xlsx';
 import { apiService } from '../services/api';
-import { Scholar } from '../types';
+import { Scholar, ScholarshipProgram } from '../types';
 import { COLLEGE_YEAR_LEVELS, PROFESSIONAL_YEAR_LEVELS } from '../constants/profileOptions';
 
 const SENIOR_HIGH_YEAR_LEVELS = ['Grade 11', 'Grade 12'];
@@ -42,6 +43,14 @@ function formatMonthLabel(monthValue: string): string {
   return new Date(year, month - 1, 1).toLocaleDateString(undefined, { year: 'numeric', month: 'long' });
 }
 
+// "2026-08" -> matches any submissionDate within that calendar month,
+// regardless of timezone-of-day (compares by the date's own local
+// year/month, not a UTC slice of the ISO string).
+function isInMonth(date: Date, monthValue: string): boolean {
+  const [year, month] = monthValue.split('-').map(Number);
+  return date.getFullYear() === year && date.getMonth() + 1 === month;
+}
+
 interface Signatory {
   name: string;
   title: string;
@@ -49,11 +58,13 @@ interface Signatory {
 
 const PayrollPage = () => {
   const [scholars, setScholars] = useState<Scholar[]>([]);
+  const [programs, setPrograms] = useState<ScholarshipProgram[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   const [statusFilter, setStatusFilter] = useState('active');
   const [categoryFilter, setCategoryFilter] = useState<Category>('');
+  const [programFilter, setProgramFilter] = useState('');
   const [nameSearch, setNameSearch] = useState('');
   const [barangaySearch, setBarangaySearch] = useState('');
   const [month, setMonth] = useState(currentMonthValue());
@@ -70,11 +81,18 @@ const PayrollPage = () => {
       .then((result) => setScholars(result.data))
       .catch((err) => setError(err.message || 'Failed to load scholars'))
       .finally(() => setLoading(false));
+    apiService
+      .getScholarships(1, 100)
+      .then((result) => setPrograms(result.data))
+      .catch(() => {
+        // Non-fatal — the Program filter just won't have options if this fails.
+      });
   }, []);
 
   const filtered = useMemo(() => {
     return scholars
       .filter((s) => (statusFilter ? s.status === statusFilter : true))
+      .filter((s) => (programFilter ? s.scholarshipId === Number(programFilter) : true))
       .filter((s) => (categoryFilter ? categoryOf(s.yearLevel) === categoryFilter : true))
       .filter((s) => (nameSearch ? s.studentName?.toLowerCase().includes(nameSearch.toLowerCase()) : true))
       .filter((s) => {
@@ -84,21 +102,72 @@ const PayrollPage = () => {
           s.studentBarangay?.toLowerCase().includes(q) || s.studentAddress?.toLowerCase().includes(q)
         );
       })
+      .filter((s) => {
+        if (!month) return true;
+        // No submissionDate (e.g. a manually-approved scholar who never
+        // went through the online application flow) can't match a
+        // specific submission month, so it's excluded rather than shown.
+        if (!s.submissionDate) return false;
+        return isInMonth(new Date(s.submissionDate), month);
+      })
       .sort((a, b) => (a.studentName ?? '').localeCompare(b.studentName ?? ''));
-  }, [scholars, statusFilter, categoryFilter, nameSearch, barangaySearch]);
+  }, [scholars, statusFilter, programFilter, categoryFilter, nameSearch, barangaySearch, month]);
 
   const amountValue = parseFloat(amount) || 0;
   const total = amountValue * filtered.length;
 
   const categoryLabel = CATEGORY_OPTIONS.find((c) => c.value === categoryFilter)?.label ?? 'All Categories';
+  const periodLabel = `${categoryLabel.toUpperCase()}${month ? ` — ${formatMonthLabel(month).toUpperCase()}` : ''}`;
 
   const handlePrint = () => window.print();
+
+  const handleExportExcel = () => {
+    const rows: (string | number)[][] = [
+      ['GENERAL PAYROLL'],
+      ['LGU-Conner, Apayao'],
+      ['Enhanced Conner Educational Assistance Program Grantees'],
+      [periodLabel],
+      [
+        'We acknowledge receipt of the sum shown opposite our names as financial assistance under the Conner Educational Assistance Program.'
+      ],
+      [],
+      ['No.', 'Name', 'Barangay', 'Amount', 'Signature'],
+      ...filtered.map((scholar, index) => [index + 1, scholar.studentName ?? '', scholar.studentBarangay ?? '', amountValue, '']),
+      ['', '', '', '', ''],
+      ['', '', 'Total', total, ''],
+      [],
+      [],
+      ['Prepared by:'],
+      [preparedBy.name],
+      [preparedBy.title],
+      [],
+      ['Certifying Funds Available:'],
+      [certifying1.name, '', certifying2.name],
+      [certifying1.title, '', certifying2.title],
+      [],
+      ['Approved by:'],
+      [approvedBy.name],
+      [approvedBy.title]
+    ];
+
+    const worksheet = XLSX.utils.aoa_to_sheet(rows);
+    worksheet['!cols'] = [{ wch: 6 }, { wch: 28 }, { wch: 18 }, { wch: 14 }, { wch: 20 }];
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Payroll');
+
+    const filenameParts = ['Payroll', categoryFilter || 'all', month || 'all-months'];
+    XLSX.writeFile(workbook, `${filenameParts.join('_')}.xlsx`);
+  };
 
   return (
     <div>
       <nav className="navbar">
         <div className="navbar-brand">Payroll</div>
         <div className="navbar-actions">
+          <button className="btn btn-secondary btn-sm" onClick={handleExportExcel}>
+            Download Excel
+          </button>
           <button className="btn btn-primary btn-sm" onClick={handlePrint}>
             Print
           </button>
@@ -147,6 +216,18 @@ const PayrollPage = () => {
             </div>
 
             <div className="form-group" style={{ margin: 0 }}>
+              <label htmlFor="payrollProgram">Program</label>
+              <select id="payrollProgram" value={programFilter} onChange={(e) => setProgramFilter(e.target.value)}>
+                <option value="">All Programs</option>
+                {programs.map((program) => (
+                  <option key={program.id} value={program.id}>
+                    {program.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-group" style={{ margin: 0 }}>
               <label htmlFor="payrollName">Name</label>
               <input
                 id="payrollName"
@@ -167,7 +248,7 @@ const PayrollPage = () => {
             </div>
 
             <div className="form-group" style={{ margin: 0 }}>
-              <label htmlFor="payrollMonth">Month</label>
+              <label htmlFor="payrollMonth">Month Submitted</label>
               <input id="payrollMonth" type="month" value={month} onChange={(e) => setMonth(e.target.value)} />
             </div>
 
@@ -194,9 +275,7 @@ const PayrollPage = () => {
               <h2 style={{ marginBottom: '0.25rem' }}>GENERAL PAYROLL</h2>
               <p style={{ fontWeight: 700, margin: 0 }}>LGU-Conner, Apayao</p>
               <p style={{ fontWeight: 700, margin: 0 }}>Enhanced Conner Educational Assistance Program Grantees</p>
-              <p style={{ fontWeight: 700, margin: '0 0 1rem 0' }}>
-                {categoryLabel.toUpperCase()} {month ? `— ${formatMonthLabel(month).toUpperCase()}` : ''}
-              </p>
+              <p style={{ fontWeight: 700, margin: '0 0 1rem 0' }}>{periodLabel}</p>
               <p style={{ margin: 0 }}>
                 We acknowledge receipt of the sum shown opposite our names as financial assistance under the Conner
                 Educational Assistance Program.

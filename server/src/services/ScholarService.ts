@@ -69,7 +69,8 @@ function toScholar(record: ScholarWithRelations, submissionDate?: Date, received
     // still findable.
     studentAddress: record.user?.applicant?.address ?? undefined,
     submissionDate,
-    receivedDate
+    receivedDate,
+    yearLevel: record.user?.applicant?.yearLevel ?? undefined
   };
 }
 

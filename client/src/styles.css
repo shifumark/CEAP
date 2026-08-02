@@ -1097,6 +1097,57 @@ tr:hover {
 }
 
 /* ===========================
+   PAYROLL
+   =========================== */
+
+.payroll-signatory input {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-primary);
+  padding: 0.35rem 0;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.95rem;
+}
+
+.payroll-signatory input:focus {
+  outline: none;
+  border-bottom-color: var(--primary);
+}
+
+/* Only the payroll sheet itself should print — the navbar, filters,
+   sidebar, and signature-line focus/hover styling are all app chrome
+   that has no business on a signed physical document. */
+@media print {
+  .app-sidebar,
+  .sidebar-toggle,
+  .sidebar-overlay,
+  .navbar,
+  .payroll-filters {
+    display: none !important;
+  }
+
+  .app-main {
+    overflow: visible !important;
+  }
+
+  .payroll-sheet {
+    background: white !important;
+    color: black !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  .payroll-sheet * {
+    color: black !important;
+  }
+
+  .payroll-signatory input {
+    border-bottom-color: black;
+  }
+}
+
+/* ===========================
    SIDEBAR MOBILE TOGGLE
    =========================== */
 

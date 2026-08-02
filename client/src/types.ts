@@ -616,6 +616,10 @@ export interface Scholar {
   // who submitted first, and display both dates.
   submissionDate?: Date;
   receivedDate?: Date;
+  // The applicant's Year Level, from their profile — lets Payroll classify
+  // scholars into Senior High/College/Special Course/ALS without a second
+  // request.
+  yearLevel?: string;
 }
 
 // GRADE

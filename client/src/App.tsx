@@ -21,6 +21,7 @@ import NotificationsPage from './pages/NotificationsPage';
 import ReportsPage from './pages/ReportsPage';
 import UserManagementPage from './pages/UserManagementPage';
 import DeletionReportPage from './pages/DeletionReportPage';
+import PayrollPage from './pages/PayrollPage';
 import SettingsPage from './pages/SettingsPage';
 import Sidebar from './components/Sidebar';
 import { UserRole } from './types';
@@ -39,6 +40,7 @@ const SIDEBAR_PATHS = [
   '/reports',
   '/users',
   '/deletion-requests',
+  '/payroll',
   '/settings'
 ];
 
@@ -145,6 +147,14 @@ function AppLayout() {
             element={
               <ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.SUPER_ADMIN]}>
                 <DeletionReportPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/payroll"
+            element={
+              <ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.SUPER_ADMIN]}>
+                <PayrollPage />
               </ProtectedRoute>
             }
           />

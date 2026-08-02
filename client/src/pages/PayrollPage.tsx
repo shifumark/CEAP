@@ -117,7 +117,10 @@ const PayrollPage = () => {
   const total = amountValue * filtered.length;
 
   const categoryLabel = CATEGORY_OPTIONS.find((c) => c.value === categoryFilter)?.label ?? 'All Categories';
-  const periodLabel = `${categoryLabel.toUpperCase()}${month ? ` — ${formatMonthLabel(month).toUpperCase()}` : ''}`;
+  const programLabel = programFilter ? programs.find((p) => String(p.id) === programFilter)?.name : undefined;
+  const periodLabel = [programLabel?.toUpperCase(), categoryLabel.toUpperCase(), month ? formatMonthLabel(month).toUpperCase() : undefined]
+    .filter(Boolean)
+    .join(' — ');
 
   const handlePrint = () => window.print();
 

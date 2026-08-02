@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import * as XLSX from 'xlsx';
+import writeXlsxFile, { Row } from 'write-excel-file/browser';
 import { apiService } from '../services/api';
 import { Scholar, ScholarshipProgram } from '../types';
 import { COLLEGE_YEAR_LEVELS, PROFESSIONAL_YEAR_LEVELS } from '../constants/profileOptions';
@@ -124,67 +124,79 @@ const PayrollPage = () => {
 
   const handlePrint = () => window.print();
 
-  const handleExportExcel = () => {
-    // Built up row-by-row (rather than one static literal) so merge ranges
-    // below can reference exact row indices — the data section's length
-    // varies with the current filters, shifting everything after it.
-    const rows: (string | number)[][] = [];
-    const merges: XLSX.Range[] = [];
-    const addRow = (row: (string | number)[]) => {
-      rows.push(row);
-      return rows.length - 1;
-    };
-    const mergeRow = (rowIndex: number, startCol: number, endCol: number) => {
-      merges.push({ s: { r: rowIndex, c: startCol }, e: { r: rowIndex, c: endCol } });
-    };
+  const handleExportExcel = async () => {
+    const BORDER: { borderColor: string; borderStyle: 'thin' } = { borderColor: '#000000', borderStyle: 'thin' };
+    const centeredLine = (value: string, extra?: Record<string, unknown>): Row => [
+      { value, align: 'center', wrap: true, columnSpan: 5, ...extra },
+      null,
+      null,
+      null,
+      null
+    ];
 
-    // Centered document header — mirrors the on-screen .payroll-sheet-header.
-    [
-      'GENERAL PAYROLL',
-      'LGU-Conner, Apayao',
-      'Enhanced Conner Educational Assistance Program Grantees',
-      periodLabel,
-      'We acknowledge receipt of the sum shown opposite our names as financial assistance under the Conner Educational Assistance Program.'
-    ].forEach((line) => mergeRow(addRow([line]), 0, 4));
-
-    addRow([]);
-    addRow(['No.', 'Name', 'Barangay', 'Amount', 'Signature']);
-    filtered.forEach((scholar, index) =>
-      addRow([index + 1, scholar.studentName ?? '', scholar.studentBarangay ?? '', amountValue, ''])
-    );
-
-    addRow([]);
-    mergeRow(addRow(['Total', '', '', total, '']), 0, 2);
-
-    addRow([]);
-    addRow([]);
-    mergeRow(addRow(['Prepared by:']), 0, 4);
-    mergeRow(addRow([preparedBy.name]), 0, 4);
-    mergeRow(addRow([preparedBy.title]), 0, 4);
-
-    addRow([]);
-    mergeRow(addRow(['Certifying Funds Available:']), 0, 4);
-    const certifyingNamesRow = addRow([certifying1.name, '', '', certifying2.name, '']);
-    mergeRow(certifyingNamesRow, 0, 1);
-    mergeRow(certifyingNamesRow, 3, 4);
-    const certifyingTitlesRow = addRow([certifying1.title, '', '', certifying2.title, '']);
-    mergeRow(certifyingTitlesRow, 0, 1);
-    mergeRow(certifyingTitlesRow, 3, 4);
-
-    addRow([]);
-    mergeRow(addRow(['Approved by:']), 0, 4);
-    mergeRow(addRow([approvedBy.name]), 0, 4);
-    mergeRow(addRow([approvedBy.title]), 0, 4);
-
-    const worksheet = XLSX.utils.aoa_to_sheet(rows);
-    worksheet['!cols'] = [{ wch: 6 }, { wch: 28 }, { wch: 18 }, { wch: 14 }, { wch: 20 }];
-    worksheet['!merges'] = merges;
-
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Payroll');
+    const rows: Row[] = [
+      centeredLine('GENERAL PAYROLL', { fontWeight: 'bold', fontSize: 16 }),
+      centeredLine('LGU-Conner, Apayao', { fontWeight: 'bold' }),
+      centeredLine('Enhanced Conner Educational Assistance Program Grantees', { fontWeight: 'bold' }),
+      centeredLine(periodLabel, { fontWeight: 'bold' }),
+      centeredLine(
+        'We acknowledge receipt of the sum shown opposite our names as financial assistance under the Conner Educational Assistance Program.'
+      ),
+      [],
+      ['No.', 'Name', 'Barangay', 'Amount', 'Signature'].map((header) => ({
+        value: header,
+        fontWeight: 'bold',
+        align: 'center',
+        ...BORDER
+      })) as Row,
+      ...filtered.map(
+        (scholar, index): Row => [
+          { value: index + 1, align: 'center', ...BORDER },
+          { value: scholar.studentName ?? '', ...BORDER },
+          { value: scholar.studentBarangay ?? '', ...BORDER },
+          { value: amountValue, format: '"₱"#,##0.00', align: 'right', ...BORDER },
+          { value: '', ...BORDER }
+        ]
+      ),
+      [
+        { value: 'Total', fontWeight: 'bold', align: 'right', columnSpan: 3, ...BORDER },
+        null,
+        null,
+        { value: total, fontWeight: 'bold', format: '"₱"#,##0.00', align: 'right', ...BORDER },
+        { value: '', ...BORDER }
+      ],
+      [],
+      [],
+      [{ value: 'Prepared by:' }],
+      centeredLine(preparedBy.name, { fontWeight: 'bold' }),
+      centeredLine(preparedBy.title),
+      [],
+      [{ value: 'Certifying Funds Available:' }],
+      [
+        { value: certifying1.name, fontWeight: 'bold', align: 'center', columnSpan: 2 },
+        null,
+        { value: '' },
+        { value: certifying2.name, fontWeight: 'bold', align: 'center', columnSpan: 2 },
+        null
+      ],
+      [
+        { value: certifying1.title, align: 'center', columnSpan: 2 },
+        null,
+        { value: '' },
+        { value: certifying2.title, align: 'center', columnSpan: 2 },
+        null
+      ],
+      [],
+      [{ value: 'Approved by:' }],
+      centeredLine(approvedBy.name, { fontWeight: 'bold' }),
+      centeredLine(approvedBy.title)
+    ];
 
     const filenameParts = ['Payroll', categoryFilter || 'all', month || 'all-months'];
-    XLSX.writeFile(workbook, `${filenameParts.join('_')}.xlsx`);
+    await writeXlsxFile(rows, {
+      sheet: 'Payroll',
+      columns: [{ width: 6 }, { width: 28 }, { width: 18 }, { width: 14 }, { width: 20 }]
+    }).toFile(`${filenameParts.join('_')}.xlsx`);
   };
 
   return (

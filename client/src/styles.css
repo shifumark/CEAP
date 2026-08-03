@@ -1123,7 +1123,8 @@ tr:hover {
   .sidebar-toggle,
   .sidebar-overlay,
   .navbar,
-  .payroll-filters {
+  .payroll-filters,
+  .no-print {
     display: none !important;
   }
 

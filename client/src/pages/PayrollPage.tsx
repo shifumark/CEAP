@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import writeXlsxFile, { Row } from 'write-excel-file/browser';
 import { apiService } from '../services/api';
-import { Scholar, ScholarshipProgram } from '../types';
+import { useAuth } from '../context/AuthContext';
+import { Scholar, ScholarshipProgram, UserRole } from '../types';
 import { COLLEGE_YEAR_LEVELS, PROFESSIONAL_YEAR_LEVELS } from '../constants/profileOptions';
+import Modal from '../components/Modal';
 
 const SENIOR_HIGH_YEAR_LEVELS = ['Grade 11', 'Grade 12'];
 const ALS_YEAR_LEVELS = ['Alternative Learning System'];
@@ -61,6 +63,15 @@ interface Signatory {
 }
 
 const PayrollPage = () => {
+  const { user } = useAuth();
+  const isAdmin = user?.role === UserRole.ADMIN;
+  const isSuperAdmin = user?.role === UserRole.SUPER_ADMIN;
+  // Any Admin/Super Admin can trim who's on this specific payroll run
+  // (without touching their actual Scholar record); only a Super Admin
+  // can add someone who the current filters wouldn't otherwise include.
+  const canRemove = isAdmin || isSuperAdmin;
+  const canAdd = isSuperAdmin;
+
   const [scholars, setScholars] = useState<Scholar[]>([]);
   const [programs, setPrograms] = useState<ScholarshipProgram[]>([]);
   const [loading, setLoading] = useState(true);
@@ -74,6 +85,14 @@ const PayrollPage = () => {
   const [month, setMonth] = useState(currentMonthValue());
   const [amount, setAmount] = useState('');
   const [semester, setSemester] = useState('');
+
+  // Per-run curation, local to this page — never touches the underlying
+  // Scholar records. "Removed" always wins over "manually added" for the
+  // same id (re-adding someone clears them from the removed set too).
+  const [removedIds, setRemovedIds] = useState<Set<number>>(new Set());
+  const [manuallyAddedIds, setManuallyAddedIds] = useState<Set<number>>(new Set());
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [addSearch, setAddSearch] = useState('');
 
   const [preparedBy, setPreparedBy] = useState<Signatory>({ name: 'LUZVIMINDA T. CULILI', title: 'Economic Researcher' });
   const [certifying1, setCertifying1] = useState<Signatory>({ name: 'JODY P. KEGAN', title: 'Municipal Accountant' });
@@ -118,8 +137,52 @@ const PayrollPage = () => {
       .sort((a, b) => (a.studentLastName ?? a.studentName ?? '').localeCompare(b.studentLastName ?? b.studentName ?? ''));
   }, [scholars, statusFilter, programFilter, categoryFilter, nameSearch, barangaySearch, month]);
 
+  // What actually gets shown/printed/exported: the filtered set, plus
+  // anyone manually added back in (even if the current filters wouldn't
+  // otherwise include them), minus anyone manually removed from this run.
+  const finalList = useMemo(() => {
+    const byId = new Map(scholars.map((s) => [s.id, s]));
+    const filteredIds = new Set(filtered.map((s) => s.id));
+    const manualExtras = Array.from(manuallyAddedIds)
+      .filter((id) => !filteredIds.has(id))
+      .map((id) => byId.get(id))
+      .filter((s): s is Scholar => Boolean(s));
+
+    return [...filtered, ...manualExtras]
+      .filter((s) => !removedIds.has(s.id))
+      .sort((a, b) => (a.studentLastName ?? a.studentName ?? '').localeCompare(b.studentLastName ?? b.studentName ?? ''));
+  }, [scholars, filtered, manuallyAddedIds, removedIds]);
+
+  const addCandidates = useMemo(() => {
+    const finalIds = new Set(finalList.map((s) => s.id));
+    return scholars
+      .filter((s) => !finalIds.has(s.id))
+      .filter((s) => (addSearch ? (s.studentName ?? '').toLowerCase().includes(addSearch.toLowerCase()) : true))
+      .sort((a, b) => (a.studentLastName ?? a.studentName ?? '').localeCompare(b.studentLastName ?? b.studentName ?? ''));
+  }, [scholars, finalList, addSearch]);
+
+  const handleRemove = (id: number) => {
+    setRemovedIds((prev) => new Set(prev).add(id));
+    setManuallyAddedIds((prev) => {
+      if (!prev.has(id)) return prev;
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+  };
+
+  const handleAdd = (id: number) => {
+    setManuallyAddedIds((prev) => new Set(prev).add(id));
+    setRemovedIds((prev) => {
+      if (!prev.has(id)) return prev;
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+  };
+
   const amountValue = parseFloat(amount) || 0;
-  const total = amountValue * filtered.length;
+  const total = amountValue * finalList.length;
 
   const categoryLabel = CATEGORY_OPTIONS.find((c) => c.value === categoryFilter)?.label ?? 'All Categories';
   const programLabel = programFilter ? programs.find((p) => String(p.id) === programFilter)?.name : undefined;
@@ -153,7 +216,7 @@ const PayrollPage = () => {
         align: 'center',
         ...BORDER
       })) as Row,
-      ...filtered.map(
+      ...finalList.map(
         (scholar, index): Row => [
           { value: index + 1, align: 'center', ...BORDER },
           { value: formatFullName(scholar), ...BORDER },
@@ -344,28 +407,36 @@ const PayrollPage = () => {
                     <th>Barangay</th>
                     <th>Amount</th>
                     <th>Signature</th>
+                    {canRemove && <th className="no-print">Action</th>}
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.length === 0 ? (
+                  {finalList.length === 0 ? (
                     <tr>
-                      <td colSpan={5} style={{ color: 'var(--text-secondary)' }}>
+                      <td colSpan={canRemove ? 6 : 5} style={{ color: 'var(--text-secondary)' }}>
                         No scholars match this filter.
                       </td>
                     </tr>
                   ) : (
-                    filtered.map((scholar, index) => (
+                    finalList.map((scholar, index) => (
                       <tr key={scholar.id}>
                         <td>{index + 1}</td>
                         <td>{formatFullName(scholar)}</td>
                         <td>{scholar.studentBarangay ?? '—'}</td>
                         <td>{formatPeso(amountValue)}</td>
                         <td></td>
+                        {canRemove && (
+                          <td className="no-print">
+                            <button className="btn btn-outline btn-sm" type="button" onClick={() => handleRemove(scholar.id)}>
+                              Remove
+                            </button>
+                          </td>
+                        )}
                       </tr>
                     ))
                   )}
                 </tbody>
-                {filtered.length > 0 && (
+                {finalList.length > 0 && (
                   <tfoot>
                     <tr>
                       <td colSpan={3} style={{ textAlign: 'right', fontWeight: 700 }}>
@@ -373,11 +444,23 @@ const PayrollPage = () => {
                       </td>
                       <td style={{ fontWeight: 700 }}>{formatPeso(total)}</td>
                       <td></td>
+                      {canRemove && <td className="no-print"></td>}
                     </tr>
                   </tfoot>
                 )}
               </table>
             </div>
+
+            {canAdd && (
+              <button
+                className="btn btn-outline btn-sm no-print"
+                type="button"
+                style={{ marginTop: '1rem' }}
+                onClick={() => setShowAddModal(true)}
+              >
+                + Add Scholar
+              </button>
+            )}
 
             <div className="payroll-signatories" style={{ marginTop: '3rem', display: 'flex', flexDirection: 'column', gap: '2rem' }}>
               <div>
@@ -401,6 +484,60 @@ const PayrollPage = () => {
           </div>
         )}
       </div>
+
+      {showAddModal && (
+        <Modal
+          title="Add Scholar to Payroll"
+          onClose={() => {
+            setShowAddModal(false);
+            setAddSearch('');
+          }}
+        >
+          <div className="form-group">
+            <label htmlFor="addScholarSearch">Search</label>
+            <input
+              id="addScholarSearch"
+              placeholder="Search by name"
+              value={addSearch}
+              onChange={(e) => setAddSearch(e.target.value)}
+              autoFocus
+            />
+          </div>
+
+          {addCandidates.length === 0 ? (
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+              {addSearch ? 'No matching scholars.' : 'Every scholar is already on this payroll.'}
+            </p>
+          ) : (
+            <div style={{ maxHeight: '320px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              {addCandidates.map((scholar) => (
+                <div
+                  key={scholar.id}
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    gap: '0.75rem',
+                    padding: '0.6rem 0.75rem',
+                    border: '1px solid var(--border)',
+                    borderRadius: 'var(--radius-md)'
+                  }}
+                >
+                  <div>
+                    <div>{formatFullName(scholar)}</div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                      {scholar.studentBarangay ?? '—'} · {scholar.scholarshipName ?? '—'}
+                    </div>
+                  </div>
+                  <button className="btn btn-primary btn-sm" type="button" onClick={() => handleAdd(scholar.id)}>
+                    Add
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </Modal>
+      )}
     </div>
   );
 };

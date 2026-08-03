@@ -73,6 +73,7 @@ const PayrollPage = () => {
   const [barangaySearch, setBarangaySearch] = useState('');
   const [month, setMonth] = useState(currentMonthValue());
   const [amount, setAmount] = useState('');
+  const [semester, setSemester] = useState('');
 
   const [preparedBy, setPreparedBy] = useState<Signatory>({ name: 'LUZVIMINDA T. CULILI', title: 'Economic Researcher' });
   const [certifying1, setCertifying1] = useState<Signatory>({ name: 'JODY P. KEGAN', title: 'Municipal Accountant' });
@@ -122,7 +123,8 @@ const PayrollPage = () => {
 
   const categoryLabel = CATEGORY_OPTIONS.find((c) => c.value === categoryFilter)?.label ?? 'All Categories';
   const programLabel = programFilter ? programs.find((p) => String(p.id) === programFilter)?.name : undefined;
-  const periodLabel = [programLabel?.toUpperCase(), categoryLabel.toUpperCase()].filter(Boolean).join(' — ');
+  const programCategoryLabel = [programLabel?.toUpperCase(), categoryLabel.toUpperCase()].filter(Boolean).join(' — ');
+  const periodLabel = [programCategoryLabel, semester.trim() ? semester.trim().toUpperCase() : undefined].filter(Boolean).join(' ');
 
   const handlePrint = () => window.print();
 
@@ -291,6 +293,16 @@ const PayrollPage = () => {
             <div className="form-group" style={{ margin: 0 }}>
               <label htmlFor="payrollMonth">Month Submitted</label>
               <input id="payrollMonth" type="month" value={month} onChange={(e) => setMonth(e.target.value)} />
+            </div>
+
+            <div className="form-group" style={{ margin: 0 }}>
+              <label htmlFor="payrollSemester">Semester / School Year</label>
+              <input
+                id="payrollSemester"
+                placeholder="2ND SEMESTER (S.Y. 2025-2026)"
+                value={semester}
+                onChange={(e) => setSemester(e.target.value)}
+              />
             </div>
 
             <div className="form-group" style={{ margin: 0 }}>

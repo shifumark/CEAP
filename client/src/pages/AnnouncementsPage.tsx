@@ -30,6 +30,7 @@ const AnnouncementsPage = () => {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
 
   const load = async () => {
     try {
@@ -85,12 +86,15 @@ const AnnouncementsPage = () => {
 
   const handleDelete = async (id: number) => {
     if (!window.confirm('Delete this announcement?')) return;
+    setDeletingId(id);
     setError('');
     try {
       await apiService.deleteAnnouncement(id);
       await load();
     } catch (err: any) {
       setError(err.message || 'Failed to delete announcement');
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -150,8 +154,12 @@ const AnnouncementsPage = () => {
                       <button className="btn btn-outline btn-sm" onClick={() => openEdit(announcement)}>
                         Edit
                       </button>
-                      <button className="btn btn-outline btn-sm" onClick={() => handleDelete(announcement.id)}>
-                        Delete
+                      <button
+                        className="btn btn-outline btn-sm"
+                        disabled={deletingId === announcement.id}
+                        onClick={() => handleDelete(announcement.id)}
+                      >
+                        {deletingId === announcement.id ? 'Deleting...' : 'Delete'}
                       </button>
                     </div>
                   )}

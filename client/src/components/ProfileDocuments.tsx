@@ -61,6 +61,7 @@ const ProfileDocuments = ({ onChange }: Props) => {
   };
 
   const handleView = async (documentId: number) => {
+    setBusyKey(`view:${documentId}`);
     setError('');
     try {
       const { blob, fileName } = await apiService.downloadDocument(documentId);
@@ -81,6 +82,8 @@ const ProfileDocuments = ({ onChange }: Props) => {
       setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
     } catch (err: any) {
       setError(err.message || 'Failed to open document');
+    } finally {
+      setBusyKey(null);
     }
   };
 
@@ -144,7 +147,11 @@ const ProfileDocuments = ({ onChange }: Props) => {
               </div>
               {existing ? (
                 <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <button className="btn btn-outline btn-sm" onClick={() => handleView(existing.id)}>
+                  <button
+                    className="btn btn-outline btn-sm"
+                    disabled={busyKey === `view:${existing.id}`}
+                    onClick={() => handleView(existing.id)}
+                  >
                     View File
                   </button>
                   <label className="btn btn-outline btn-sm" style={{ cursor: 'pointer', margin: 0 }}>

@@ -268,6 +268,7 @@ const DocumentRequirementsPage = () => {
                             textAlign: 'left',
                             background: selectedUser?.id === u.id ? 'rgba(139, 92, 246, 0.1)' : undefined
                           }}
+                          disabled={documentsLoading}
                           onClick={() => openUser(u)}
                         >
                           {u.firstName} {u.lastName} <span style={{ color: 'var(--text-secondary)', marginLeft: '0.5rem' }}>{u.email}</span>

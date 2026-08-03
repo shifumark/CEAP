@@ -135,6 +135,7 @@ const ProgramPage = () => {
   });
 
   const openEdit = async (program: ScholarshipProgram) => {
+    setBusyId(program.id);
     setEditingProgram(program);
     setEditForm(toEditForm(program));
     try {
@@ -143,6 +144,8 @@ const ProgramPage = () => {
     } catch {
       // Non-fatal — the field just starts blank if this fails, same as
       // a brand-new program with no required documents yet.
+    } finally {
+      setBusyId(null);
     }
   };
 

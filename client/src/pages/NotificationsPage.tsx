@@ -24,6 +24,8 @@ const NotificationsPage = () => {
   const [error, setError] = useState('');
   const [deletingId, setDeletingId] = useState<number | null>(null);
   const [deletingAll, setDeletingAll] = useState(false);
+  const [markingReadId, setMarkingReadId] = useState<number | null>(null);
+  const [markingAllRead, setMarkingAllRead] = useState(false);
 
   const load = async () => {
     try {
@@ -41,20 +43,28 @@ const NotificationsPage = () => {
   }, []);
 
   const handleMarkRead = async (id: number) => {
+    setMarkingReadId(id);
+    setError('');
     try {
       await apiService.markNotificationAsRead(id);
       await load();
     } catch (err: any) {
       setError(err.message || 'Failed to update notification');
+    } finally {
+      setMarkingReadId(null);
     }
   };
 
   const handleMarkAllRead = async () => {
+    setMarkingAllRead(true);
+    setError('');
     try {
       await apiService.markAllNotificationsAsRead();
       await load();
     } catch (err: any) {
       setError(err.message || 'Failed to update notifications');
+    } finally {
+      setMarkingAllRead(false);
     }
   };
 
@@ -93,8 +103,8 @@ const NotificationsPage = () => {
         {notifications.length > 0 && (
           <div className="navbar-actions" style={{ display: 'flex', gap: '0.5rem' }}>
             {unreadCount > 0 && (
-              <button className="btn btn-outline btn-sm" onClick={handleMarkAllRead}>
-                Mark all as read
+              <button className="btn btn-outline btn-sm" disabled={markingAllRead} onClick={handleMarkAllRead}>
+                {markingAllRead ? 'Marking...' : 'Mark all as read'}
               </button>
             )}
             <button
@@ -170,8 +180,12 @@ const NotificationsPage = () => {
                   </div>
                   <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0 }}>
                     {!notification.isRead && (
-                      <button className="btn btn-outline btn-sm" onClick={() => handleMarkRead(notification.id)}>
-                        Mark as read
+                      <button
+                        className="btn btn-outline btn-sm"
+                        disabled={markingReadId === notification.id}
+                        onClick={() => handleMarkRead(notification.id)}
+                      >
+                        {markingReadId === notification.id ? 'Marking...' : 'Mark as read'}
                       </button>
                     )}
                     <button

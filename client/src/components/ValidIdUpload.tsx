@@ -52,6 +52,7 @@ const ValidIdUpload = ({ onChange }: Props) => {
   };
 
   const handleView = async (documentId: number) => {
+    setBusyKey(`view:${documentId}`);
     setError('');
     try {
       const { blob, fileName } = await apiService.downloadDocument(documentId);
@@ -70,6 +71,8 @@ const ValidIdUpload = ({ onChange }: Props) => {
       setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
     } catch (err: any) {
       setError(err.message || 'Failed to open ID photo');
+    } finally {
+      setBusyKey(null);
     }
   };
 
@@ -126,7 +129,12 @@ const ValidIdUpload = ({ onChange }: Props) => {
         >
           <span style={{ color: 'var(--text-secondary)' }}>{doc.fileName}</span>
           <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <button className="btn btn-outline btn-sm" type="button" onClick={() => handleView(doc.id)}>
+            <button
+              className="btn btn-outline btn-sm"
+              type="button"
+              disabled={busyKey === `view:${doc.id}`}
+              onClick={() => handleView(doc.id)}
+            >
               View File
             </button>
             <button

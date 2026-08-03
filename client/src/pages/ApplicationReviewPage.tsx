@@ -92,6 +92,7 @@ const ApplicationReviewPage = () => {
   const [documents, setDocuments] = useState<UploadedDocument[]>([]);
   const [documentsLoading, setDocumentsLoading] = useState(false);
   const [documentActionId, setDocumentActionId] = useState<number | null>(null);
+  const [viewingDocumentId, setViewingDocumentId] = useState<number | null>(null);
   const [applicantProfile, setApplicantProfile] = useState<Applicant | null>(null);
   const [profileLoading, setProfileLoading] = useState(false);
   const [totalCount, setTotalCount] = useState(0);
@@ -240,6 +241,7 @@ const ApplicationReviewPage = () => {
   };
 
   const handleViewDocument = async (documentId: number) => {
+    setViewingDocumentId(documentId);
     try {
       const { blob } = await apiService.downloadDocument(documentId);
       const objectUrl = URL.createObjectURL(blob);
@@ -262,6 +264,8 @@ const ApplicationReviewPage = () => {
       setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
     } catch (err: any) {
       setError(err.message || 'Failed to open document');
+    } finally {
+      setViewingDocumentId(null);
     }
   };
 
@@ -508,6 +512,7 @@ const ApplicationReviewPage = () => {
                         <button
                           className="btn btn-outline btn-sm"
                           style={{ marginTop: '0.25rem' }}
+                          disabled={viewingDocumentId === doc.id}
                           onClick={() => handleViewDocument(doc.id)}
                         >
                           View file

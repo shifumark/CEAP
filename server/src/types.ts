@@ -618,6 +618,12 @@ export interface Scholar {
   // the scholar can still request a renewal.
   scholarshipStatus?: string;
   studentName?: string;
+  // Split out alongside studentName (which stays "First Last" for
+  // everywhere else that already renders it that way) so Payroll can
+  // format "Last, First M." without a second request.
+  studentFirstName?: string;
+  studentLastName?: string;
+  studentMiddleName?: string;
   studentEmail?: string;
   studentBarangay?: string;
   studentAddress?: string;

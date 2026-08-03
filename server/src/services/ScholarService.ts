@@ -61,6 +61,9 @@ function toScholar(record: ScholarWithRelations, submissionDate?: Date, received
     scholarshipName: record.scholarship?.name,
     scholarshipStatus: record.scholarship?.status,
     studentName: record.user ? `${record.user.firstName} ${record.user.lastName}` : undefined,
+    studentFirstName: record.user?.firstName,
+    studentLastName: record.user?.lastName,
+    studentMiddleName: record.user?.applicant?.middleName ?? undefined,
     studentEmail: record.user?.email,
     studentBarangay: record.user?.applicant?.barangay ?? undefined,
     // Fallback for scholars whose location was entered as free text under

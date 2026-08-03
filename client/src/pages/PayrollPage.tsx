@@ -32,15 +32,19 @@ function formatPeso(value: number): string {
   return `₱${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
+// "Last name, First name, Middle initial" — e.g. "Culili, Anton J." —
+// falls back to the plain "First Last" studentName for any record
+// missing the split name fields (shouldn't happen for fresh data, but
+// keeps this from rendering blank if it ever does).
+function formatFullName(scholar: Scholar): string {
+  if (!scholar.studentLastName || !scholar.studentFirstName) return scholar.studentName ?? '—';
+  const middleInitial = scholar.studentMiddleName?.trim() ? `${scholar.studentMiddleName.trim().charAt(0).toUpperCase()}.` : '';
+  return [`${scholar.studentLastName}, ${scholar.studentFirstName}`, middleInitial].filter(Boolean).join(' ');
+}
+
 function currentMonthValue(): string {
   const now = new Date();
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-}
-
-function formatMonthLabel(monthValue: string): string {
-  if (!monthValue) return '';
-  const [year, month] = monthValue.split('-').map(Number);
-  return new Date(year, month - 1, 1).toLocaleDateString(undefined, { year: 'numeric', month: 'long' });
 }
 
 // "2026-08" -> matches any submissionDate within that calendar month,
@@ -110,7 +114,7 @@ const PayrollPage = () => {
         if (!s.submissionDate) return false;
         return isInMonth(new Date(s.submissionDate), month);
       })
-      .sort((a, b) => (a.studentName ?? '').localeCompare(b.studentName ?? ''));
+      .sort((a, b) => (a.studentLastName ?? a.studentName ?? '').localeCompare(b.studentLastName ?? b.studentName ?? ''));
   }, [scholars, statusFilter, programFilter, categoryFilter, nameSearch, barangaySearch, month]);
 
   const amountValue = parseFloat(amount) || 0;
@@ -118,9 +122,7 @@ const PayrollPage = () => {
 
   const categoryLabel = CATEGORY_OPTIONS.find((c) => c.value === categoryFilter)?.label ?? 'All Categories';
   const programLabel = programFilter ? programs.find((p) => String(p.id) === programFilter)?.name : undefined;
-  const periodLabel = [programLabel?.toUpperCase(), categoryLabel.toUpperCase(), month ? formatMonthLabel(month).toUpperCase() : undefined]
-    .filter(Boolean)
-    .join(' — ');
+  const periodLabel = [programLabel?.toUpperCase(), categoryLabel.toUpperCase()].filter(Boolean).join(' — ');
 
   const handlePrint = () => window.print();
 
@@ -152,7 +154,7 @@ const PayrollPage = () => {
       ...filtered.map(
         (scholar, index): Row => [
           { value: index + 1, align: 'center', ...BORDER },
-          { value: scholar.studentName ?? '', ...BORDER },
+          { value: formatFullName(scholar), ...BORDER },
           { value: scholar.studentBarangay ?? '', ...BORDER },
           { value: amountValue, format: '"₱"#,##0.00', align: 'right', ...BORDER },
           { value: '', ...BORDER }
@@ -343,7 +345,7 @@ const PayrollPage = () => {
                     filtered.map((scholar, index) => (
                       <tr key={scholar.id}>
                         <td>{index + 1}</td>
-                        <td>{scholar.studentName ?? '—'}</td>
+                        <td>{formatFullName(scholar)}</td>
                         <td>{scholar.studentBarangay ?? '—'}</td>
                         <td>{formatPeso(amountValue)}</td>
                         <td></td>

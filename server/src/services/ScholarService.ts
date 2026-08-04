@@ -33,7 +33,7 @@ const scholarInclude = {
   user: { include: { applicant: true } }
 } satisfies Prisma.ScholarInclude;
 
-type ScholarWithRelations = Prisma.ScholarGetPayload<{ include: typeof scholarInclude }>;
+export type ScholarWithRelations = Prisma.ScholarGetPayload<{ include: typeof scholarInclude }>;
 
 function isPrivileged(user: JWTPayload): boolean {
   return user.role === UserRole.ADMIN || user.role === UserRole.SUPER_ADMIN;
@@ -47,7 +47,7 @@ function canView(user: JWTPayload): boolean {
   return isPrivileged(user) || user.role === UserRole.VIEWER;
 }
 
-function toScholar(record: ScholarWithRelations, submissionDate?: Date, receivedDate?: Date): Scholar {
+export function toScholar(record: ScholarWithRelations, submissionDate?: Date, receivedDate?: Date): Scholar {
   return {
     id: record.id,
     userId: record.userId,

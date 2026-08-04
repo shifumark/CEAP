@@ -50,7 +50,12 @@ app.get('/health', (req, res) => {
 // Middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
-app.use(rateLimit(100, 15 * 60 * 1000)); // 100 requests per 15 minutes
+// 500/15min — raised from 100 after real users behind a shared IP
+// (school computer lab, LGU office, barangay hall) were getting
+// throttled by each other's combined traffic, including background
+// notification polling, not by any actual abuse. Still well below
+// what a genuine single-actor abuse pattern would need.
+app.use(rateLimit(500, 15 * 60 * 1000));
 app.use(auditLog);
 
 // Routes

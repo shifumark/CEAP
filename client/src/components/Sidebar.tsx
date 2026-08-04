@@ -73,6 +73,12 @@ function Sidebar() {
     let cancelled = false;
 
     const loadUnreadCount = () => {
+      // Skip the request entirely while the tab isn't visible — a
+      // backgrounded/minimized tab doesn't need a live badge, and this
+      // is a meaningful chunk of every logged-in session's baseline
+      // request volume (every open tab, every 60s, forever) that adds
+      // up fast when many people share one IP.
+      if (document.hidden) return;
       apiService
         .getNotifications()
         .then((notifications) => {
@@ -85,9 +91,13 @@ function Sidebar() {
 
     loadUnreadCount();
     const interval = setInterval(loadUnreadCount, NOTIFICATION_POLL_MS);
+    // Catch up immediately on return instead of waiting for the next
+    // tick, so the badge isn't stale for up to a full poll interval.
+    document.addEventListener('visibilitychange', loadUnreadCount);
     return () => {
       cancelled = true;
       clearInterval(interval);
+      document.removeEventListener('visibilitychange', loadUnreadCount);
     };
   }, [user]);
 

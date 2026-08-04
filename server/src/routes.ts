@@ -22,6 +22,7 @@ import { DocumentRequirementService } from './services/DocumentRequirementServic
 import { DeletionRequestService } from './services/DeletionRequestService.js';
 import { generateApplicationFormPdf } from './services/ApplicationFormPdfService.js';
 import { prisma } from './lib/prisma.js';
+import { cached } from './lib/cache.js';
 import { COLLEGE_YEAR_LEVELS, PROFESSIONAL_YEAR_LEVELS } from './lib/profileRequirements.js';
 import {
   UserRole,
@@ -249,7 +250,13 @@ router.get('/scholarships', async (req, res) => {
     const page = parseInt(req.query.page as string) || 1;
     const pageSize = parseInt(req.query.pageSize as string) || 10;
 
-    const result = await scholarshipService.getPrograms({ page, pageSize });
+    // Every visitor to the public Home/Programs pages hits this with the
+    // same default page/pageSize — a 30s cache means a burst of traffic
+    // (many students loading the site around the same time) costs one DB
+    // query instead of one per request.
+    const result = await cached(`scholarships:${page}:${pageSize}`, 30_000, () =>
+      scholarshipService.getPrograms({ page, pageSize })
+    );
     res.json(result);
   } catch (error: any) {
     console.error(error); res.status(500).json({ error: 'Internal server error' });
@@ -1209,53 +1216,59 @@ router.get('/dashboard/stats', verifyToken, async (req: AuthenticatedRequest, re
     let stats: any;
 
     if (isAdmin) {
-      const [
-        pending,
-        approved,
-        rejected,
-        totalScholars,
-        activeScholars,
-        graduatedScholars,
-        renewalsDue,
-        seniorHighScholars,
-        collegeScholars,
-        specialCourseScholars,
-        alsScholars
-      ] = await Promise.all([
-        prisma.application.count({
-          where: { status: { in: ['submitted', 'under_review', 'document_verification', 'interview'] } }
-        }),
-        prisma.application.count({ where: { status: 'approved' } }),
-        prisma.application.count({ where: { status: 'rejected' } }),
-        prisma.scholar.count(),
-        prisma.scholar.count({ where: { status: 'active' } }),
-        prisma.scholar.count({ where: { status: 'graduated' } }),
-        prisma.renewal.count({ where: { status: 'pending' } }),
-        // Scholars only, by year-level category — not bare Applicant
-        // profiles, which would count anyone who ever picked a year level
-        // regardless of whether they were ever approved.
-        prisma.scholar.count({ where: { user: { applicant: { yearLevel: { in: ['Grade 11', 'Grade 12'] } } } } }),
-        prisma.scholar.count({ where: { user: { applicant: { yearLevel: { in: COLLEGE_YEAR_LEVELS } } } } }),
-        prisma.scholar.count({ where: { user: { applicant: { yearLevel: { in: PROFESSIONAL_YEAR_LEVELS } } } } }),
-        prisma.scholar.count({ where: { user: { applicant: { yearLevel: 'Alternative Learning System' } } } })
-      ]);
+      // Shared identically across every Admin/Super Admin/Viewer — an 11-
+      // query fan-out that's a good caching candidate since it's the same
+      // result for everyone, refreshed every 30s rather than on every
+      // single dashboard load.
+      stats = await cached('dashboard:admin', 30_000, async () => {
+        const [
+          pending,
+          approved,
+          rejected,
+          totalScholars,
+          activeScholars,
+          graduatedScholars,
+          renewalsDue,
+          seniorHighScholars,
+          collegeScholars,
+          specialCourseScholars,
+          alsScholars
+        ] = await Promise.all([
+          prisma.application.count({
+            where: { status: { in: ['submitted', 'under_review', 'document_verification', 'interview'] } }
+          }),
+          prisma.application.count({ where: { status: 'approved' } }),
+          prisma.application.count({ where: { status: 'rejected' } }),
+          prisma.scholar.count(),
+          prisma.scholar.count({ where: { status: 'active' } }),
+          prisma.scholar.count({ where: { status: 'graduated' } }),
+          prisma.renewal.count({ where: { status: 'pending' } }),
+          // Scholars only, by year-level category — not bare Applicant
+          // profiles, which would count anyone who ever picked a year
+          // level regardless of whether they were ever approved.
+          prisma.scholar.count({ where: { user: { applicant: { yearLevel: { in: ['Grade 11', 'Grade 12'] } } } } }),
+          prisma.scholar.count({ where: { user: { applicant: { yearLevel: { in: COLLEGE_YEAR_LEVELS } } } } }),
+          prisma.scholar.count({ where: { user: { applicant: { yearLevel: { in: PROFESSIONAL_YEAR_LEVELS } } } } }),
+          prisma.scholar.count({ where: { user: { applicant: { yearLevel: 'Alternative Learning System' } } } })
+        ]);
 
-      stats = {
-        totalScholars,
-        activeScholars,
-        graduatedScholars,
-        pendingApplications: pending,
-        approvedApplications: approved,
-        rejectedApplications: rejected,
-        // No per-program capacity target is tracked yet to compute a
-        // meaningful utilization percentage against.
-        scholarshipUtilization: 0,
-        renewalsDue,
-        seniorHighScholars,
-        collegeScholars,
-        specialCourseScholars,
-        alsScholars
-      };
+        return {
+          totalScholars,
+          activeScholars,
+          graduatedScholars,
+          pendingApplications: pending,
+          approvedApplications: approved,
+          rejectedApplications: rejected,
+          // No per-program capacity target is tracked yet to compute a
+          // meaningful utilization percentage against.
+          scholarshipUtilization: 0,
+          renewalsDue,
+          seniorHighScholars,
+          collegeScholars,
+          specialCourseScholars,
+          alsScholars
+        };
+      });
     } else {
       // Student view — most recently created application, if any.
       const applications = await applicationService.listApplications(req.user!, { page: 1, pageSize: 1 });

@@ -55,6 +55,41 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+    outputs:
+      page_url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
+
+  smoke-test:
+    # Deliberately a separate job (not a step tacked onto `deploy`) so a
+    # failure here shows up as its own red X and triggers GitHub's normal
+    # workflow-failure notification — this is the only thing in this repo
+    # that automatically flags "the live site is actually broken" instead
+    # of relying on a real user noticing and reporting it, which is how
+    # the last two production incidents this project had were caught.
+    needs: deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Check GitHub Pages is serving the new build
+        run: |
+          url="${{ needs.deploy.outputs.page_url }}"
+          status=$(curl -s -o /dev/null -w "%{http_code}" "$url")
+          echo "GET $url -> $status"
+          if [ "$status" != "200" ]; then
+            echo "::error::Pages site returned $status instead of 200 after deploy"
+            exit 1
+          fi
+
+      - name: Check the Render backend is up
+        # VITE_API_URL points at .../api — strip that suffix to hit /health.
+        run: |
+          api="${{ vars.VITE_API_URL }}"
+          health="${api%/api}/health"
+          status=$(curl -s -o /dev/null -w "%{http_code}" "$health")
+          echo "GET $health -> $status"
+          if [ "$status" != "200" ]; then
+            echo "::error::Backend health check returned $status — this deploy only covers the client, but a broken backend breaks the whole app regardless."
+            exit 1
+          fi

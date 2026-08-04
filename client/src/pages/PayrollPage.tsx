@@ -21,7 +21,7 @@ const CATEGORY_OPTIONS: { value: Category; label: string }[] = [
   { value: 'als', label: 'ALS' }
 ];
 
-function categoryOf(yearLevel?: string): Category {
+export function categoryOf(yearLevel?: string): Category {
   if (!yearLevel) return '';
   if (SENIOR_HIGH_YEAR_LEVELS.includes(yearLevel)) return 'senior_high';
   if (COLLEGE_YEAR_LEVELS.includes(yearLevel)) return 'college';
@@ -30,7 +30,7 @@ function categoryOf(yearLevel?: string): Category {
   return '';
 }
 
-function formatPeso(value: number): string {
+export function formatPeso(value: number): string {
   return `₱${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
@@ -38,7 +38,7 @@ function formatPeso(value: number): string {
 // falls back to the plain "First Last" studentName for any record
 // missing the split name fields (shouldn't happen for fresh data, but
 // keeps this from rendering blank if it ever does).
-function formatFullName(scholar: Scholar): string {
+export function formatFullName(scholar: Scholar): string {
   if (!scholar.studentLastName || !scholar.studentFirstName) return scholar.studentName ?? '—';
   const middleInitial = scholar.studentMiddleName?.trim() ? `${scholar.studentMiddleName.trim().charAt(0).toUpperCase()}.` : '';
   return [`${scholar.studentLastName}, ${scholar.studentFirstName}`, middleInitial].filter(Boolean).join(' ');
@@ -52,7 +52,7 @@ function currentMonthValue(): string {
 // "2026-08" -> matches any submissionDate within that calendar month,
 // regardless of timezone-of-day (compares by the date's own local
 // year/month, not a UTC slice of the ISO string).
-function isInMonth(date: Date, monthValue: string): boolean {
+export function isInMonth(date: Date, monthValue: string): boolean {
   const [year, month] = monthValue.split('-').map(Number);
   return date.getFullYear() === year && date.getMonth() + 1 === month;
 }

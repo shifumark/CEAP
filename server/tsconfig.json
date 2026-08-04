@@ -10,5 +10,10 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true
   },
-  "include": ["src/**/*"]
+  "include": ["src/**/*"],
+  // Test files import vitest, a devDependency Render's production
+  // install (NODE_ENV=production) doesn't install — compiling them into
+  // the production build breaks `tsc` there even though it works locally.
+  // They're also never meant to ship in dist/ in the first place.
+  "exclude": ["src/**/*.test.ts"]
 }

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { roleHome } from '../components/ProtectedRoute';
+import connerSeal from '../assets/images/conner-seal.jpg';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -32,6 +33,13 @@ const LoginPage = () => {
   return (
     <div className="login-container">
       <div className="login-card">
+        <img
+          src={connerSeal}
+          alt="Municipality of Conner, Apayao seal"
+          width={80}
+          height={80}
+          style={{ display: 'block', margin: '0 auto 1rem', borderRadius: '50%' }}
+        />
         <h2>Welcome back</h2>
         <p>Sign in to access the scholarship management portal</p>
 

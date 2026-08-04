@@ -1557,32 +1557,51 @@ router.post('/deletion-requests/:id/approve', verifyToken, requireDeletionReview
       return res.status(400).json({ error: 'This request has already been reviewed' });
     }
 
-    if (request.entityType === DeletionEntityType.APPLICATION) {
-      await applicationService.performApplicationDeletion(request.entityId);
-    } else if (request.entityType === DeletionEntityType.SCHOLAR) {
-      await scholarService.performScholarDeletion(request.entityId);
-    } else {
-      // Re-verify eligibility at approval time, not just at request time —
-      // performUserDeletion is a trusted primitive with no checks of its
-      // own (deliberately, since it's also used directly for one-off admin
-      // cleanup), so the "Student account, not a Scholar" guard that
-      // originally gated this request has to be re-applied here in case
-      // the account's role changed (or it became a Scholar) in the time
-      // between the request being filed and now being reviewed.
-      const target = await prisma.user.findUnique({ where: { id: request.entityId }, select: { role: true } });
-      if (target && target.role !== 'applicant') {
-        return res.status(400).json({ error: 'This account is no longer a Student account and can no longer be deleted this way.' });
-      }
-      if (target) {
-        const scholar = await prisma.scholar.findFirst({ where: { userId: request.entityId }, select: { id: true } });
-        if (scholar) {
-          return res.status(400).json({ error: 'This user has since become a Scholar — remove them from Scholar Management instead.' });
-        }
-      }
-      await authService.performUserDeletion(request.entityId);
+    // Atomically claims the request (pending -> approved) BEFORE any of
+    // the actual deletion work below — see the comment on
+    // DeletionRequestService.markApproved. Closes a race where two
+    // reviewers acting on this same request at nearly the same instant
+    // (e.g. one clicking Approve while another clicks Reject) could both
+    // pass the pending check above and both proceed.
+    const claimed = await deletionRequestService.markApproved(requestId, req.user!.sub);
+    if (!claimed) {
+      return res.status(400).json({ error: 'This request has already been reviewed' });
     }
 
-    await deletionRequestService.markApproved(requestId, req.user!.sub);
+    try {
+      if (request.entityType === DeletionEntityType.APPLICATION) {
+        await applicationService.performApplicationDeletion(request.entityId);
+      } else if (request.entityType === DeletionEntityType.SCHOLAR) {
+        await scholarService.performScholarDeletion(request.entityId);
+      } else {
+        // Re-verify eligibility at approval time, not just at request time —
+        // performUserDeletion is a trusted primitive with no checks of its
+        // own (deliberately, since it's also used directly for one-off admin
+        // cleanup), so the "Student account, not a Scholar" guard that
+        // originally gated this request has to be re-applied here in case
+        // the account's role changed (or it became a Scholar) in the time
+        // between the request being filed and now being reviewed.
+        const target = await prisma.user.findUnique({ where: { id: request.entityId }, select: { role: true } });
+        if (target && target.role !== 'applicant') {
+          throw new Error('This account is no longer a Student account and can no longer be deleted this way.');
+        }
+        if (target) {
+          const scholar = await prisma.scholar.findFirst({ where: { userId: request.entityId }, select: { id: true } });
+          if (scholar) {
+            throw new Error('This user has since become a Scholar — remove them from Scholar Management instead.');
+          }
+        }
+        await authService.performUserDeletion(request.entityId);
+      }
+    } catch (deletionError) {
+      // The claim above already succeeded but the actual deletion (or an
+      // eligibility re-check) failed — put the request back to 'pending'
+      // so it stays retryable instead of getting stuck "approved" with
+      // nothing actually deleted.
+      await deletionRequestService.revertToPending(requestId).catch(() => undefined);
+      throw deletionError;
+    }
+
     // requestedBy is only absent if the requester's own account has since
     // been deleted — nothing to notify in that case.
     if (request.requestedBy !== undefined) {
@@ -1614,7 +1633,12 @@ router.post('/deletion-requests/:id/reject', verifyToken, requireDeletionReviewe
     }
 
     const note = typeof req.body?.note === 'string' ? req.body.note : undefined;
-    await deletionRequestService.markRejected(requestId, req.user!.sub, note);
+    // Same compare-and-swap claim as the approve route — closes the same
+    // concurrent-review race from this side.
+    const claimed = await deletionRequestService.markRejected(requestId, req.user!.sub, note);
+    if (!claimed) {
+      return res.status(400).json({ error: 'This request has already been reviewed' });
+    }
     if (request.requestedBy !== undefined) {
       notificationService
         .notifyRequesterOfDeletionDecision(request.requestedBy, request.entityLabel, false, note)

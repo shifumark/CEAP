@@ -59,7 +59,12 @@ describe('toScholar', () => {
   it('demonstrates why the bare `records.map(toScholar)` form is wrong', () => {
     const records = [record, { ...record, id: 35 }];
     // This is the exact buggy call pattern that shipped — kept here as a
-    // negative example, not something any real code should do.
+    // negative example, not something any real code should do. tsc
+    // rightly flags this call as a type error (that's the whole point:
+    // the compiler catches this the moment the project actually builds),
+    // so it's suppressed here rather than left to break `npm run build`
+    // the same way it broke it in production.
+    // @ts-expect-error — see comment above; this line is intentionally wrong.
     const buggyResults = records.map(toScholar);
 
     // Array.map passes (element, index, array) — index 0 and 1 land in

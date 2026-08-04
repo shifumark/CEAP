@@ -28,8 +28,20 @@ export class DocumentRequirementService {
       throw new Error('This document requirement already exists');
     }
 
-    const created = await prisma.documentRequirement.create({ data: { documentType: trimmed } });
-    return toRequirement(created);
+    try {
+      const created = await prisma.documentRequirement.create({ data: { documentType: trimmed } });
+      return toRequirement(created);
+    } catch (error: any) {
+      // The check above has a race: two concurrent creates for the same
+      // documentType can both pass it before either commits.
+      // DocumentRequirement.documentType is @unique, so this just turns
+      // the loser's P2002 into the same friendly message instead of a
+      // raw 500.
+      if (error?.code === 'P2002') {
+        throw new Error('This document requirement already exists');
+      }
+      throw error;
+    }
   }
 
   async delete(id: number): Promise<boolean> {

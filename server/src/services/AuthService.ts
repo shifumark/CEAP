@@ -68,18 +68,31 @@ export class AuthService {
       throw new Error('User with this email already exists');
     }
 
-    const created = await prisma.user.create({
-      data: {
-        email: request.email,
-        passwordHash: await bcrypt.hash(request.password, 10),
-        firstName: request.firstName,
-        lastName: request.lastName,
-        // Self-registration always lands as Student (APPLICANT) unless a
-        // Super Admin is creating the account via POST /users.
-        role: (request.role ?? UserRole.APPLICANT) as unknown as PrismaUser['role'],
-        emailVerified: false
+    let created: PrismaUser;
+    try {
+      created = await prisma.user.create({
+        data: {
+          email: request.email,
+          passwordHash: await bcrypt.hash(request.password, 10),
+          firstName: request.firstName,
+          lastName: request.lastName,
+          // Self-registration always lands as Student (APPLICANT) unless a
+          // Super Admin is creating the account via POST /users.
+          role: (request.role ?? UserRole.APPLICANT) as unknown as PrismaUser['role'],
+          emailVerified: false
+        }
+      });
+    } catch (error: any) {
+      // The check above has a race: two concurrent registrations with the
+      // same email can both pass it before either commits. User.email is
+      // @unique, so the loser hits P2002 here — turn that into the same
+      // friendly message instead of a raw constraint error reaching the
+      // client.
+      if (error?.code === 'P2002') {
+        throw new Error('User with this email already exists');
       }
-    });
+      throw error;
+    }
 
     // Confirms the address is real and actually reachable by its owner —
     // covers both self-registration and an Admin/Super Admin creating the

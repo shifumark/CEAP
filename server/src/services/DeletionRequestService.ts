@@ -135,17 +135,47 @@ export class DeletionRequestService {
     return record ? toDeletionRequest(record) : null;
   }
 
-  async markApproved(id: number, reviewerId: number): Promise<void> {
-    await prisma.deletionRequest.update({
-      where: { id },
+  /**
+   * Atomically claims a pending request as approved — the WHERE clause is
+   * scoped to status: 'pending', not just id, so this is a
+   * compare-and-swap rather than a plain update. Two reviewers acting on
+   * the same request at nearly the same instant (one clicking Approve
+   * while another clicks Reject, or a double-click on Approve) can both
+   * read status === 'pending' before either write lands; without this
+   * guard both could proceed — one performing the actual entity deletion,
+   * the other flipping the request to 'rejected' afterward, leaving the
+   * entity gone but the request's own record calling it rejected. Only
+   * the call that actually flips pending -> approved returns true; the
+   * caller must treat a false return as "someone else already reviewed
+   * this" and must not perform the underlying deletion.
+   */
+  async markApproved(id: number, reviewerId: number): Promise<boolean> {
+    const result = await prisma.deletionRequest.updateMany({
+      where: { id, status: 'pending' },
       data: { status: 'approved', reviewedBy: reviewerId, reviewedAt: new Date() }
     });
+    return result.count > 0;
   }
 
-  async markRejected(id: number, reviewerId: number, note?: string): Promise<void> {
+  /** Same compare-and-swap guard as markApproved, for the reject path. */
+  async markRejected(id: number, reviewerId: number, note?: string): Promise<boolean> {
+    const result = await prisma.deletionRequest.updateMany({
+      where: { id, status: 'pending' },
+      data: { status: 'rejected', reviewedBy: reviewerId, reviewedAt: new Date(), reviewNote: note }
+    });
+    return result.count > 0;
+  }
+
+  /**
+   * Reverts a request this reviewer just claimed via markApproved back to
+   * 'pending' — used when the underlying deletion itself then failed
+   * (e.g. a remote storage error), so the request stays retryable instead
+   * of getting stuck showing "approved" with nothing actually deleted.
+   */
+  async revertToPending(id: number): Promise<void> {
     await prisma.deletionRequest.update({
       where: { id },
-      data: { status: 'rejected', reviewedBy: reviewerId, reviewedAt: new Date(), reviewNote: note }
+      data: { status: 'pending', reviewedBy: null, reviewedAt: null }
     });
   }
 }

@@ -156,18 +156,38 @@ export class ScholarService {
     });
     if (existing) return toScholar(existing);
 
-    const created = await prisma.scholar.create({
-      data: { userId, scholarshipId, approvalDate: new Date(), status: 'active' }
-    });
+    try {
+      const created = await prisma.scholar.create({
+        data: { userId, scholarshipId, approvalDate: new Date(), status: 'active' }
+      });
 
-    const scholarIdNumber = `SCH-${new Date().getFullYear()}-${String(created.id).padStart(5, '0')}`;
-    const updated = await prisma.scholar.update({
-      where: { id: created.id },
-      data: { scholarIdNumber },
-      include: scholarInclude
-    });
+      const scholarIdNumber = `SCH-${new Date().getFullYear()}-${String(created.id).padStart(5, '0')}`;
+      const updated = await prisma.scholar.update({
+        where: { id: created.id },
+        data: { scholarIdNumber },
+        include: scholarInclude
+      });
 
-    return toScholar(updated);
+      return toScholar(updated);
+    } catch (error: any) {
+      // The check above has a race: two concurrent approvals of the same
+      // application (e.g. two admins both hitting Approve within the same
+      // instant) can both pass it before either commits. @@unique([userId,
+      // scholarshipId]) on Scholar is the real guard; the loser hits P2002
+      // here, so fetch and return the row the winner created instead of
+      // throwing — this method's contract (see the doc comment above) is
+      // to be idempotent per (userId, scholarshipId), and its only caller
+      // (ApplicationService.updateStatus) treats it as best-effort and
+      // just logs a thrown error rather than surfacing it.
+      if (error?.code === 'P2002') {
+        const created = await prisma.scholar.findUnique({
+          where: { userId_scholarshipId: { userId, scholarshipId } },
+          include: scholarInclude
+        });
+        if (created) return toScholar(created);
+      }
+      throw error;
+    }
   }
 
   /**

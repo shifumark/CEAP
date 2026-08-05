@@ -36,8 +36,8 @@ const LoginPage = () => {
         <img
           src={connerSeal}
           alt="Municipality of Conner, Apayao seal"
-          width={80}
-          height={80}
+          width={150}
+          height={150}
           style={{ display: 'block', margin: '0 auto 1rem', borderRadius: '50%' }}
         />
         <h2>Welcome back</h2>

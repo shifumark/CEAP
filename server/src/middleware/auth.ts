@@ -116,9 +116,32 @@ export const requireDeletionReviewer = (req: AuthenticatedRequest, res: Response
  */
 const requestCounts = new Map<string, { count: number; resetTime: number }>();
 
+/**
+ * Keys by the authenticated user when a valid token is present, so
+ * multiple people sharing one IP (a school computer lab, an office) each
+ * get their own budget instead of collectively draining one. Falls back
+ * to IP for anonymous requests (login, register, public listings) — this
+ * doesn't need to be as strict as verifyToken since a bad/expired token
+ * just falls back to IP-keying here; the route's own verifyToken still
+ * enforces real auth separately.
+ */
+const rateLimitIdentifier = (req: Request): string => {
+  const authHeader = req.headers.authorization;
+  const token = authHeader?.split(' ')[1];
+  if (token) {
+    try {
+      const payload = jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] }) as unknown as JWTPayload;
+      return `user:${payload.sub}`;
+    } catch {
+      // Falls through to IP-keying below.
+    }
+  }
+  return `ip:${req.ip || 'unknown'}`;
+};
+
 export const rateLimit = (maxRequests = 100, windowMs = 15 * 60 * 1000) => {
   return (req: Request, res: Response, next: NextFunction) => {
-    const identifier = req.ip || 'unknown';
+    const identifier = rateLimitIdentifier(req);
     const now = Date.now();
 
     const record = requestCounts.get(identifier);

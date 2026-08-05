@@ -147,7 +147,7 @@ const AnnouncementsPage = () => {
                       <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{formatDate(announcement.publishedAt)}</span>
                     </div>
                     <h3 style={{ marginBottom: '0.5rem' }}>{announcement.title}</h3>
-                    <p style={{ color: '#D8D0EF', whiteSpace: 'pre-wrap' }}>{announcement.content}</p>
+                    <p style={{ color: 'var(--text-secondary)', whiteSpace: 'pre-wrap' }}>{announcement.content}</p>
                   </div>
                   {isAdmin && (
                     <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0 }}>

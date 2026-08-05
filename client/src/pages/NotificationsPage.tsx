@@ -167,7 +167,7 @@ const NotificationsPage = () => {
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem' }}>
                   <div>
                     <strong>{notification.title}</strong>
-                    <p style={{ margin: '0.35rem 0', color: '#D8D0EF' }}>{notification.message}</p>
+                    <p style={{ margin: '0.35rem 0', color: 'var(--text-secondary)' }}>{notification.message}</p>
                     <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{formatDateTime(notification.createdAt)}</span>
                     {notification.actionUrl && (
                       <>

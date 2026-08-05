@@ -1,5 +1,12 @@
 import { transporter, emailEnabled, EMAIL_FROM } from '../lib/email.js';
 
+// Lets email verification keep working while password reset, status
+// updates, and broadcasts stay silent — a coarser on/off than per-type
+// config would ideally be, but matches the one concrete case this is
+// needed for right now without over-building a config system nobody
+// asked for yet.
+const VERIFICATION_ONLY = process.env.EMAIL_VERIFICATION_ONLY === 'true';
+
 // Frontend origin never includes a path (CORS Origin headers are always
 // scheme+host+port), so the GitHub Pages base path is appended here.
 const APP_URL = `${process.env.CORS_ORIGIN || 'http://localhost:5173'}/CEAP`;
@@ -84,6 +91,10 @@ export class EmailService {
   }
 
   async sendPasswordReset(to: string, firstName: string, token: string): Promise<void> {
+    if (VERIFICATION_ONLY) {
+      console.warn('[EmailService] EMAIL_VERIFICATION_ONLY set — skipping password reset email to', to);
+      return;
+    }
     const resetUrl = `${APP_URL}/reset-password?token=${encodeURIComponent(token)}`;
     await this.send(
       to,
@@ -97,6 +108,10 @@ export class EmailService {
   }
 
   async sendApplicationStatusUpdate(to: string, scholarshipName: string, status: string): Promise<void> {
+    if (VERIFICATION_ONLY) {
+      console.warn('[EmailService] EMAIL_VERIFICATION_ONLY set — skipping status update email to', to);
+      return;
+    }
     const readableStatus = status.replace(/_/g, ' ');
     await this.send(
       to,
@@ -115,6 +130,10 @@ export class EmailService {
    */
   async sendNewProgramAnnouncement(recipients: string[], programName: string): Promise<void> {
     if (recipients.length === 0) return;
+    if (VERIFICATION_ONLY) {
+      console.warn('[EmailService] EMAIL_VERIFICATION_ONLY set — skipping new program broadcast to', recipients.length, 'recipients');
+      return;
+    }
     if (!emailEnabled || !transporter) {
       console.warn('[EmailService] Email not configured — skipping new program broadcast to', recipients.length, 'recipients');
       return;

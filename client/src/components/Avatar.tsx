@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { apiService } from '../services/api';
+import Modal from './Modal';
 
 interface AvatarProps {
   userId: number;
@@ -17,6 +18,7 @@ interface AvatarProps {
 // when there's no picture or the fetch fails.
 const Avatar = ({ userId, hasPicture = true, name, size = 40 }: AvatarProps) => {
   const [src, setSrc] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
     if (!hasPicture) {
@@ -46,11 +48,19 @@ const Avatar = ({ userId, hasPicture = true, name, size = 40 }: AvatarProps) => 
 
   if (src) {
     return (
-      <img
-        src={src}
-        alt=""
-        style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }}
-      />
+      <>
+        <img
+          src={src}
+          alt=""
+          onClick={() => setExpanded(true)}
+          style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', flexShrink: 0, cursor: 'pointer' }}
+        />
+        {expanded && (
+          <Modal title={name || 'Profile Picture'} onClose={() => setExpanded(false)}>
+            <img src={src} alt="" style={{ width: '100%', borderRadius: 'var(--radius-md)', display: 'block' }} />
+          </Modal>
+        )}
+      </>
     );
   }
 

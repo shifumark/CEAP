@@ -1,4 +1,5 @@
 import { useTheme, Theme } from '../context/ThemeContext';
+import ProfilePictureUpload from '../components/ProfilePictureUpload';
 
 interface ThemeOption {
   id: Theme;
@@ -61,7 +62,19 @@ const SettingsPage = () => {
 
       <div className="container">
         <div className="page-header">
-          <h1>Theme Settings</h1>
+          <h1>Settings</h1>
+          <p>Manage your profile picture and choose a color theme for this device.</p>
+        </div>
+
+        <div className="card" style={{ marginBottom: '2rem' }}>
+          <div className="card-header">
+            <h3>Profile Picture</h3>
+          </div>
+          <ProfilePictureUpload />
+        </div>
+
+        <div className="page-header" style={{ marginTop: '2rem' }}>
+          <h1 style={{ fontSize: '1.4rem' }}>Theme Settings</h1>
           <p>Choose the color theme for this device. Your choice is saved locally and won't affect other users.</p>
         </div>
 

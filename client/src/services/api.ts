@@ -508,6 +508,52 @@ class ApiService {
     return this.request('DELETE', '/users', { ids });
   }
 
+  async uploadProfilePicture(file: File): Promise<User> {
+    // Fails fast client-side instead of waiting on a full upload round
+    // trip just to hit the same 5MB limit the server enforces (upload.ts).
+    if (file.size > MAX_UPLOAD_BYTES) {
+      throw new Error('File is too large — the maximum upload size is 5MB.');
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const headers: HeadersInit = {};
+    if (this.token) {
+      headers.Authorization = `Bearer ${this.token}`;
+    }
+
+    const response = await fetch(`${API_BASE_URL}/users/me/profile-picture`, {
+      method: 'POST',
+      headers,
+      body: formData
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.error || error.message || 'Failed to upload profile picture');
+    }
+
+    return response.json();
+  }
+
+  async deleteProfilePicture(): Promise<User> {
+    return this.request('DELETE', '/users/me/profile-picture');
+  }
+
+  async getProfilePictureBlob(userId: number): Promise<Blob> {
+    const headers: HeadersInit = {};
+    if (this.token) {
+      headers.Authorization = `Bearer ${this.token}`;
+    }
+
+    const response = await fetch(`${API_BASE_URL}/users/${userId}/profile-picture`, { headers });
+    if (!response.ok) {
+      throw new Error('No profile picture');
+    }
+    return response.blob();
+  }
+
   async getDeletionHistory(page = 1, pageSize = 50): Promise<PaginatedResponse<DeletionRequest>> {
     return this.request('GET', `/deletion-requests/history?page=${page}&pageSize=${pageSize}`);
   }

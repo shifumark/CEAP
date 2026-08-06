@@ -1562,6 +1562,58 @@ router.get('/users/:id/profile-documents/merged-pdf', verifyToken, requireAdminO
   }
 });
 
+/**
+ * Upload/replace the requesting user's own profile picture.
+ * Protected - self-service, any authenticated role.
+ */
+router.post('/users/me/profile-picture', verifyToken, upload.single('file'), async (req: AuthenticatedRequest, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    const user = await authService.uploadProfilePicture(req.user!, {
+      buffer: req.file.buffer,
+      originalname: req.file.originalname,
+      mimetype: req.file.mimetype,
+      size: req.file.size
+    });
+
+    res.json(user);
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+/**
+ * Removes the requesting user's own profile picture.
+ * Protected - self-service, any authenticated role.
+ */
+router.delete('/users/me/profile-picture', verifyToken, async (req: AuthenticatedRequest, res) => {
+  try {
+    const user = await authService.deleteProfilePicture(req.user!);
+    res.json(user);
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+/**
+ * Streams a user's profile picture — self, or Admin/Super Admin/Viewer
+ * viewing anyone else's (same visibility as the Applicant profile).
+ * Never a public Drive link, same reasoning as document downloads.
+ */
+router.get('/users/:id/profile-picture', verifyToken, async (req: AuthenticatedRequest, res) => {
+  try {
+    const result = await authService.getProfilePictureDownload(req.user!, parseInt(req.params.id));
+    res.setHeader('Content-Type', result.mimeType);
+    res.setHeader('Cache-Control', 'private, max-age=300');
+    result.stream.pipe(res);
+  } catch (error: any) {
+    res.status(404).json({ error: error.message });
+  }
+});
+
 // ============== DELETION APPROVAL WORKFLOW ROUTES ==============
 
 /**

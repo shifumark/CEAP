@@ -1,14 +1,18 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
+import { Readable } from 'stream';
 import type { User as PrismaUser } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { JWT_SECRET } from '../lib/env.js';
 import { supabaseAdmin, DOCUMENTS_BUCKET } from '../lib/supabase.js';
-import { getDriveAccount } from '../lib/googleDrive.js';
+import { getDriveAccount, selectDriveAccountForUpload } from '../lib/googleDrive.js';
+import { processUploadedFile, type UploadFile } from '../lib/imageProcessing.js';
 import { User, LoginRequest, LoginResponse, UserRole, UserStatus, CreateUserRequest, JWTPayload, DeletionEntityType } from '../types.js';
 import { DeletionRequestService } from './DeletionRequestService.js';
 import { EmailService } from './EmailService.js';
+
+export type ProfilePictureDownload = { stream: NodeJS.ReadableStream; mimeType: string };
 
 const deletionRequestService = new DeletionRequestService();
 const emailService = new EmailService();
@@ -259,6 +263,95 @@ export class AuthService {
   }
 
   /**
+   * Any authenticated user, for their own account only. Profile pictures
+   * always go to Drive account 1 (not load-balanced across overflow
+   * accounts the way documents are) — at up to 300KB each
+   * (imageProcessing's compression guarantee), total storage stays
+   * negligible even at thousands of users, so the dynamic
+   * account-selection machinery document uploads use isn't needed here.
+   */
+  async uploadProfilePicture(user: JWTPayload, file: UploadFile): Promise<User> {
+    const processed = await processUploadedFile(file);
+    if (processed.mimetype !== 'image/jpeg') {
+      // processUploadedFile only ever leaves a file un-re-encoded for
+      // PDFs — reaching this means a PDF was uploaded as a picture.
+      throw new Error('Profile picture must be an image (JPG or PNG), not a PDF.');
+    }
+
+    const existing = await prisma.user.findUnique({ where: { id: user.sub }, select: { profilePictureUrl: true } });
+    const account = getDriveAccount(1);
+
+    const driveFile = await account.drive.files.create({
+      requestBody: {
+        name: `avatar-${user.sub}-${Date.now()}.jpg`,
+        parents: account.folderId ? [account.folderId] : undefined
+      },
+      media: {
+        mimeType: processed.mimetype,
+        body: Readable.from(processed.buffer)
+      },
+      fields: 'id'
+    });
+
+    const fileId = driveFile.data.id;
+    if (!fileId) {
+      throw new Error('Upload failed: Google Drive did not return a file id');
+    }
+
+    const updated = await prisma.user.update({ where: { id: user.sub }, data: { profilePictureUrl: fileId } });
+
+    // Old picture is cleaned up only after the new one is safely saved —
+    // an outdated-but-working picture is a better failure mode than a
+    // deleted one with no replacement if this next step fails.
+    if (existing?.profilePictureUrl) {
+      await account.drive.files.delete({ fileId: existing.profilePictureUrl }).catch(() => undefined);
+    }
+
+    return toUser(updated);
+  }
+
+  async deleteProfilePicture(user: JWTPayload): Promise<User> {
+    const existing = await prisma.user.findUnique({ where: { id: user.sub }, select: { profilePictureUrl: true } });
+    if (existing?.profilePictureUrl) {
+      try {
+        await getDriveAccount(1).drive.files.delete({ fileId: existing.profilePictureUrl });
+      } catch (error: any) {
+        if (error?.code !== 404) {
+          throw new Error(`Failed to delete profile picture: ${error.message}`);
+        }
+      }
+    }
+
+    const updated = await prisma.user.update({ where: { id: user.sub }, data: { profilePictureUrl: null } });
+    return toUser(updated);
+  }
+
+  /**
+   * Viewable by the user themselves, or anyone who can already see this
+   * user's info elsewhere (Admin/Super Admin/Viewer) — same visibility as
+   * the Applicant profile itself. Streamed through our own server, never
+   * a public Drive link, same reasoning as document downloads.
+   */
+  async getProfilePictureDownload(user: JWTPayload, targetUserId: number): Promise<ProfilePictureDownload> {
+    const isSelf = user.sub === targetUserId;
+    const canView = user.role === UserRole.ADMIN || user.role === UserRole.SUPER_ADMIN || user.role === UserRole.VIEWER;
+    if (!isSelf && !canView) {
+      throw new Error('Not authorized to view this profile picture');
+    }
+
+    const target = await prisma.user.findUnique({ where: { id: targetUserId }, select: { profilePictureUrl: true } });
+    if (!target?.profilePictureUrl) {
+      throw new Error('This user has no profile picture');
+    }
+
+    const response = await getDriveAccount(1).drive.files.get(
+      { fileId: target.profilePictureUrl, alt: 'media' },
+      { responseType: 'stream' }
+    );
+    return { stream: response.data as NodeJS.ReadableStream, mimeType: 'image/jpeg' };
+  }
+
+  /**
    * Super Admin only — generates a fresh random password for a user who
    * can't get in on their own, sets it, and returns the plaintext value
    * exactly once so the admin can relay it to the student through a
@@ -351,8 +444,16 @@ export class AuthService {
     // Idempotent: a pending deletion request can outlive its target (e.g.
     // approved twice, or the account removed some other way in the
     // meantime) — nothing left to do, not an error.
-    const exists = await prisma.user.findUnique({ where: { id: targetId }, select: { id: true } });
+    const exists = await prisma.user.findUnique({ where: { id: targetId }, select: { id: true, profilePictureUrl: true } });
     if (!exists) return;
+
+    // Not part of UploadedDocument, so not covered by that table's cleanup
+    // below — always Drive account 1 (see uploadProfilePicture).
+    if (exists.profilePictureUrl) {
+      await getDriveAccount(1)
+        .drive.files.delete({ fileId: exists.profilePictureUrl })
+        .catch(() => undefined);
+    }
 
     const documents = await prisma.uploadedDocument.findMany({
       where: { userId: targetId },

@@ -3,6 +3,7 @@ import { apiService } from '../services/api';
 import { Applicant, ProfileCompleteness, UpdateApplicantProfileRequest } from '../types';
 import ProfileDocuments from '../components/ProfileDocuments';
 import ValidIdUpload from '../components/ValidIdUpload';
+import ProfilePictureUpload from '../components/ProfilePictureUpload';
 import Modal from '../components/Modal';
 import {
   SEX_OPTIONS,
@@ -455,6 +456,8 @@ const ProfilePage = () => {
           <p>Loading...</p>
         ) : (
           <>
+            <ProfilePictureUpload />
+
             {completeness && !completeness.complete && (
               <div
                 style={{

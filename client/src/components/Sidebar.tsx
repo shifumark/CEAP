@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { apiService } from '../services/api';
 import { UserRole } from '../types';
+import Avatar from './Avatar';
 import connerSeal from '../assets/images/conner-seal.jpg';
 
 // How often the sidebar re-checks the unread count while mounted (i.e.
@@ -172,10 +173,16 @@ function Sidebar() {
         </nav>
 
         <div className="sidebar-footer">
-          <div style={{ fontSize: '0.85rem', marginBottom: '0.5rem' }}>
-            <strong>
-              {user ? `${user.firstName} ${user.lastName}` : 'Guest'}
-            </strong>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', marginBottom: '0.5rem' }}>
+            {user && (
+              <Avatar
+                userId={user.id}
+                hasPicture={Boolean(user.profilePictureUrl)}
+                name={`${user.firstName} ${user.lastName}`}
+                size={36}
+              />
+            )}
+            <strong style={{ fontSize: '0.85rem' }}>{user ? `${user.firstName} ${user.lastName}` : 'Guest'}</strong>
           </div>
           <div style={{ opacity: 0.8, fontSize: '0.8rem', marginBottom: '0.75rem' }}>
             {user?.role === UserRole.APPLICANT

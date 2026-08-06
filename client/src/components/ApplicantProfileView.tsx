@@ -1,6 +1,7 @@
 ﻿import { useState } from 'react';
 import { Applicant } from '../types';
 import { apiService } from '../services/api';
+import Avatar from './Avatar';
 
 function formatDate(value?: string | Date) {
   if (!value) return '—';
@@ -74,6 +75,18 @@ const ApplicantProfileView = ({ profile, loading, email, userId, canManageLock }
 
   return (
     <div style={{ marginTop: '0.6rem' }}>
+      {userId !== undefined && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
+          <Avatar userId={userId} name={`${profile.firstName} ${profile.lastName}`} size={56} />
+          <div>
+            <div style={{ fontWeight: 600 }}>
+              {profile.firstName} {profile.lastName}
+            </div>
+            {email && <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{email}</div>}
+          </div>
+        </div>
+      )}
+
       {canManageLock && userId !== undefined && (
         <div
           style={{

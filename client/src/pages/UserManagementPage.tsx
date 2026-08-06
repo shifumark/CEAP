@@ -1,8 +1,10 @@
 ﻿import { useEffect, useState } from 'react';
 import { apiService } from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import { User, UserRole, UserStatus } from '../types';
+import { Applicant, User, UserRole, UserStatus } from '../types';
 import Modal from '../components/Modal';
+import ApplicantProfileView from '../components/ApplicantProfileView';
+import Avatar from '../components/Avatar';
 
 // An Admin or Super Admin can promote/demote between these two roles
 // only — Super Admin itself is deliberately excluded from this UI
@@ -60,6 +62,10 @@ const UserManagementPage = () => {
   const [deleting, setDeleting] = useState(false);
   const [showDeleteAll, setShowDeleteAll] = useState(false);
   const [deletingAll, setDeletingAll] = useState(false);
+  const [viewingUser, setViewingUser] = useState<User | null>(null);
+  const [viewingProfile, setViewingProfile] = useState<Applicant | null>(null);
+  const [viewingProfileLoading, setViewingProfileLoading] = useState(false);
+  const [viewingProfileError, setViewingProfileError] = useState('');
 
   const load = () => {
     setLoading(true);
@@ -168,6 +174,23 @@ const UserManagementPage = () => {
       setError(err.message || 'Failed to delete users');
     } finally {
       setDeletingAll(false);
+    }
+  };
+
+  const openProfile = async (u: User) => {
+    setViewingUser(u);
+    setViewingProfile(null);
+    setViewingProfileError('');
+    setViewingProfileLoading(true);
+    try {
+      const profile = await apiService.getApplicantProfileByUserId(u.id);
+      setViewingProfile(profile);
+    } catch (err: any) {
+      // Most commonly a 404 — this user (e.g. one who registered but never
+      // filled out their profile yet) has no Applicant record at all.
+      setViewingProfileError(err.message || 'This user has no profile to view yet.');
+    } finally {
+      setViewingProfileLoading(false);
     }
   };
 
@@ -325,8 +348,18 @@ const UserManagementPage = () => {
                     <tr key={u.id}>
                       <td>{index + 1}</td>
                       <td>
-                        {u.firstName} {u.lastName}
-                        {isSelf && <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}> (you)</span>}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                          <Avatar
+                            userId={u.id}
+                            hasPicture={Boolean(u.profilePictureUrl)}
+                            name={`${u.firstName} ${u.lastName}`}
+                            size={28}
+                          />
+                          <span>
+                            {u.firstName} {u.lastName}
+                            {isSelf && <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}> (you)</span>}
+                          </span>
+                        </div>
                       </td>
                       <td>{u.email}</td>
                       <td>
@@ -369,15 +402,23 @@ const UserManagementPage = () => {
                         </td>
                       )}
                       <td>
-                        {!isViewer && !isSelf && !isSuperAdminRow && (
-                          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                            <button className="btn btn-outline btn-sm" disabled={busy} onClick={() => handleToggleStatus(u)}>
-                              {u.status === UserStatus.ACTIVE ? 'Disable' : 'Enable'}
+                        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                          {u.role === UserRole.APPLICANT && (
+                            <button className="btn btn-outline btn-sm" onClick={() => openProfile(u)}>
+                              View Profile
                             </button>
-                            <button className="btn btn-outline btn-sm" disabled={busy} onClick={() => setResettingUser(u)}>
-                              Reset Password
-                            </button>
-                            {u.role === UserRole.APPLICANT && (
+                          )}
+                          {!isViewer && !isSelf && !isSuperAdminRow && (
+                            <>
+                              <button className="btn btn-outline btn-sm" disabled={busy} onClick={() => handleToggleStatus(u)}>
+                                {u.status === UserStatus.ACTIVE ? 'Disable' : 'Enable'}
+                              </button>
+                              <button className="btn btn-outline btn-sm" disabled={busy} onClick={() => setResettingUser(u)}>
+                                Reset Password
+                              </button>
+                            </>
+                          )}
+                          {!isViewer && !isSelf && !isSuperAdminRow && u.role === UserRole.APPLICANT && (
                               <button
                                 className="btn btn-outline btn-sm"
                                 style={{ color: 'var(--error-text)', borderColor: 'var(--error-text)' }}
@@ -388,7 +429,6 @@ const UserManagementPage = () => {
                               </button>
                             )}
                           </div>
-                        )}
                       </td>
                     </tr>
                   );
@@ -517,6 +557,22 @@ const UserManagementPage = () => {
               </button>
             </div>
           </form>
+        </Modal>
+      )}
+
+      {viewingUser && (
+        <Modal title={`Profile: ${viewingUser.firstName} ${viewingUser.lastName}`} onClose={() => setViewingUser(null)}>
+          {viewingProfileError ? (
+            <p style={{ color: 'var(--text-secondary)' }}>{viewingProfileError}</p>
+          ) : (
+            <ApplicantProfileView
+              profile={viewingProfile}
+              loading={viewingProfileLoading}
+              email={viewingUser.email}
+              userId={viewingUser.id}
+              canManageLock={!isViewer}
+            />
+          )}
         </Modal>
       )}
 

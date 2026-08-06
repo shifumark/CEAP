@@ -44,7 +44,12 @@ app.use(
 // limit, the health check itself could trip a 429 and cause a
 // fail-restart-fail crash loop (this happened in production once).
 app.get('/health', (req, res) => {
-  res.json({ status: 'OK', timestamp: new Date().toISOString() });
+  // RENDER_GIT_COMMIT is set automatically by Render to the deployed
+  // commit's SHA — exposing it here is what lets a deploy actually be
+  // verified against a specific push, rather than just confirming the
+  // process is up (which is equally true of a stale build that's still
+  // running because a newer deploy failed silently in the background).
+  res.json({ status: 'OK', timestamp: new Date().toISOString(), commit: process.env.RENDER_GIT_COMMIT ?? 'unknown' });
 });
 
 // Middleware

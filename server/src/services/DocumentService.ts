@@ -384,14 +384,31 @@ export class DocumentService {
     const merged = await PDFLibDocument.create();
     const font = await merged.embedFont(StandardFonts.HelveticaBold);
 
-    for (const doc of docs) {
-      let bytes: Buffer;
-      try {
-        bytes = await this.fetchFileBytes(doc);
-      } catch (error) {
-        console.error(`[DocumentService] Failed to fetch bytes for document ${doc.id} while merging`, error);
-        continue;
-      }
+    // Fetched concurrently — these are independent Drive round-trips with
+    // no reason to wait on each other, and doing so one-at-a-time was the
+    // main reason this could take many seconds for an applicant with
+    // several uploads. Each fetch catches its own error (rather than
+    // letting Promise.all reject the whole batch on the first failure),
+    // preserving the original behavior of skipping just that one document
+    // and still merging the rest. Array order is preserved regardless of
+    // which fetch finishes first, so the merged PDF's page order is
+    // unaffected by this change.
+    const fetched = await Promise.all(
+      docs.map(async (doc) => {
+        try {
+          return { doc, bytes: await this.fetchFileBytes(doc) };
+        } catch (error) {
+          console.error(`[DocumentService] Failed to fetch bytes for document ${doc.id} while merging`, error);
+          return { doc, bytes: null };
+        }
+      })
+    );
+
+    // Merging itself stays sequential — pdf-lib's PDFDocument isn't safe
+    // for concurrent mutation, and this part is CPU-bound (no network
+    // wait), so there's nothing to gain from parallelizing it anyway.
+    for (const { doc, bytes } of fetched) {
+      if (!bytes) continue;
 
       const divider = merged.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
       divider.drawText(doc.documentType ?? 'Document', { x: PAGE_MARGIN, y: PAGE_HEIGHT - 100, size: 20, font });

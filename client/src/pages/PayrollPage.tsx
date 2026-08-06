@@ -9,7 +9,13 @@ import Modal from '../components/Modal';
 const SENIOR_HIGH_YEAR_LEVELS = ['Grade 11', 'Grade 12'];
 const ALS_YEAR_LEVELS = ['Alternative Learning System'];
 
-const STATUS_OPTIONS = ['active', 'inactive', 'graduated', 'terminated'];
+type RenewalTypeFilter = '' | 'new' | 'for_renewal';
+
+const RENEWAL_TYPE_OPTIONS: { value: RenewalTypeFilter; label: string }[] = [
+  { value: '', label: 'All' },
+  { value: 'new', label: 'New Scholar' },
+  { value: 'for_renewal', label: 'For Renewal' }
+];
 
 type Category = '' | 'senior_high' | 'college' | 'special_course' | 'als';
 
@@ -77,7 +83,7 @@ const PayrollPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const [statusFilter, setStatusFilter] = useState('active');
+  const [renewalTypeFilter, setRenewalTypeFilter] = useState<RenewalTypeFilter>('');
   const [categoryFilter, setCategoryFilter] = useState<Category>('');
   const [programFilter, setProgramFilter] = useState('');
   const [nameSearch, setNameSearch] = useState('');
@@ -115,7 +121,11 @@ const PayrollPage = () => {
 
   const filtered = useMemo(() => {
     return scholars
-      .filter((s) => (statusFilter ? s.status === statusFilter : true))
+      .filter((s) => {
+        if (renewalTypeFilter === 'new') return !s.hasRenewalRequest;
+        if (renewalTypeFilter === 'for_renewal') return Boolean(s.hasRenewalRequest);
+        return true;
+      })
       .filter((s) => (programFilter ? s.scholarshipId === Number(programFilter) : true))
       .filter((s) => (categoryFilter ? categoryOf(s.yearLevel) === categoryFilter : true))
       .filter((s) => (nameSearch ? s.studentName?.toLowerCase().includes(nameSearch.toLowerCase()) : true))
@@ -135,7 +145,7 @@ const PayrollPage = () => {
         return isInMonth(new Date(s.submissionDate), month);
       })
       .sort((a, b) => (a.studentLastName ?? a.studentName ?? '').localeCompare(b.studentLastName ?? b.studentName ?? ''));
-  }, [scholars, statusFilter, programFilter, categoryFilter, nameSearch, barangaySearch, month]);
+  }, [scholars, renewalTypeFilter, programFilter, categoryFilter, nameSearch, barangaySearch, month]);
 
   // What actually gets shown/printed/exported: the filtered set, plus
   // anyone manually added back in (even if the current filters wouldn't
@@ -295,12 +305,15 @@ const PayrollPage = () => {
         <div className="card payroll-filters" style={{ marginBottom: '1.5rem' }}>
           <div className="grid grid-4" style={{ margin: 0 }}>
             <div className="form-group" style={{ margin: 0 }}>
-              <label htmlFor="payrollStatus">Status</label>
-              <select id="payrollStatus" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-                <option value="">All Statuses</option>
-                {STATUS_OPTIONS.map((status) => (
-                  <option key={status} value={status}>
-                    {status.charAt(0).toUpperCase() + status.slice(1)}
+              <label htmlFor="payrollRenewalType">Status</label>
+              <select
+                id="payrollRenewalType"
+                value={renewalTypeFilter}
+                onChange={(e) => setRenewalTypeFilter(e.target.value as RenewalTypeFilter)}
+              >
+                {RENEWAL_TYPE_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
                   </option>
                 ))}
               </select>

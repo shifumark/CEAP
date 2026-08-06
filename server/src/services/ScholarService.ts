@@ -48,7 +48,12 @@ function canView(user: JWTPayload): boolean {
   return isPrivileged(user) || user.role === UserRole.VIEWER;
 }
 
-export function toScholar(record: ScholarWithRelations, submissionDate?: Date, receivedDate?: Date): Scholar {
+export function toScholar(
+  record: ScholarWithRelations,
+  submissionDate?: Date,
+  receivedDate?: Date,
+  hasRenewalRequest?: boolean
+): Scholar {
   return {
     id: record.id,
     userId: record.userId,
@@ -74,7 +79,8 @@ export function toScholar(record: ScholarWithRelations, submissionDate?: Date, r
     studentAddress: record.user?.applicant?.address ?? undefined,
     submissionDate,
     receivedDate,
-    yearLevel: record.user?.applicant?.yearLevel ?? undefined
+    yearLevel: record.user?.applicant?.yearLevel ?? undefined,
+    hasRenewalRequest
   };
 }
 
@@ -274,13 +280,26 @@ export class ScholarService {
       }
     }
 
+    // "New Scholar" vs "For Renewal" (Payroll's status filter) is driven
+    // by whether a scholar has ever filed a renewal request at all —
+    // a single bulk query rather than N+1, same reasoning as above.
+    const scholarIds = items.map((item) => item.id);
+    const renewalScholarIds = scholarIds.length
+      ? await prisma.renewal.findMany({
+          where: { scholarId: { in: scholarIds } },
+          select: { scholarId: true },
+          distinct: ['scholarId']
+        })
+      : [];
+    const hasRenewalRequestByScholarId = new Set(renewalScholarIds.map((r) => r.scholarId));
+
     return {
       data: items.map((item) => {
         const applicantId = item.user?.applicant?.id;
         const key = applicantId !== undefined ? `${applicantId}:${item.scholarshipId}` : undefined;
         const submissionDate = key ? submissionDateByKey.get(key) ?? undefined : undefined;
         const receivedDate = key ? receivedDateByKey.get(key) ?? undefined : undefined;
-        return toScholar(item, submissionDate, receivedDate);
+        return toScholar(item, submissionDate, receivedDate, hasRenewalRequestByScholarId.has(item.id));
       }),
       total,
       page,

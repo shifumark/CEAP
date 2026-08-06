@@ -626,6 +626,9 @@ export interface Scholar {
   // scholars into Senior High/College/Special Course/ALS without a second
   // request.
   yearLevel?: string;
+  // Whether this scholar has ever filed a renewal request — backs
+  // Payroll's "New Scholar" vs "For Renewal" filter.
+  hasRenewalRequest?: boolean;
 }
 
 // GRADE

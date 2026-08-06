@@ -561,7 +561,11 @@ const UserManagementPage = () => {
       )}
 
       {viewingUser && (
-        <Modal title={`Profile: ${viewingUser.firstName} ${viewingUser.lastName}`} onClose={() => setViewingUser(null)}>
+        <Modal
+          title={`Profile: ${viewingUser.firstName} ${viewingUser.lastName}`}
+          onClose={() => setViewingUser(null)}
+          scrollable={false}
+        >
           {viewingProfileError ? (
             <p style={{ color: 'var(--text-secondary)' }}>{viewingProfileError}</p>
           ) : (

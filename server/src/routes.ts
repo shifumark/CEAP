@@ -37,6 +37,7 @@ import {
   SubmitGradeRequest,
   CreateRenewalRequest,
   ReviewRenewalRequest,
+  RenewalFilters,
   CreateAllowanceRequest,
   CreateViolationRequest,
   CreateAnnouncementRequest,
@@ -958,6 +959,26 @@ router.post('/scholars/:id/grades', verifyToken, requireAdmin, async (req: Authe
 /**
  * Renewals
  */
+
+/**
+ * Every renewal request system-wide — backs the Renewal Requests page.
+ * Protected - Admin/Super Admin/Viewer.
+ */
+router.get('/renewals', verifyToken, requireAdminOrViewer, async (req: AuthenticatedRequest, res) => {
+  try {
+    const filters: RenewalFilters = {
+      status: (req.query.status as any) || undefined,
+      scholarshipId: req.query.scholarshipId ? parseInt(req.query.scholarshipId as string) : undefined,
+      page: parseInt(req.query.page as string) || 1,
+      pageSize: parseInt(req.query.pageSize as string) || 50
+    };
+    const result = await scholarService.listAllRenewals(req.user!, filters);
+    res.json(result);
+  } catch (error: any) {
+    console.error(error); res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 router.get('/scholars/:id/renewals', verifyToken, async (req: AuthenticatedRequest, res) => {
   try {
     const renewals = await scholarService.listRenewals(req.user!, parseInt(req.params.id));
@@ -972,6 +993,25 @@ router.post('/scholars/:id/renewals', verifyToken, async (req: AuthenticatedRequ
     const request: CreateRenewalRequest = { ...req.body, scholarId: parseInt(req.params.id) };
     const renewal = await scholarService.requestRenewal(req.user!, request);
     res.status(201).json(renewal);
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+/**
+ * Moves a renewal request from "Received" to "For Review" — an
+ * intermediate step before the actual approve/reject decision.
+ * Protected - Admin/Super Admin.
+ */
+router.put('/renewals/:id/under-review', verifyToken, requireAdmin, async (req: AuthenticatedRequest, res) => {
+  try {
+    const renewal = await scholarService.markUnderReview(req.user!, parseInt(req.params.id));
+
+    if (!renewal) {
+      return res.status(400).json({ error: 'This request is no longer pending' });
+    }
+
+    res.json(renewal);
   } catch (error: any) {
     res.status(400).json({ error: error.message });
   }

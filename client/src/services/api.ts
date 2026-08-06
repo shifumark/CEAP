@@ -21,6 +21,7 @@ import {
   ScholarFilters,
   Grade,
   Renewal,
+  RenewalFilters,
   Allowance,
   Violation,
   Announcement,
@@ -427,6 +428,19 @@ class ApiService {
 
   async reviewRenewal(renewalId: number, decision: 'approved' | 'rejected', notes?: string): Promise<Renewal> {
     return this.request('PUT', `/renewals/${renewalId}`, { decision, notes });
+  }
+
+  async getAllRenewals(filters?: Partial<RenewalFilters>): Promise<PaginatedResponse<Renewal>> {
+    const params = new URLSearchParams();
+    if (filters?.status) params.set('status', filters.status);
+    if (filters?.scholarshipId) params.set('scholarshipId', String(filters.scholarshipId));
+    if (filters?.page) params.set('page', String(filters.page));
+    if (filters?.pageSize) params.set('pageSize', String(filters.pageSize));
+    return this.request('GET', `/renewals?${params.toString()}`);
+  }
+
+  async markRenewalUnderReview(renewalId: number): Promise<Renewal> {
+    return this.request('PUT', `/renewals/${renewalId}/under-review`, {});
   }
 
   async getAllowances(scholarId: number): Promise<Allowance[]> {

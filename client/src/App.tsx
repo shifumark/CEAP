@@ -22,6 +22,7 @@ import ReportsPage from './pages/ReportsPage';
 import UserManagementPage from './pages/UserManagementPage';
 import DeletionReportPage from './pages/DeletionReportPage';
 import PayrollPage from './pages/PayrollPage';
+import RenewalRequestsPage from './pages/RenewalRequestsPage';
 import SettingsPage from './pages/SettingsPage';
 import Sidebar from './components/Sidebar';
 import { UserRole } from './types';
@@ -41,6 +42,7 @@ const SIDEBAR_PATHS = [
   '/users',
   '/deletion-requests',
   '/payroll',
+  '/renewals',
   '/settings'
 ];
 
@@ -155,6 +157,14 @@ function AppLayout() {
             element={
               <ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.SUPER_ADMIN]}>
                 <PayrollPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/renewals"
+            element={
+              <ProtectedRoute allowedRoles={[UserRole.ADMIN, UserRole.SUPER_ADMIN, UserRole.VIEWER]}>
+                <RenewalRequestsPage />
               </ProtectedRoute>
             }
           />

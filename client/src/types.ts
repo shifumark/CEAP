@@ -664,6 +664,24 @@ export interface Renewal {
   notes?: string;
   createdAt: Date;
   updatedAt: Date;
+  // Populated on the system-wide list (Renewal Requests page) and the
+  // per-scholar list — undefined on a bare create/review response, which
+  // doesn't need them since the caller already knows which scholar.
+  studentName?: string;
+  studentFirstName?: string;
+  studentLastName?: string;
+  studentMiddleName?: string;
+  studentBarangay?: string;
+  scholarshipId?: number;
+  scholarshipName?: string;
+  scholarIdNumber?: string;
+}
+
+export interface RenewalFilters {
+  status?: RenewalStatus;
+  scholarshipId?: number;
+  page?: number;
+  pageSize?: number;
 }
 
 export interface CreateRenewalRequest {

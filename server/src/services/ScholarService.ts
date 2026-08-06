@@ -11,6 +11,7 @@ import {
   SubmitGradeRequest,
   CreateRenewalRequest,
   ReviewRenewalRequest,
+  RenewalFilters,
   CreateAllowanceRequest,
   CreateViolationRequest,
   ScholarFilters,
@@ -92,7 +93,19 @@ function toGrade(record: Prisma.GradeGetPayload<{}>): Grade {
   };
 }
 
-function toRenewal(record: Prisma.RenewalGetPayload<{}>): Renewal {
+const renewalInclude = {
+  scholar: { include: { scholarship: true, user: { include: { applicant: true } } } }
+} satisfies Prisma.RenewalInclude;
+
+type RenewalWithRelations = Prisma.RenewalGetPayload<{ include: typeof renewalInclude }>;
+
+// `scholar` is only present when the caller queried with renewalInclude
+// (listRenewals, listAllRenewals) — requestRenewal/reviewRenewal's own
+// create/update calls pass a bare record, which is fine since those
+// callers already know which scholar they're dealing with and don't
+// need the display fields.
+function toRenewal(record: Prisma.RenewalGetPayload<{}> | RenewalWithRelations): Renewal {
+  const scholar = 'scholar' in record ? record.scholar : undefined;
   return {
     id: record.id,
     scholarId: record.scholarId,
@@ -105,7 +118,15 @@ function toRenewal(record: Prisma.RenewalGetPayload<{}>): Renewal {
     decision: record.decision ?? undefined,
     notes: record.notes ?? undefined,
     createdAt: record.createdAt,
-    updatedAt: record.updatedAt
+    updatedAt: record.updatedAt,
+    studentName: scholar?.user ? `${scholar.user.firstName} ${scholar.user.lastName}` : undefined,
+    studentFirstName: scholar?.user?.firstName,
+    studentLastName: scholar?.user?.lastName,
+    studentMiddleName: scholar?.user?.applicant?.middleName ?? undefined,
+    studentBarangay: scholar?.user?.applicant?.barangay ?? undefined,
+    scholarshipId: scholar?.scholarshipId,
+    scholarshipName: scholar?.scholarship?.name,
+    scholarIdNumber: scholar?.scholarIdNumber ?? undefined
   };
 }
 
@@ -449,8 +470,72 @@ export class ScholarService {
     const scholar = await this.getById(user, scholarId);
     if (!scholar) return [];
 
-    const renewals = await prisma.renewal.findMany({ where: { scholarId }, orderBy: { createdAt: 'desc' } });
+    const renewals = await prisma.renewal.findMany({
+      where: { scholarId },
+      include: renewalInclude,
+      orderBy: { createdAt: 'desc' }
+    });
     return renewals.map(toRenewal);
+  }
+
+  /**
+   * Every renewal request system-wide, for the Renewal Requests page —
+   * mirrors listScholars/listApplications' shape (canView-gated,
+   * paginated, filterable). Unlike listRenewals, not scoped to one
+   * scholar.
+   */
+  async listAllRenewals(user: JWTPayload, filters?: RenewalFilters): Promise<PaginatedResponse<Renewal>> {
+    if (!canView(user)) {
+      throw new Error('Not authorized to list renewal requests');
+    }
+
+    const page = filters?.page || 1;
+    const pageSize = filters?.pageSize || 10;
+    const where: Prisma.RenewalWhereInput = {};
+    if (filters?.status) where.status = filters.status as any;
+    if (filters?.scholarshipId) where.scholar = { scholarshipId: filters.scholarshipId };
+
+    const [items, total] = await Promise.all([
+      prisma.renewal.findMany({
+        where,
+        include: renewalInclude,
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+        orderBy: { createdAt: 'desc' }
+      }),
+      prisma.renewal.count({ where })
+    ]);
+
+    return {
+      data: items.map(toRenewal),
+      total,
+      page,
+      pageSize,
+      totalPages: Math.ceil(total / pageSize)
+    };
+  }
+
+  /**
+   * Moves a renewal request from "Received" (pending) into "For Review"
+   * (under_review) — a lightweight status the Renewal Requests page uses
+   * to show a request is actively being looked at, distinct from the
+   * final approve/reject decision. Compare-and-swap on status: 'pending'
+   * so two reviewers clicking this near-simultaneously don't both
+   * "win" — only the first actually transitions it.
+   */
+  async markUnderReview(user: JWTPayload, renewalId: number): Promise<Renewal | undefined> {
+    if (!isPrivileged(user)) {
+      throw new Error('Not authorized to review renewals');
+    }
+
+    const result = await prisma.renewal.updateMany({
+      where: { id: renewalId, status: 'pending' },
+      data: { status: 'under_review' }
+    });
+    if (result.count === 0) return undefined;
+
+    const updated = await prisma.renewal.findUnique({ where: { id: renewalId }, include: renewalInclude });
+    return updated ? toRenewal(updated) : undefined;
   }
 
   async reviewRenewal(
@@ -462,36 +547,39 @@ export class ScholarService {
       throw new Error('Not authorized to review renewals');
     }
 
-    try {
-      const updated = await prisma.renewal.update({
-        where: { id: renewalId },
-        data: {
-          status: request.decision as any,
-          decision: request.decision,
-          notes: request.notes,
-          reviewedBy: user.sub,
-          reviewedAt: new Date()
-        }
-      });
+    // Compare-and-swap: only a request still sitting at "Received" or
+    // "For Review" can be decided — closes the same concurrent-review
+    // race fixed elsewhere (two reviewers deciding the same request at
+    // nearly the same instant), and stops a second decision overwriting
+    // an already-decided one.
+    const result = await prisma.renewal.updateMany({
+      where: { id: renewalId, status: { in: ['pending', 'under_review'] } },
+      data: {
+        status: request.decision as any,
+        decision: request.decision,
+        notes: request.notes,
+        reviewedBy: user.sub,
+        reviewedAt: new Date()
+      }
+    });
+    if (result.count === 0) return undefined;
 
-      prisma.scholar
-        .findUnique({ where: { id: updated.scholarId } })
-        .then((scholar) => {
-          if (!scholar) return;
-          return notificationService.create(
-            scholar.userId,
-            NotificationType.SYSTEM_NOTIFICATION,
-            'Renewal Decision',
-            `Your renewal request for ${updated.academicYear ?? ''} ${updated.semester ?? ''} was ${request.decision}.`,
-            '/my-application'
-          );
-        })
+    const updated = await prisma.renewal.findUnique({ where: { id: renewalId }, include: renewalInclude });
+    if (!updated) return undefined;
+
+    if (updated.scholar?.user) {
+      notificationService
+        .create(
+          updated.scholar.userId,
+          NotificationType.SYSTEM_NOTIFICATION,
+          'Renewal Decision',
+          `Your renewal request for ${updated.academicYear ?? ''} ${updated.semester ?? ''} was ${request.decision}.`,
+          '/my-application'
+        )
         .catch((error) => console.error('[NotificationService] Failed to notify scholar of renewal decision', updated.id, error));
-
-      return toRenewal(updated);
-    } catch {
-      return undefined;
     }
+
+    return toRenewal(updated);
   }
 
   // ---------------- Allowances ----------------

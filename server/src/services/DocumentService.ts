@@ -1,5 +1,5 @@
 import { Readable } from 'stream';
-import { PDFDocument as PDFLibDocument, StandardFonts, type PDFImage } from 'pdf-lib';
+import { PDFDocument as PDFLibDocument, StandardFonts, type PDFImage, type PDFFont } from 'pdf-lib';
 import type { UploadedDocument as PrismaUploadedDocument } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { supabaseAdmin, DOCUMENTS_BUCKET } from '../lib/supabase.js';
@@ -343,25 +343,42 @@ export class DocumentService {
     return Buffer.from(await data.arrayBuffer());
   }
 
-  private addImagePage(pdf: PDFLibDocument, image: PDFImage): void {
+  /**
+   * One page per image: the requirement's name as a header, the image
+   * scaled to fit beneath it. Used instead of a separate divider page so
+   * an image requirement stays a single page in the bundle.
+   */
+  private addImagePage(pdf: PDFLibDocument, image: PDFImage, title: string, font: PDFFont): void {
+    const titleSize = 16;
+    const titleY = PAGE_HEIGHT - PAGE_MARGIN - titleSize;
+    const imageAreaTop = titleY - 20;
+
     const maxWidth = PAGE_WIDTH - PAGE_MARGIN * 2;
-    const maxHeight = PAGE_HEIGHT - PAGE_MARGIN * 2;
+    const maxHeight = imageAreaTop - PAGE_MARGIN;
     const scale = Math.min(maxWidth / image.width, maxHeight / image.height);
     const width = image.width * scale;
     const height = image.height * scale;
 
     const page = pdf.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
-    page.drawImage(image, { x: (PAGE_WIDTH - width) / 2, y: (PAGE_HEIGHT - height) / 2, width, height });
+    page.drawText(title, { x: PAGE_MARGIN, y: titleY, size: titleSize, font });
+    page.drawImage(image, {
+      x: (PAGE_WIDTH - width) / 2,
+      y: PAGE_MARGIN + (maxHeight - height) / 2,
+      width,
+      height
+    });
   }
 
   /**
    * Admin/Super Admin only — merges every one of an applicant's
    * profile-level documentary requirement uploads into a single
-   * downloadable PDF, preceded by a section-divider page per document so
-   * the packet stays navigable. PDFs are merged page-for-page; images
-   * become their own page, scaled to fit. A file that fails to fetch or
-   * embed (e.g. corrupted upload, or its declared mimetype doesn't match
-   * its actual bytes) is skipped rather than failing the whole bundle.
+   * downloadable PDF. Image uploads get one page each: the requirement's
+   * name as a header with the image scaled to fit beneath it. PDF
+   * uploads (which may already span multiple pages) get a section-divider
+   * page ahead of their copied-in pages instead. A file that fails to
+   * fetch or embed (e.g. corrupted upload, or its declared mimetype
+   * doesn't match its actual bytes) is skipped rather than failing the
+   * whole bundle.
    */
   async getMergedProfileDocumentsPdf(user: JWTPayload, targetUserId: number): Promise<{ buffer: Buffer; fileName: string }> {
     if (!canView(user)) {
@@ -410,22 +427,27 @@ export class DocumentService {
     for (const { doc, bytes } of fetched) {
       if (!bytes) continue;
 
-      const divider = merged.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
-      divider.drawText(doc.documentType ?? 'Document', { x: PAGE_MARGIN, y: PAGE_HEIGHT - 100, size: 20, font });
-      divider.drawText(doc.fileName, { x: PAGE_MARGIN, y: PAGE_HEIGHT - 130, size: 10, font });
+      const title = doc.documentType ?? 'Document';
 
       try {
         const mimeType = (doc.fileType || '').toLowerCase();
         if (mimeType === 'application/pdf') {
+          // A PDF may already span multiple pages of its own, so a title
+          // + single-image page doesn't apply — keep the divider page
+          // ahead of its copied pages instead.
+          const divider = merged.addPage([PAGE_WIDTH, PAGE_HEIGHT]);
+          divider.drawText(title, { x: PAGE_MARGIN, y: PAGE_HEIGHT - 100, size: 20, font });
+          divider.drawText(doc.fileName, { x: PAGE_MARGIN, y: PAGE_HEIGHT - 130, size: 10, font });
+
           const src = await PDFLibDocument.load(bytes, { ignoreEncryption: true });
           const pages = await merged.copyPages(src, src.getPageIndices());
           pages.forEach((page) => merged.addPage(page));
         } else if (mimeType === 'image/png') {
-          this.addImagePage(merged, await merged.embedPng(bytes));
+          this.addImagePage(merged, await merged.embedPng(bytes), title, font);
         } else {
           // Covers image/jpeg and image/jpg — the only other types
           // upload.ts's fileFilter allows through.
-          this.addImagePage(merged, await merged.embedJpg(bytes));
+          this.addImagePage(merged, await merged.embedJpg(bytes), title, font);
         }
       } catch (error) {
         console.error(`[DocumentService] Failed to embed document ${doc.id} while merging`, error);

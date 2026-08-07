@@ -782,7 +782,6 @@ const ProfilePage = () => {
                     id="guardianName"
                     value={form.guardian.name}
                     onChange={(e) => setFamilyField('guardian', 'name', e.target.value)}
-                    disabled={hasBothParents}
                   />
                 </div>
                 <div className="form-group">
@@ -791,7 +790,6 @@ const ProfilePage = () => {
                     id="guardianRelationship"
                     value={form.guardian.relationship}
                     onChange={(e) => setFamilyField('guardian', 'relationship', e.target.value)}
-                    disabled={hasBothParents}
                     placeholder="e.g. Grandmother, Aunt, Sibling"
                   />
                 </div>
@@ -801,7 +799,6 @@ const ProfilePage = () => {
                     id="guardianOccupation"
                     value={form.guardian.occupation}
                     onChange={(e) => setFamilyField('guardian', 'occupation', e.target.value)}
-                    disabled={hasBothParents}
                   />
                 </div>
                 <div className="form-group">
@@ -811,7 +808,6 @@ const ProfilePage = () => {
                     type="number"
                     value={form.guardian.monthlyIncome}
                     onChange={(e) => setFamilyField('guardian', 'monthlyIncome', e.target.value)}
-                    disabled={hasBothParents}
                   />
                 </div>
                 <h4>Household</h4>

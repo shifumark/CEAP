@@ -314,6 +314,9 @@ const ProfilePage = () => {
   // to "Select..." the instant it's cleared, making "Other" look
   // unclickable.
   const [specialCourseOtherSelected, setSpecialCourseOtherSelected] = useState(false);
+  // Same "Others" -> text field swap as specialCourseOtherSelected above,
+  // for the Type of ID dropdown.
+  const [idTypeOtherSelected, setIdTypeOtherSelected] = useState(false);
 
   const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
   const [changingPassword, setChangingPassword] = useState(false);
@@ -335,6 +338,7 @@ const ProfilePage = () => {
       setForm(applicantToForm(profile));
       setProfileLocked(profile.profileLocked);
       setSpecialCourseOtherSelected(false);
+      setIdTypeOtherSelected(false);
     } catch (err: any) {
       setError(err.message || 'Failed to load profile');
     } finally {
@@ -439,6 +443,13 @@ const ProfilePage = () => {
         ? 'Other'
         : '';
   const hasBothParents = form.father.name.trim() !== '' && form.mother.name.trim() !== '';
+  const idTypeSelectValue = idTypeOtherSelected
+    ? 'Others'
+    : ID_TYPE_OPTIONS.includes(form.idType)
+      ? form.idType
+      : form.idType
+        ? 'Others'
+        : '';
 
   return (
     <div>
@@ -592,14 +603,45 @@ const ProfilePage = () => {
                 </div>
                 <div className="form-group">
                   <label htmlFor="idType">Type of ID</label>
-                  <select id="idType" value={form.idType} onChange={(e) => set('idType', e.target.value)}>
-                    <option value="">Select...</option>
-                    {ID_TYPE_OPTIONS.map((o) => (
-                      <option key={o} value={o}>
-                        {o}
-                      </option>
-                    ))}
-                  </select>
+                  {idTypeOtherSelected ? (
+                    <>
+                      <input
+                        id="idType"
+                        value={form.idType}
+                        onChange={(e) => set('idType', e.target.value)}
+                        placeholder="Type your ID type"
+                        autoFocus
+                      />
+                      <button
+                        type="button"
+                        className="btn btn-outline btn-sm"
+                        style={{ marginTop: '0.5rem' }}
+                        onClick={() => {
+                          setIdTypeOtherSelected(false);
+                          set('idType', '');
+                        }}
+                      >
+                        Choose from list instead
+                      </button>
+                    </>
+                  ) : (
+                    <select
+                      id="idType"
+                      value={idTypeSelectValue}
+                      onChange={(e) => {
+                        const isOther = e.target.value === 'Others';
+                        setIdTypeOtherSelected(isOther);
+                        set('idType', isOther ? '' : e.target.value);
+                      }}
+                    >
+                      <option value="">Select...</option>
+                      {ID_TYPE_OPTIONS.map((o) => (
+                        <option key={o} value={o}>
+                          {o}
+                        </option>
+                      ))}
+                    </select>
+                  )}
                 </div>
                 <ValidIdUpload onChange={loadCompleteness} />
                 <div className="form-group">

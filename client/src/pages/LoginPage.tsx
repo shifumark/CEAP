@@ -1,8 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { roleHome } from '../components/ProtectedRoute';
 import connerSeal from '../assets/images/conner-seal.jpg';
+
+// Shown once after a successful login, before landing in the system.
+const SPLASH_DURATION_MS = 6000;
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -10,6 +13,10 @@ const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  // Set right after a successful login instead of navigating immediately —
+  // holds the splash screen up for SPLASH_DURATION_MS before continuing on
+  // to wherever this role actually lands.
+  const [pendingRoute, setPendingRoute] = useState<string | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
   const { login } = useAuth();
@@ -22,13 +29,40 @@ const LoginPage = () => {
 
     try {
       const user = await login(email, password);
-      navigate(roleHome[user.role]);
+      setPendingRoute(roleHome[user.role]);
     } catch (err: any) {
       setError(err.message || 'Login failed');
     } finally {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (!pendingRoute) return;
+    const timer = setTimeout(() => navigate(pendingRoute), SPLASH_DURATION_MS);
+    return () => clearTimeout(timer);
+  }, [pendingRoute, navigate]);
+
+  if (pendingRoute) {
+    return (
+      <div className="login-container">
+        <div className="login-card" style={{ textAlign: 'center' }}>
+          <img
+            src={connerSeal}
+            alt="Municipality of Conner, Apayao seal"
+            width={150}
+            height={150}
+            style={{ display: 'block', margin: '0 auto 1rem', borderRadius: '50%' }}
+          />
+          <h2>Enhance Conner Educational Assistance Program</h2>
+          <p style={{ marginBottom: '0.5rem' }}>All rights reserved &copy; MP_Culili</p>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+            Special credits to Louie_Culili &mdash; System Commentor
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="login-container">

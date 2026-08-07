@@ -547,7 +547,7 @@ const ProfilePage = () => {
                 <div className="form-group">
                   <label htmlFor="suffix">Suffix</label>
                   <select id="suffix" value={form.suffix} onChange={(e) => set('suffix', e.target.value)}>
-                    <option value="">Select...</option>
+                    <option value="" disabled hidden>Select...</option>
                     {SUFFIX_OPTIONS.map((o) => (
                       <option key={o} value={o}>
                         {o}
@@ -558,7 +558,7 @@ const ProfilePage = () => {
                 <div className="form-group">
                   <label htmlFor="sex">Sex</label>
                   <select id="sex" value={form.sex} onChange={(e) => set('sex', e.target.value)}>
-                    <option value="">Select...</option>
+                    <option value="" disabled hidden>Select...</option>
                     {SEX_OPTIONS.map((o) => (
                       <option key={o} value={o}>
                         {o}
@@ -569,7 +569,7 @@ const ProfilePage = () => {
                 <div className="form-group">
                   <label htmlFor="civilStatus">Civil Status</label>
                   <select id="civilStatus" value={form.civilStatus} onChange={(e) => set('civilStatus', e.target.value)}>
-                    <option value="">Select...</option>
+                    <option value="" disabled hidden>Select...</option>
                     {CIVIL_STATUS_OPTIONS.map((o) => (
                       <option key={o} value={o}>
                         {o}
@@ -634,7 +634,7 @@ const ProfilePage = () => {
                         set('idType', isOther ? '' : e.target.value);
                       }}
                     >
-                      <option value="">Select...</option>
+                      <option value="" disabled hidden>Select...</option>
                       {ID_TYPE_OPTIONS.map((o) => (
                         <option key={o} value={o}>
                           {o}
@@ -661,7 +661,7 @@ const ProfilePage = () => {
                     value={form.isIndigenousPeople}
                     onChange={(e) => set('isIndigenousPeople', e.target.value)}
                   >
-                    <option value="">Select...</option>
+                    <option value="" disabled hidden>Select...</option>
                     <option value="yes">Yes</option>
                     <option value="no">No</option>
                   </select>
@@ -883,7 +883,7 @@ const ProfilePage = () => {
                 <div className="form-group">
                   <label htmlFor="parentalStatus">Parental Status</label>
                   <select id="parentalStatus" value={form.parentalStatus} onChange={(e) => set('parentalStatus', e.target.value)}>
-                    <option value="">Select...</option>
+                    <option value="" disabled hidden>Select...</option>
                     {PARENTAL_STATUS_OPTIONS.map((o) => (
                       <option key={o} value={o}>
                         {o}
@@ -908,7 +908,7 @@ const ProfilePage = () => {
                 <div className="form-group">
                   <label htmlFor="schoolType">Type</label>
                   <select id="schoolType" value={form.schoolType} onChange={(e) => set('schoolType', e.target.value)}>
-                    <option value="">Select...</option>
+                    <option value="" disabled hidden>Select...</option>
                     {SCHOOL_TYPE_OPTIONS.map((o) => (
                       <option key={o} value={o}>
                         {o}
@@ -990,7 +990,7 @@ const ProfilePage = () => {
                           set('courseName', isOther ? '' : e.target.value);
                         }}
                       >
-                        <option value="">Please Select</option>
+                        <option value="" disabled hidden>Please Select</option>
                         {SPECIAL_COURSE_OPTIONS.map((o) => (
                           <option key={o} value={o}>
                             {o}
@@ -1019,7 +1019,7 @@ const ProfilePage = () => {
                 <div className="form-group">
                   <label htmlFor="academicStatus">Academic Status</label>
                   <select id="academicStatus" value={form.academicStatus} onChange={(e) => set('academicStatus', e.target.value)}>
-                    <option value="">Select...</option>
+                    <option value="" disabled hidden>Select...</option>
                     {ACADEMIC_STATUS_OPTIONS.map((o) => (
                       <option key={o} value={o}>
                         {o}
@@ -1042,7 +1042,7 @@ const ProfilePage = () => {
                     value={form.currentlyReceivingAssistance}
                     onChange={(e) => set('currentlyReceivingAssistance', e.target.value)}
                   >
-                    <option value="">Select...</option>
+                    <option value="" disabled hidden>Select...</option>
                     <option value="yes">Yes</option>
                     <option value="no">No</option>
                   </select>
@@ -1077,7 +1077,7 @@ const ProfilePage = () => {
                     value={form.receivedCeapAssistance}
                     onChange={(e) => set('receivedCeapAssistance', e.target.value)}
                   >
-                    <option value="">Select...</option>
+                    <option value="" disabled hidden>Select...</option>
                     <option value="yes">Yes</option>
                     <option value="no">No</option>
                   </select>
@@ -1100,7 +1100,7 @@ const ProfilePage = () => {
                     value={form.appliedOtherScholarship}
                     onChange={(e) => set('appliedOtherScholarship', e.target.value)}
                   >
-                    <option value="">Select...</option>
+                    <option value="" disabled hidden>Select...</option>
                     <option value="yes">Yes</option>
                     <option value="no">No</option>
                   </select>

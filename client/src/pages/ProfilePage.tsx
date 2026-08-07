@@ -1146,8 +1146,7 @@ const ProfilePage = () => {
                   }}
                 >
                   <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                    Don't have the official CEAP application form? Generate one pre-filled with your profile
-                    information, then print and sign it before uploading it below as your "Application Form".
+                    Download and print your pre-filled application form. Attach a 2" x 2" ID photo to the printed form. Submit the original/authenticated hard copy when required.
                   </p>
                   <button type="button" className="btn btn-outline btn-sm" disabled={downloadingForm} onClick={handleDownloadApplicationForm}>
                     {downloadingForm ? 'Generating...' : 'Download Application Form (PDF)'}

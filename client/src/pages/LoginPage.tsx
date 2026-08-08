@@ -56,7 +56,7 @@ const LoginPage = () => {
           />
           <h2>Enhance Conner Educational Assistance Program</h2>
           <p style={{ marginBottom: '0.5rem' }}>All rights reserved &copy; MP_Culili</p>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+          <p style={{ color: '#000000', fontSize: '0.85rem' }}>
             Special credits to Louie_Culili &mdash; System Commentor
           </p>
         </div>

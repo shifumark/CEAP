@@ -55,7 +55,7 @@ const LoginPage = () => {
             style={{ display: 'block', margin: '0 auto 1rem', borderRadius: '50%' }}
           />
           <h2>Enhance Conner Educational Assistance Program</h2>
-          <p style={{ marginBottom: '0.5rem' }}>All rights reserved &copy; MP_Culili</p>
+          <p style={{ marginBottom: '0.5rem', color: '#000000' }}>All rights reserved &copy; MP_Culili</p>
           <p style={{ color: '#000000', fontSize: '0.85rem' }}>
             Special credits to Louie_Culili &mdash; System Commentor
           </p>

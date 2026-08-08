@@ -5,7 +5,7 @@ import { roleHome } from '../components/ProtectedRoute';
 import connerSeal from '../assets/images/conner-seal.jpg';
 
 // Shown once after a successful login, before landing in the system.
-const SPLASH_DURATION_MS = 6000;
+const SPLASH_DURATION_MS = 8000;
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
